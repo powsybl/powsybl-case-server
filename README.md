@@ -1,4 +1,4 @@
-# PowSyBl case
+# PowSyBl case server
 
 [![Actions Status](https://github.com/powsybl/powsybl-case-server/workflows/CI/badge.svg)](https://github.com/powsybl/powsybl-case-server/actions)
 [![Coverage Status](https://sonarcloud.io/api/project_badges/measure?project=com.powsybl%3Apowsybl-case-server&metric=coverage)](https://sonarcloud.io/component_measures?id=com.powsybl%3Apowsybl-case-server&metric=coverage)
