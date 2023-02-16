@@ -44,17 +44,13 @@
     </developers>
 
     <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>11</java.version>
-        <!-- FIXME why maven won't work without the following 2 lines -->
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
 
         <liquibase-hibernate-package>com.powsybl.caseserver.repository</liquibase-hibernate-package>
 
         <mockito-inline.version>3.11.1</mockito-inline.version>
         <log4j2-mock-version>0.0.2</log4j2-mock-version>
-        <powsybl-ws-dependencies.version>2.0.0</powsybl-ws-dependencies.version>
+        <powsybl-ws-dependencies.version>2.1.0</powsybl-ws-dependencies.version>
         <testcontainers.version>1.16.2</testcontainers.version>
     </properties>
 
