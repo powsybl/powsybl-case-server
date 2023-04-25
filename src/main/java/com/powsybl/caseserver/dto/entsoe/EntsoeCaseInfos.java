@@ -34,11 +34,11 @@ import org.springframework.messaging.Message;
 @TypeAlias(value = "EntsoeCaseInfos")
 public class EntsoeCaseInfos extends CaseInfos {
 
-    public static final String DATE_HEADER_KEY         = "date";
-    public static final String FO_DISTANCE_HEADER_KEY  = "forecastDistance";
-    public static final String GEO_CODE_HEADER_KEY     = "geographicalCode";
-    public static final String COUNTRY_HEADER_KEY      = "country";
-    public static final String VERSION_HEADER_KEY      = "version";
+    public static final String DATE_HEADER_KEY = "date";
+    public static final String FO_DISTANCE_HEADER_KEY = "forecastDistance";
+    public static final String GEO_CODE_HEADER_KEY = "geographicalCode";
+    public static final String COUNTRY_HEADER_KEY = "country";
+    public static final String VERSION_HEADER_KEY = "version";
 
     @NonNull private DateTime date;
     @NonNull private Integer forecastDistance;
@@ -52,11 +52,11 @@ public class EntsoeCaseInfos extends CaseInfos {
     @Override
     public Message<String> createMessage() {
         return createMessageBuilder()
-            .setHeader(DATE_HEADER_KEY,         getDate())
-            .setHeader(FO_DISTANCE_HEADER_KEY,  getForecastDistance())
-            .setHeader(GEO_CODE_HEADER_KEY,     getGeographicalCode())
-            .setHeader(COUNTRY_HEADER_KEY,      getCountry())
-            .setHeader(VERSION_HEADER_KEY,      getVersion())
+            .setHeader(DATE_HEADER_KEY, getDate())
+            .setHeader(FO_DISTANCE_HEADER_KEY, getForecastDistance())
+            .setHeader(GEO_CODE_HEADER_KEY, getGeographicalCode())
+            .setHeader(COUNTRY_HEADER_KEY, getCountry())
+            .setHeader(VERSION_HEADER_KEY, getVersion())
             .build();
     }
 

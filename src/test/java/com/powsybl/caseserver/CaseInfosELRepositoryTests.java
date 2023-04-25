@@ -31,13 +31,13 @@ import static org.junit.Assert.*;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 public class CaseInfosELRepositoryTests {
 
-    private static final String SN_UCTE_CASE_FILE_NAME      = "20200103_0915_SN5_D80.UCT";
-    private static final String ID1_UCTE_CASE_FILE_NAME     = "20200103_0915_135_CH2.UCT";
-    private static final String ID2_UCTE_CASE_FILE_NAME     = "20200424_1330_135_CH2.UCT";
-    private static final String FO1_UCTE_CASE_FILE_NAME     = "20200103_0915_FO5_FR0.UCT";
-    private static final String FO2_UCTE_CASE_FILE_NAME     = "20200110_0430_FO5_FR0.uct";
-    private static final String D4_UCTE_CASE_FILE_NAME      = "20200430_1530_2D4_D41.uct";
-    private static final String TEST_CGMES_CASE_FILE_NAME   = "20200424T1330Z_2D_RTEFRANCE_001.zip";
+    private static final String SN_UCTE_CASE_FILE_NAME = "20200103_0915_SN5_D80.UCT";
+    private static final String ID1_UCTE_CASE_FILE_NAME = "20200103_0915_135_CH2.UCT";
+    private static final String ID2_UCTE_CASE_FILE_NAME = "20200424_1330_135_CH2.UCT";
+    private static final String FO1_UCTE_CASE_FILE_NAME = "20200103_0915_FO5_FR0.UCT";
+    private static final String FO2_UCTE_CASE_FILE_NAME = "20200110_0430_FO5_FR0.uct";
+    private static final String D4_UCTE_CASE_FILE_NAME = "20200430_1530_2D4_D41.uct";
+    private static final String TEST_CGMES_CASE_FILE_NAME = "20200424T1330Z_2D_RTEFRANCE_001.zip";
 
     @Autowired
     private CaseService caseService;

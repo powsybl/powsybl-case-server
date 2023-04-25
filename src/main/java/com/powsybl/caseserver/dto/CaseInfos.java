@@ -36,14 +36,14 @@ import org.springframework.messaging.Message;
 @TypeAlias(value = "CaseInfos")
 public class CaseInfos {
 
-    public static final String NAME_HEADER_KEY   = "name";
-    public static final String UUID_HEADER_KEY   = "uuid";
+    public static final String NAME_HEADER_KEY = "name";
+    public static final String UUID_HEADER_KEY = "uuid";
     public static final String FORMAT_HEADER_KEY = "format";
 
     @Id
-    @NonNull protected UUID     uuid;
-    @NonNull protected String   name;
-    @NonNull protected String   format;
+    @NonNull protected UUID uuid;
+    @NonNull protected String name;
+    @NonNull protected String format;
 
     @Override
     public boolean equals(Object obj) {
@@ -60,9 +60,9 @@ public class CaseInfos {
         }
 
         CaseInfos other = (CaseInfos) obj;
-        return  Objects.equals(this.uuid, other.uuid) &&
-                Objects.equals(this.name, other.name) &&
-                Objects.equals(this.format, other.format);
+        return Objects.equals(this.uuid, other.uuid) &&
+            Objects.equals(this.name, other.name) &&
+            Objects.equals(this.format, other.format);
     }
 
     @Override
@@ -89,9 +89,9 @@ public class CaseInfos {
 
     protected MessageBuilder<String> createMessageBuilder() {
         return MessageBuilder.withPayload("")
-                .setHeader(NAME_HEADER_KEY,     getName())
-                .setHeader(UUID_HEADER_KEY,     getUuid())
-                .setHeader(FORMAT_HEADER_KEY,   getFormat());
+                .setHeader(NAME_HEADER_KEY, getName())
+                .setHeader(UUID_HEADER_KEY, getUuid())
+                .setHeader(FORMAT_HEADER_KEY, getFormat());
     }
 
     public Message<String> createMessage() {

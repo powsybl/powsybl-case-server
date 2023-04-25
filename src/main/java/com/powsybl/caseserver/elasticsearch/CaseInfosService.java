@@ -46,7 +46,7 @@ public class CaseInfosService {
     }
 
     public Optional<CaseInfos> getCaseInfosByUuid(@NonNull final String uuid) {
-        Page<CaseInfos> res = caseInfosRepository.findByUuid(uuid,  PageRequest.of(0, 1));
+        Page<CaseInfos> res = caseInfosRepository.findByUuid(uuid, PageRequest.of(0, 1));
         return res.get().findFirst();
     }
 
@@ -64,7 +64,7 @@ public class CaseInfosService {
         caseInfosRepository.delete(ci);
     }
 
-    public void deleteCaseInfosByUuid(@NonNull  String uuid) {
+    public void deleteCaseInfosByUuid(@NonNull String uuid) {
         caseInfosRepository.deleteById(uuid);
     }
 
