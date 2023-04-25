@@ -141,8 +141,8 @@ public class CaseController {
     @PostMapping(value = "/cases")
     @Operation(summary = "create a case from an existing one")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The case has been duplicated"),
-            @ApiResponse(responseCode = "404", description = "Source case not found"),
-            @ApiResponse(responseCode = "500", description = "An error occurred during the case file duplication")})
+        @ApiResponse(responseCode = "404", description = "Source case not found"),
+        @ApiResponse(responseCode = "500", description = "An error occurred during the case file duplication")})
     public ResponseEntity<UUID> duplicateCase(
             @RequestParam("duplicateFrom") UUID sourceCaseUuid,
             @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration) {
@@ -154,8 +154,8 @@ public class CaseController {
     @PutMapping(value = "/cases/{caseUuid}/disableExpiration")
     @Operation(summary = "disable the case expiration")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "The case expiration has been removed"),
-            @ApiResponse(responseCode = "404", description = "Source case not found")})
+        @ApiResponse(responseCode = "200", description = "The case expiration has been removed"),
+        @ApiResponse(responseCode = "404", description = "Source case not found")})
     public ResponseEntity<Void> disableCaseExpiration(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("disableCaseExpiration request received for caseUuid = {}", caseUuid);
         caseService.disableCaseExpiration(caseUuid);

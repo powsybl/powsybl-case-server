@@ -556,7 +556,7 @@ public class CaseControllerTest {
         assertFalse(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                .param("q",  getDateSearchTerm("20140116_0830") + " AND geographicalCode:(ES)"))
+                .param("q", getDateSearchTerm("20140116_0830") + " AND geographicalCode:(ES)"))
                 .andExpect(status().isOk())
                 .andReturn();
         assertEquals("[]", mvcResult.getResponse().getContentAsString());
