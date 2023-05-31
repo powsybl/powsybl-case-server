@@ -35,7 +35,7 @@ public final class CaseException extends RuntimeException {
         return type;
     }
 
-    public static CaseException createDirectoryAreadyExists(Path directory) {
+    public static CaseException createDirectoryAreadyExists(String directory) {
         Objects.requireNonNull(directory);
         return new CaseException(Type.DIRECTORY_ALREADY_EXISTS, "A directory with the same name already exists: " + directory);
     }

@@ -15,3 +15,12 @@ powsybl-ws:
 
 cleaning-cases-cron: 0 * 2 * * ?
 
+cloud:
+  aws:
+    credentials:
+      access-key: minioadmin
+      secret-key: minioadmin
+    s3:
+      endpoint: http://minio:9000
+
+case-store-bucket: bucket-gridsuite

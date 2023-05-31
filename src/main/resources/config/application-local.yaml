@@ -1,0 +1,7 @@
+cloud:
+  aws:
+    s3:
+      # using host ip address for s3 endpoint because spring cloud aws 2.x doesn't allow
+      # spring.cloud.aws.s3.path-style-access-enabled (only spring cloud aws 3.x), to be revisisted ?
+      # in local dev we don't have wildcard dns entries *.localhost so we need path style
+      endpoint: http://172.17.0.1:19000
