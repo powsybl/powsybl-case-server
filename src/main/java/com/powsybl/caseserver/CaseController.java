@@ -12,7 +12,6 @@ import com.powsybl.iidm.xml.NetworkXml;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
 
@@ -51,7 +50,7 @@ public class CaseController {
     //For maintenance purpose
     public ResponseEntity<List<CaseInfos>> getCases() {
         LOGGER.debug("getCases request received");
-        List<CaseInfos> cases = caseService.getCases(caseService.getStorageRootDir());
+        List<CaseInfos> cases = caseService.getCases();
         if (cases == null) {
             return ResponseEntity.noContent().build();
         }
@@ -62,11 +61,10 @@ public class CaseController {
     @Operation(summary = "Get a case infos")
     public ResponseEntity<CaseInfos> getCaseInfos(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("getCaseInfos request received");
-        Path file = caseService.getCaseFile(caseUuid);
-        if (file == null) {
+        if (!caseService.caseExists(caseUuid)) {
             return ResponseEntity.noContent().build();
         }
-        CaseInfos caseInfos = caseService.getCase(file);
+        CaseInfos caseInfos = caseService.getCase(caseUuid);
         return ResponseEntity.ok().body(caseInfos);
     }
 
@@ -74,11 +72,10 @@ public class CaseController {
     @Operation(summary = "Get case Format")
     public ResponseEntity<String> getCaseFormat(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("getCaseFormat request received");
-        Path file = caseService.getCaseFile(caseUuid);
-        if (file == null) {
+        if (!caseService.caseExists(caseUuid)) {
             throw createDirectoryNotFound(caseUuid);
         }
-        String caseFormat = caseService.getFormat(file);
+        String caseFormat = caseService.getFormat(caseUuid);
         return ResponseEntity.ok().body(caseFormat);
     }
 
@@ -86,6 +83,9 @@ public class CaseController {
     @Operation(summary = "Get case name")
     public ResponseEntity<String> getCaseName(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("getCaseName request received");
+        if (!caseService.caseExists(caseUuid)) {
+            throw createDirectoryNotFound(caseUuid);
+        }
         String caseName = caseService.getCaseName(caseUuid);
         return ResponseEntity.ok().body(caseName);
     }
@@ -166,6 +166,9 @@ public class CaseController {
     @Operation(summary = "delete a case")
     public ResponseEntity<Void> deleteCase(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("deleteCase request received with parameter caseUuid = {}", caseUuid);
+        if (!caseService.caseExists(caseUuid)) {
+            throw createDirectoryNotFound(caseUuid);
+        }
         caseService.deleteCase(caseUuid);
         return ResponseEntity.ok().build();
     }
@@ -200,4 +203,5 @@ public class CaseController {
         LOGGER.debug("get Case metadata");
         return ResponseEntity.ok().body(caseService.getMetadata(ids));
     }
+
 }

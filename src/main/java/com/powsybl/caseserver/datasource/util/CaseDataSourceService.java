@@ -8,17 +8,17 @@ package com.powsybl.caseserver.datasource.util;
 
 import com.powsybl.caseserver.CaseService;
 import com.powsybl.commons.datasource.DataSource;
+
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.Functions.FailableFunction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.Set;
 import java.util.UUID;
 
@@ -33,64 +33,41 @@ public class CaseDataSourceService {
     private CaseService caseService;
 
     String getBaseName(UUID caseUuid) {
-        DataSource dataSource = getDatasource(caseUuid);
-        return dataSource.getBaseName();
+        return withS3DownloadedDataSource(caseUuid, DataSource::getBaseName);
     }
 
     Boolean datasourceExists(UUID caseUuid, String suffix, String ext) {
-        DataSource dataSource = getDatasource(caseUuid);
-        try {
-            return dataSource.exists(suffix, ext);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return withS3DownloadedDataSource(caseUuid, datasource -> datasource.exists(suffix, ext));
     }
 
     Boolean datasourceExists(UUID caseUuid, String fileName) {
-        DataSource dataSource = getDatasource(caseUuid);
-        try {
-            return dataSource.exists(fileName);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return withS3DownloadedDataSource(caseUuid, datasource -> datasource.exists(fileName));
     }
 
     byte[] getInputStream(UUID caseUuid, String fileName) {
-        DataSource dataSource = getDatasource(caseUuid);
-        try (InputStream inputStream = dataSource.newInputStream(fileName)) {
-            return IOUtils.toByteArray(inputStream);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return withS3DownloadedDataSource(caseUuid,
+            datasource -> IOUtils.toByteArray(datasource.newInputStream(fileName)));
     }
 
     byte[] getInputStream(UUID caseUuid, String suffix, String ext) {
-        DataSource dataSource = getDatasource(caseUuid);
-        try (InputStream inputStream = dataSource.newInputStream(suffix, ext)) {
-            return IOUtils.toByteArray(inputStream);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return withS3DownloadedDataSource(caseUuid,
+            datasource -> IOUtils.toByteArray(datasource.newInputStream(suffix, ext)));
     }
 
     Set<String> listName(UUID caseUuid, String regex) {
-        DataSource dataSource = getDatasource(caseUuid);
-        String decodedRegex = URLDecoder.decode(regex, StandardCharsets.UTF_8);
-        try {
-            return dataSource.listNames(decodedRegex);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return withS3DownloadedDataSource(caseUuid, datasource -> {
+            String decodedRegex = URLDecoder.decode(regex, StandardCharsets.UTF_8);
+            try {
+                return datasource.listNames(decodedRegex);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
     }
 
-    private DataSource initDatasource(UUID caseUuid) {
-        Path file = caseService.getCaseFile(caseUuid);
-        return DataSource.fromPath(file);
-    }
-
-    private DataSource getDatasource(UUID caseUuid) {
-        caseService.checkStorageInitialization();
-        return initDatasource(caseUuid);
+    public <R, T extends Throwable> R withS3DownloadedDataSource(UUID caseUuid, FailableFunction<DataSource, R, T> f) {
+        // TODO replace with lang3 3.11 FailableFunction::compose
+        return caseService.withS3DownloadedTempPath(caseUuid, path -> f.apply(DataSource.fromPath(path)));
     }
 
 }

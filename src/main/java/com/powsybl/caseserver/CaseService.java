@@ -6,6 +6,14 @@
  */
 package com.powsybl.caseserver;
 
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest.KeyVersion;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.parsers.FileNameInfos;
@@ -18,6 +26,9 @@ import com.powsybl.computation.ComputationManager;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
+
+import org.apache.commons.lang3.Functions.FailableConsumer;
+import org.apache.commons.lang3.Functions.FailableFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +43,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.*;
 import java.time.LocalDateTime;
@@ -42,9 +54,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
 
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
@@ -52,6 +61,7 @@ import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
  */
 @Service
 @ComponentScan(basePackageClasses = {CaseInfosService.class})
+//TODO make this an interface, with different implementations (filesystem or object storage)
 public class CaseService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CaseService.class);
@@ -75,10 +85,21 @@ public class CaseService {
     @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
     private String rootDirectory;
 
+    @Value("${case-store-bucket}")
+    private String bucketName;
+
+    private static final String CASES_PREFIX = "gsi-cases/";
+
+    @Autowired
+    private AmazonS3Client s3Client;
+
     public CaseService(CaseMetadataRepository caseMetadataRepository) {
         this.caseMetadataRepository = caseMetadataRepository;
     }
 
+    // TODO replace Path with InputStream but simple powsybl APIs need a Path to
+    // make a datasource listing a zip content.
+    // TODO use new multipledatasource ?
     Importer getImporterOrThrowsException(Path caseFile) {
         DataSource dataSource = DataSource.fromPath(caseFile);
         Importer importer = Importer.find(dataSource, computationManager);
@@ -93,153 +114,210 @@ public class CaseService {
         return importer.getFormat();
     }
 
-    public List<CaseInfos> getCases(Path directory) {
-        try (Stream<Path> walk = Files.walk(directory)) {
-            return walk.filter(Files::isRegularFile)
-                .map(file -> createInfos(file.getFileName().toString(), UUID.fromString(file.getParent().getFileName().toString()), getFormat(file)))
-                .collect(Collectors.toList());
+    // creates a directory, and then in this directory, initializes a file with content.
+    // After applying f to the file, deletes the file and the directory.
+    private <R, T1 extends Throwable, T2 extends Throwable> R withTempCopy(UUID caseUuid, String filename,
+            FailableConsumer<Path, T1> contentInitializer, FailableFunction<Path, R, T2> f) {
+        Path tempdir;
+        Path tempCasePath = null;
+        try {
+            tempdir = Files.createTempDirectory(caseUuid.toString());
+            // after this line, need to cleanup the dir
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        try {
+            tempCasePath = tempdir.resolve(filename);
+            try {
+                contentInitializer.accept(tempCasePath);
+            } catch (CaseException e) {
+                throw e; // don't wrap our exceptions
+            } catch (Throwable ex) {
+                throw new RuntimeException(ex);
+            }
+            // after this line, need to cleanup the file
+            try {
+                try {
+                    return f.apply(tempCasePath);
+                } catch (CaseException e) {
+                    throw e; // don't wrap our exceptions
+                } catch (Throwable t) {
+                    throw new RuntimeException(t);
+                }
+            } finally {
+                try {
+                    Files.delete(tempCasePath);
+                } catch (IOException e) {
+                    LOGGER.error("Error cleaning up temporary case file", e);
+                }
+            }
+        } finally {
+            try {
+                Files.delete(tempdir);
+            } catch (IOException e) {
+                LOGGER.error("Error cleaning up temporary case dir", e);
+            }
+        }
+    }
+
+    // downloads from s3 and cleanup
+    public <R, T extends Throwable> R withS3DownloadedTempPath(UUID caseUuid, FailableFunction<Path, R, T> f) {
+        String caseFileKey = getCaseFileObjectKey(caseUuid);
+        String filename = parseFilenameFromKey(getCaseFileObjectKey(caseUuid));
+        return withTempCopy(caseUuid, filename, path ->
+            s3Client.getObject(new GetObjectRequest(bucketName, caseFileKey), path.toFile()),
+        f);
+    }
+
+    // TODO don't download file to get the format, see getImporterOrThrowsException
+    String getFormat(UUID caseUuid) {
+        return withS3DownloadedTempPath(caseUuid, this::getFormat);
+    }
+
+    // key format is "gsi-cases/UUID/filename"
+    private UUID parseUuidFromKey(String key) {
+        int firstSlash = key.indexOf('/');
+        int secondSlash = key.indexOf('/', firstSlash + 1);
+        return UUID.fromString(key.substring(firstSlash + 1, secondSlash));
+    }
+
+    private String parseFilenameFromKey(String key) {
+        int firstSlash = key.indexOf('/');
+        int secondSlash = key.indexOf('/', firstSlash + 1);
+        return key.substring(secondSlash + 1);
+    }
+
+    private String uuidToPrefixKey(UUID uuid) {
+        return CASES_PREFIX + uuid.toString() + "/";
+    }
+
+    private String uuidAndFilenameToKey(UUID uuid, String filename) {
+        return uuidToPrefixKey(uuid) + filename;
+    }
+
+    //TODO try to remove amazon client objects from APIs
+    private List<S3ObjectSummary> getCasesSummary(String prefix) {
+        ObjectListing objectListing = s3Client.listObjects(bucketName, prefix);
+        if (objectListing.isTruncated()) {
+            LOGGER.warn("Truncated listing for prefix " + prefix); // TODO implement pagination
+        }
+        return objectListing.getObjectSummaries().stream()
+                .filter(x -> !x.getKey().endsWith("/")).collect(Collectors.toList());
+    }
+
+    private S3ObjectSummary getCaseFileSummary(UUID caseUuid) {
+        List<S3ObjectSummary> files = getCasesSummary(uuidToPrefixKey(caseUuid));
+        if (files.size() > 1) {
+            LOGGER.warn("Multiple files for case " + caseUuid); //TODO handle uuids that have multiple files
+        }
+        return files.stream().findFirst().orElseThrow();
+    }
+
+    public String getCaseFileObjectKey(UUID caseUuid) {
+        S3ObjectSummary s3ObjectSummary = getCaseFileSummary(caseUuid);
+        return s3ObjectSummary.getKey();
+    }
+
+    private CaseInfos infosFromDownloadCaseFileSummary(S3ObjectSummary objectSummary) {
+        UUID uuid = parseUuidFromKey(objectSummary.getKey());
+        return createInfos(parseFilenameFromKey(objectSummary.getKey()), uuid,
+                getFormat(uuid) // TODO Store as metadata instead
+        );
+    }
+
+    public CaseInfos getCase(UUID caseUuid) {
+        return infosFromDownloadCaseFileSummary(getCaseFileSummary(caseUuid));
+    }
+
+    public String getCaseName(UUID caseUuid) {
+        CaseInfos caseInfos = getCase(caseUuid);
+        return caseInfos.getName();
+    }
+
+    public List<CaseInfos> getCases(String prefix) {
+        return getCasesSummary(prefix).stream()
+                .map(this::infosFromDownloadCaseFileSummary) // TODO handle uuids that have multiple files
+            .collect(Collectors.toList());
+    }
+
+    public List<CaseInfos> getCases() {
+        return getCases(CASES_PREFIX);
+    }
+
+    Optional<byte[]> getCaseBytes(UUID caseUuid) {
+        String caseFileKey = getCaseFileObjectKey(caseUuid);
+        S3Object s3object = s3Client.getObject(bucketName, caseFileKey);
+
+        // TODO can this API really return null ?
+        if (s3object == null) {
+            return Optional.empty();
+        }
+
+        try {
+            return Optional.of(s3object.getObjectContent().readAllBytes());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
-    public String getCaseName(UUID caseUuid) {
-        Path file = getCaseFile(caseUuid);
-        if (file == null) {
-            throw createDirectoryNotFound(caseUuid);
-        }
-        CaseInfos caseInfos = getCase(file);
-        return caseInfos.getName();
-    }
-
-    public CaseInfos getCase(Path casePath) {
-        checkStorageInitialization();
-        Optional<CaseInfos> caseInfo = getCases(casePath).stream().findFirst();
-        return caseInfo.orElseThrow();
-    }
-
-    public Path getCaseFile(UUID caseUuid) {
-        return walkCaseDirectory(getStorageRootDir().resolve(caseUuid.toString()));
-    }
-
-    Path getCaseDirectory(UUID caseUuid) {
-        Path caseDirectory = getStorageRootDir().resolve(caseUuid.toString());
-        if (Files.exists(caseDirectory) && Files.isDirectory(caseDirectory)) {
-            return caseDirectory;
-        }
-        throw CaseException.createDirectoryNotFound(caseUuid);
-    }
-
-    public Path walkCaseDirectory(Path caseDirectory) {
-        if (Files.exists(caseDirectory) && Files.isDirectory(caseDirectory)) {
-            try (Stream<Path> pathStream = Files.walk(caseDirectory)) {
-                Optional<Path> pathOpt = pathStream.filter(file -> !Files.isDirectory(file)).findFirst();
-                if (pathOpt.isEmpty()) {
-                    throw CaseException.createDirectoryEmpty(caseDirectory);
-                }
-                return pathOpt.get();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-        return null;
-    }
-
-    Optional<byte[]> getCaseBytes(UUID caseUuid) {
-        checkStorageInitialization();
-
-        Path caseFile = getCaseFile(caseUuid);
-        if (caseFile == null) {
-            return Optional.empty();
-        }
-
-        if (Files.exists(caseFile) && Files.isRegularFile(caseFile)) {
-            try {
-                byte[] bytes = Files.readAllBytes(caseFile);
-                return Optional.of(bytes);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-        return Optional.empty();
-    }
-
     boolean caseExists(UUID caseName) {
-        checkStorageInitialization();
-        Path caseFile = getCaseFile(caseName);
-        if (caseFile == null) {
-            return false;
-        }
-        return Files.exists(caseFile) && Files.isRegularFile(caseFile);
+        //TODO what request does this do ?
+        return !getCasesSummary(uuidToPrefixKey(caseName)).isEmpty();
     }
 
     UUID importCase(MultipartFile mpf, boolean withExpiration) {
-        checkStorageInitialization();
-
         UUID caseUuid = UUID.randomUUID();
-        Path uuidDirectory = getStorageRootDir().resolve(caseUuid.toString());
 
         String caseName = mpf.getOriginalFilename();
         validateCaseName(caseName);
 
-        if (Files.exists(uuidDirectory)) {
-            throw CaseException.createDirectoryAreadyExists(uuidDirectory);
+        //TODO, remove this ? can't happend with a randomUUID
+        if (caseExists(caseUuid)) {
+            throw CaseException.createDirectoryAreadyExists(caseUuid.toString());
         }
 
-        Path caseFile;
-        try {
-            Files.createDirectory(uuidDirectory);
-            caseFile = uuidDirectory.resolve(caseName);
-            mpf.transferTo(caseFile);
+        // TODO store this detected format to avoid having to recompute it later after
+        // the case has been stored and clients do a request on the /format API
+        String format = withTempCopy(caseUuid, caseName, mpf::transferTo, this::getFormat);
+
+        try (InputStream inputStream = mpf.getInputStream()) {
+            String key = uuidAndFilenameToKey(caseUuid, caseName);
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentType(mpf.getContentType());
+            metadata.setContentLength(mpf.getSize());
+            s3Client.putObject(bucketName, key, inputStream, metadata);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
 
-        Importer importer;
-        try {
-            importer = getImporterOrThrowsException(caseFile);
-        } catch (CaseException e) {
-            try {
-                Files.deleteIfExists(caseFile);
-                Files.deleteIfExists(uuidDirectory);
-            } catch (IOException e2) {
-                LOGGER.error(e2.toString(), e2);
-            }
-            throw e;
-        }
-
         createCaseMetadataEntity(caseUuid, withExpiration);
-        CaseInfos caseInfos = createInfos(caseFile.getFileName().toString(), caseUuid, importer.getFormat());
+        CaseInfos caseInfos = createInfos(mpf.getOriginalFilename(), caseUuid, format);
         caseInfosService.addCaseInfos(caseInfos);
         sendImportMessage(caseInfos.createMessage());
+
         return caseUuid;
     }
 
     UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration) {
-        try {
-            Path existingCaseFile = getCaseFile(sourceCaseUuid);
-            if (existingCaseFile == null || existingCaseFile.getParent() == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Source case " + sourceCaseUuid + " not found");
-            }
-
-            UUID newCaseUuid = UUID.randomUUID();
-            Path newCaseUuidDirectory = existingCaseFile.getParent().getParent().resolve(newCaseUuid.toString());
-            Path newCaseFile;
-            Files.createDirectory(newCaseUuidDirectory);
-            newCaseFile = newCaseUuidDirectory.resolve(existingCaseFile.getFileName());
-            Files.copy(existingCaseFile, newCaseFile, StandardCopyOption.COPY_ATTRIBUTES);
-
-            CaseInfos existingCaseInfos = caseInfosService.getCaseInfosByUuid(sourceCaseUuid.toString()).orElseThrow();
-            CaseInfos caseInfos = createInfos(existingCaseInfos.getName(), newCaseUuid, existingCaseInfos.getFormat());
-            caseInfosService.addCaseInfos(caseInfos);
-            createCaseMetadataEntity(newCaseUuid, withExpiration);
-
-            sendImportMessage(caseInfos.createMessage());
-            return newCaseUuid;
-
-        } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred during case duplication");
+        // TODO don't query twice, here in caseExist and for getCaseObjectKey
+        if (!caseExists(sourceCaseUuid)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Source case " + sourceCaseUuid + " not found");
         }
+
+        UUID newCaseUuid = UUID.randomUUID();
+
+        String sourceKey = getCaseFileObjectKey(sourceCaseUuid);
+        String targetKey = uuidAndFilenameToKey(newCaseUuid, parseFilenameFromKey(sourceKey));
+
+        s3Client.copyObject(bucketName, sourceKey, bucketName, targetKey);
+
+        CaseInfos existingCaseInfos = caseInfosService.getCaseInfosByUuid(sourceCaseUuid.toString()).orElseThrow();
+        CaseInfos caseInfos = createInfos(existingCaseInfos.getName(), newCaseUuid, existingCaseInfos.getFormat());
+        caseInfosService.addCaseInfos(caseInfos);
+        createCaseMetadataEntity(newCaseUuid, withExpiration);
+
+        sendImportMessage(caseInfos.createMessage());
+        return newCaseUuid;
     }
 
     private void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration) {
@@ -268,72 +346,41 @@ public class CaseService {
     }
 
     Optional<Network> loadNetwork(UUID caseUuid) {
-        checkStorageInitialization();
 
-        Path caseFile = getCaseFile(caseUuid);
-        if (caseFile == null) {
+        if (!caseExists(caseUuid)) {
             return Optional.empty();
         }
 
-        if (Files.exists(caseFile) && Files.isRegularFile(caseFile)) {
-            Network network = Network.read(caseFile);
+        return Optional.of(withS3DownloadedTempPath(caseUuid, path -> {
+            Network network = Network.read(path);
             if (network == null) {
-                throw CaseException.createFileNotImportable(caseFile);
+                throw CaseException.createFileNotImportable(path);
             }
-            return Optional.of(network);
-        }
-        return Optional.empty();
-    }
-
-    void deleteDirectoryRecursively(Path caseDirectory) {
-        try (DirectoryStream<Path> paths = Files.newDirectoryStream(caseDirectory)) {
-            paths.forEach(file -> {
-                try {
-                    Files.delete(file);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            });
-            Files.delete(caseDirectory);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+            return network;
+        }));
     }
 
     void deleteCase(UUID caseUuid) {
-        checkStorageInitialization();
-        Path caseDirectory = getCaseDirectory(caseUuid);
-        deleteDirectoryRecursively(caseDirectory);
-        caseInfosService.deleteCaseInfosByUuid(caseUuid.toString());
-        caseMetadataRepository.deleteById(caseUuid);
+        List<KeyVersion> keys = s3Client.listObjects(bucketName, uuidToPrefixKey(caseUuid))
+                .getObjectSummaries().stream()
+                .map(S3ObjectSummary::getKey).map(KeyVersion::new).collect(Collectors.toList());
+        if (!keys.isEmpty()) {
+            s3Client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(keys));
+            caseInfosService.deleteCaseInfosByUuid(caseUuid.toString());
+            caseMetadataRepository.deleteById(caseUuid);
+        }
     }
 
     void deleteAllCases() {
-        checkStorageInitialization();
+        List<KeyVersion> keys = s3Client.listObjects(bucketName, CASES_PREFIX)
+                .getObjectSummaries().stream()
+                .map(S3ObjectSummary::getKey).map(k -> new KeyVersion(k)).collect(Collectors.toList());
 
-        Path rootDirectoryPath = getStorageRootDir();
-        try (DirectoryStream<Path> paths = Files.newDirectoryStream(rootDirectoryPath)) {
-            paths.forEach(this::deleteDirectoryRecursively);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        if (!keys.isEmpty()) {
+            s3Client.deleteObjects(new DeleteObjectsRequest(bucketName).withKeys(keys));
         }
         caseInfosService.deleteAllCaseInfos();
         caseMetadataRepository.deleteAll();
-    }
-
-    public Path getStorageRootDir() {
-        return fileSystem.getPath(rootDirectory);
-    }
-
-    private boolean isStorageCreated() {
-        Path storageRootDir = getStorageRootDir();
-        return Files.exists(storageRootDir) && Files.isDirectory(storageRootDir);
-    }
-
-    public void checkStorageInitialization() {
-        if (!isStorageCreated()) {
-            throw CaseException.createStorageNotInitialized(getStorageRootDir());
-        }
     }
 
     public void setFileSystem(FileSystem fileSystem) {
@@ -357,8 +404,6 @@ public class CaseService {
      date:XXX AND geographicalCode:(X OR Y OR Z)
     */
     List<CaseInfos> searchCases(String query) {
-        checkStorageInitialization();
-
         return caseInfosService.searchCaseInfos(query);
     }
 
@@ -368,17 +413,14 @@ public class CaseService {
     }
 
     public void reindexAllCases() {
-        caseInfosService.recreateAllCaseInfos(getCases(getStorageRootDir()));
+        caseInfosService.recreateAllCaseInfos(getCases(CASES_PREFIX));
     }
 
     public List<CaseInfos> getMetadata(List<UUID> ids) {
         List<CaseInfos> cases = new ArrayList<>();
         ids.forEach(caseUuid -> {
-            Path file = getCaseFile(caseUuid);
-            if (file != null) {
-                CaseInfos caseInfos = getCase(file);
-                cases.add(caseInfos);
-            }
+            CaseInfos caseInfos = getCase(caseUuid);
+            cases.add(caseInfos);
         });
         return cases;
     }

@@ -6,6 +6,10 @@
  */
 package com.powsybl.caseserver.datasource.util;
 
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.jimfs.Jimfs;
 import com.powsybl.caseserver.CaseApplication;
@@ -16,6 +20,7 @@ import com.powsybl.commons.datasource.DataSource;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -31,12 +36,14 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -44,6 +51,7 @@ import static org.junit.Assert.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import static org.mockito.Mockito.*;
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  */
@@ -66,6 +74,9 @@ public class CaseDataSourceControllerTest {
     private CaseMetadataRepository caseMetadataRepository;
 
     @MockBean
+    private AmazonS3Client s3Client;
+
+    @MockBean
     CaseInfosRepository caseInfosRepository;
 
     @Autowired
@@ -84,6 +95,22 @@ public class CaseDataSourceControllerTest {
 
     @Before
     public void setUp() throws URISyntaxException, IOException {
+
+        ObjectListing objectListing = Mockito.mock(ObjectListing.class);
+        S3ObjectSummary objectSummary1 = Mockito.mock(S3ObjectSummary.class);
+        when(s3Client.getObject(Mockito.<GetObjectRequest>any(), Mockito.<File>any())).then(invocation -> {
+            File file = invocation.getArgument(1);
+            try (InputStream cgmesURL = getClass().getResourceAsStream("/" + cgmesName)) {
+                Files.copy(cgmesURL, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+            return null;
+        });
+
+        when(objectSummary1.getKey()).thenReturn("gsi-cases/" + CASE_UUID + "/" + cgmesName);
+        when(objectListing.getObjectSummaries()).thenReturn(List.of(objectSummary1));
+        when(s3Client.listObjects(Mockito.anyString(), Mockito.anyString())).thenReturn(objectListing);
+
+        // TODO not used with s3, reactivate when we support both modes?
         Path path = fileSystem.getPath(rootDirectory);
         if (!Files.exists(path)) {
             Files.createDirectories(path);
