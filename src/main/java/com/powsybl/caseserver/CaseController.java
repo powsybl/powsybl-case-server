@@ -13,6 +13,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -192,5 +193,20 @@ public class CaseController {
         LOGGER.debug("reindex all cases request received");
         caseService.reindexAllCases();
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping(value = "/cases/metadata")
+    @Operation(summary = "Get cases Metadata")
+    public ResponseEntity<List<CaseInfos>> getMetadata(@RequestParam("ids") List<UUID> ids) {
+        LOGGER.debug("getCaseInfos metadata");
+        List<CaseInfos> cases = new ArrayList<>();
+        ids.forEach(caseUuid -> {
+            Path file = caseService.getCaseFile(caseUuid);
+            if (file != null) {
+                CaseInfos caseInfos = caseService.getCase(file);
+                cases.add(caseInfos);
+            }
+        });
+        return ResponseEntity.ok().body(cases);
     }
 }
