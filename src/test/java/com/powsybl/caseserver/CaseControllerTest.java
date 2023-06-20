@@ -648,4 +648,15 @@ public class CaseControllerTest {
         String utcFormattedDate = EntsoeFileNameParser.parseDateTime(entsoeFormatDate).toDateTimeISO().toString();
         return "date:\"" + utcFormattedDate + "\"";
     }
+
+    @Test
+    public void testGetCaseMetadata() throws Exception {
+        createStorageDir();
+        UUID caseUuid = importCase(TEST_CASE, false);
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/metadata?ids=" + caseUuid))
+                .andExpect(status().isOk())
+                .andReturn();
+        String response = mvcResult.getResponse().getContentAsString();
+        assertTrue(response.contains("\"format\":\"XIIDM\""));
+    }
 }
