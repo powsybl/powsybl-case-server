@@ -373,6 +373,13 @@ public class CaseControllerTest {
                 .andReturn();
 
         assertTrue(mvcResult.getResponse().getContentAsString().contains("\"name\":\"testCase.xiidm\""));
+
+        // test case metadata
+        mvcResult = mvc.perform(get("/v1/cases/metadata?ids=" + caseUuid))
+                .andExpect(status().isOk())
+                .andReturn();
+        String response = mvcResult.getResponse().getContentAsString();
+        assertTrue(response.contains("\"format\":\"XIIDM\""));
     }
 
     private UUID importCase(String testCase, Boolean withExpiration) throws Exception {
@@ -647,16 +654,5 @@ public class CaseControllerTest {
     private String getDateSearchTerm(String entsoeFormatDate) {
         String utcFormattedDate = EntsoeFileNameParser.parseDateTime(entsoeFormatDate).toDateTimeISO().toString();
         return "date:\"" + utcFormattedDate + "\"";
-    }
-
-    @Test
-    public void testGetCaseMetadata() throws Exception {
-        createStorageDir();
-        UUID caseUuid = importCase(TEST_CASE, false);
-        MvcResult mvcResult = mvc.perform(get("/v1/cases/metadata?ids=" + caseUuid))
-                .andExpect(status().isOk())
-                .andReturn();
-        String response = mvcResult.getResponse().getContentAsString();
-        assertTrue(response.contains("\"format\":\"XIIDM\""));
     }
 }
