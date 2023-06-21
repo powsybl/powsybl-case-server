@@ -13,7 +13,6 @@ import com.powsybl.caseserver.CaseService;
 import com.powsybl.caseserver.elasticsearch.CaseInfosRepository;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.commons.datasource.DataSource;
-import com.powsybl.iidm.network.Importers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -100,7 +99,7 @@ public class CaseDataSourceControllerTest {
             Path cgmes = caseDirectory.resolve(cgmesName);
             Files.copy(cgmesURL, cgmes, StandardCopyOption.REPLACE_EXISTING);
         }
-        dataSource = Importers.createDataSource(Paths.get(getClass().getResource("/" + cgmesName).toURI()));
+        dataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + cgmesName).toURI()));
     }
 
     @Test

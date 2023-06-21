@@ -8,7 +8,6 @@ package com.powsybl.caseserver.datasource.util;
 
 import com.powsybl.caseserver.CaseService;
 import com.powsybl.commons.datasource.DataSource;
-import com.powsybl.iidm.network.Importers;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
@@ -86,7 +85,7 @@ public class CaseDataSourceService {
 
     private DataSource initDatasource(UUID caseUuid) {
         Path file = caseService.getCaseFile(caseUuid);
-        return Importers.createDataSource(file);
+        return DataSource.fromPath(file);
     }
 
     private DataSource getDatasource(UUID caseUuid) {
