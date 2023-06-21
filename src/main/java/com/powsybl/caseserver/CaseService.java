@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -369,5 +370,17 @@ public class CaseService {
 
     public void reindexAllCases() {
         caseInfosService.recreateAllCaseInfos(getCases(getStorageRootDir()));
+    }
+
+    public List<CaseInfos> getMetadata(List<UUID> ids) {
+        List<CaseInfos> cases = new ArrayList<>();
+        ids.forEach(caseUuid -> {
+            Path file = getCaseFile(caseUuid);
+            if (file != null) {
+                CaseInfos caseInfos = getCase(file);
+                cases.add(caseInfos);
+            }
+        });
+        return cases;
     }
 }
