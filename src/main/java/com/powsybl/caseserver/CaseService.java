@@ -17,7 +17,6 @@ import com.powsybl.commons.datasource.DataSource;
 import com.powsybl.computation.ComputationManager;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
-import com.powsybl.iidm.network.Importers;
 import com.powsybl.iidm.network.Network;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,7 +80,7 @@ public class CaseService {
     }
 
     Importer getImporterOrThrowsException(Path caseFile) {
-        DataSource dataSource = Importers.createDataSource(caseFile);
+        DataSource dataSource = DataSource.fromPath(caseFile);
         Importer importer = Importer.find(dataSource, computationManager);
         if (importer == null) {
             throw CaseException.createFileNotImportable(caseFile);
