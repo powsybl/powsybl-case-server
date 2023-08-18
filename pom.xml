@@ -13,7 +13,7 @@
     <parent>
         <groupId>com.powsybl</groupId>
         <artifactId>powsybl-parent-ws</artifactId>
-        <version>12</version>
+        <version>14</version>
         <relativePath/>
     </parent>
 
@@ -48,8 +48,8 @@
 
         <mockito-inline.version>3.11.1</mockito-inline.version>
         <log4j2-mock-version>0.0.2</log4j2-mock-version>
-        <powsybl-ws-dependencies.version>2.3.0</powsybl-ws-dependencies.version>
-        <testcontainers.version>1.16.2</testcontainers.version>
+        <powsybl-ws-dependencies.version>2.4.0</powsybl-ws-dependencies.version>
+        <testcontainers.version>1.18.3</testcontainers.version>
     </properties>
 
     <build>
@@ -135,10 +135,6 @@
             <artifactId>powsybl-ws-commons</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.elasticsearch</groupId>
-            <artifactId>elasticsearch</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
@@ -176,13 +172,11 @@
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-ui</artifactId>
         </dependency>
-
-        <!-- Runtime dependencies -->
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-joda</artifactId>
-            <scope>runtime</scope>
         </dependency>
+        <!-- Runtime dependencies -->
         <dependency>
             <groupId>org.liquibase</groupId>
             <artifactId>liquibase-core</artifactId>
@@ -282,10 +276,8 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-stream</artifactId>
-            <type>test-jar</type>
+            <artifactId>spring-cloud-stream-test-binder</artifactId>
             <scope>test</scope>
-            <classifier>test-binder</classifier>
         </dependency>
         <dependency>
             <groupId>org.springframework.integration</groupId>
