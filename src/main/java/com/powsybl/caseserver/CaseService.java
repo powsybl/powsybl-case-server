@@ -179,7 +179,7 @@ public class CaseService {
         UUID caseUuid = UUID.randomUUID();
         Path uuidDirectory = getStorageRootDir().resolve(caseUuid.toString());
 
-        String caseName = mpf.getOriginalFilename().trim();
+        String caseName = Objects.requireNonNull(mpf.getOriginalFilename()).trim();
         validateCaseName(caseName);
 
         if (Files.exists(uuidDirectory)) {
