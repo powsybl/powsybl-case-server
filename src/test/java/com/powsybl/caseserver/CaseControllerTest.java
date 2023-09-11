@@ -408,6 +408,11 @@ public class CaseControllerTest {
         CaseService.validateCaseName("test..xiidm");
 
         try {
+            CaseService.validateCaseName("test");
+            fail();
+        } catch (CaseException ignored) {
+        }
+        try {
             CaseService.validateCaseName("../test.xiidm");
             fail();
         } catch (CaseException ignored) {
