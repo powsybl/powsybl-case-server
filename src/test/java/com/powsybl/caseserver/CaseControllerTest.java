@@ -443,20 +443,19 @@ public class CaseControllerTest {
 
     @Test
     public void validateCaseNameTest() {
-        CaseService.validateCaseName("test");
         CaseService.validateCaseName("test.xiidm");
-        CaseService.validateCaseName("te-st");
         CaseService.validateCaseName("test-case.7zip");
         CaseService.validateCaseName("testcase1.7zip");
         CaseService.validateCaseName("testcase1.xiidm.gz");
+        CaseService.validateCaseName("test..xiidm");
 
         try {
-            CaseService.validateCaseName("../test.xiidm");
+            CaseService.validateCaseName("test");
             fail();
         } catch (CaseException ignored) {
         }
         try {
-            CaseService.validateCaseName("test..xiidm");
+            CaseService.validateCaseName("../test.xiidm");
             fail();
         } catch (CaseException ignored) {
         }
