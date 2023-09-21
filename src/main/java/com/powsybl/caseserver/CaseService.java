@@ -179,7 +179,7 @@ public class CaseService {
         UUID caseUuid = UUID.randomUUID();
         Path uuidDirectory = getStorageRootDir().resolve(caseUuid.toString());
 
-        String caseName = mpf.getOriginalFilename();
+        String caseName = Objects.requireNonNull(mpf.getOriginalFilename()).trim();
         validateCaseName(caseName);
 
         if (Files.exists(uuidDirectory)) {
@@ -346,7 +346,7 @@ public class CaseService {
 
     static void validateCaseName(String caseName) {
         Objects.requireNonNull(caseName);
-        if (!caseName.matches("[\\w\\-]+(\\.[\\w]+)*+")) {
+        if (!caseName.matches("[^<>:\"/|?*]+(\\.[\\w]+)")) {
             throw CaseException.createIllegalCaseName(caseName);
         }
     }
