@@ -13,6 +13,7 @@ import com.powsybl.caseserver.CaseService;
 import com.powsybl.caseserver.elasticsearch.CaseInfosRepository;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.commons.datasource.DataSource;
+import jakarta.persistence.EntityManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -59,6 +60,9 @@ public class CaseDataSourceControllerTest {
     @MockBean
     StreamBridge streamBridge;
 
+    @MockBean
+    EntityManager entityManager;
+
     @Autowired
     private MockMvc mvc;
 
@@ -80,7 +84,9 @@ public class CaseDataSourceControllerTest {
     private static final UUID CASE_UUID = UUID.randomUUID();
 
     private DataSource dataSource;
-    private ObjectMapper mapper = new ObjectMapper();
+
+    @Autowired
+    private ObjectMapper mapper;
 
     @Before
     public void setUp() throws URISyntaxException, IOException {

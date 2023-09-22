@@ -6,9 +6,12 @@
  */
 package com.powsybl.caseserver;
 
+import com.fasterxml.jackson.databind.Module;
+import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.powsybl.ws.commons.Utils;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
@@ -22,5 +25,10 @@ public class CaseApplication {
     public static void main(String[] args) {
         Utils.initProperties();
         SpringApplication.run(CaseApplication.class, args);
+    }
+
+    @Bean
+    public Module module() {
+        return new JodaModule();
     }
 }

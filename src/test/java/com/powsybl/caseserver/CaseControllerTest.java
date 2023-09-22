@@ -360,7 +360,7 @@ public class CaseControllerTest {
         MvcResult deleteExpirationResult = mvc.perform(put("/v1/cases/{caseUuid}/disableExpiration", randomUuid))
                 .andExpect(status().isNotFound())
                 .andReturn();
-        assertTrue(deleteExpirationResult.getResponse().getErrorMessage().contains("case " + randomUuid + " not found"));
+        assertTrue(deleteExpirationResult.getResponse().getContentAsString().contains("case " + randomUuid + " not found"));
 
         // assert that duplicating a non existing case should return a 404
         mvc.perform(post("/v1/cases").param("duplicateFrom", UUID.randomUUID().toString()))

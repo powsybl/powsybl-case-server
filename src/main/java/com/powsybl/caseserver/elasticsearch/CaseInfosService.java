@@ -6,17 +6,18 @@
  */
 package com.powsybl.caseserver.elasticsearch;
 
+import co.elastic.clients.elasticsearch._types.query_dsl.QueryStringQuery;
 import com.google.common.collect.Lists;
 import com.powsybl.caseserver.dto.CaseInfos;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.elasticsearch.client.elc.NativeQuery;
+import org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import org.springframework.data.elasticsearch.core.query.NativeSearchQuery;
-import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
+import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
@@ -55,9 +56,9 @@ public class CaseInfosService {
     }
 
     public List<CaseInfos> searchCaseInfos(@NonNull final String query) {
-        NativeSearchQuery searchQuery = new NativeSearchQueryBuilder().withQuery(QueryBuilders.queryStringQuery(query)).build();
+        NativeQuery searchQuery = new NativeQueryBuilder().withQuery(QueryStringQuery.of(qs -> qs.query(query))._toQuery()).build();
         return Lists.newArrayList(operations.search(searchQuery, CaseInfos.class)
-                                            .map(searchHit -> searchHit.getContent()));
+                                            .map(SearchHit::getContent));
     }
 
     public void deleteCaseInfos(@NonNull final CaseInfos ci) {
