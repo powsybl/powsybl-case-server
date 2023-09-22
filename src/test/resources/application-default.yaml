@@ -9,6 +9,7 @@ spring:
         generate_statistics: true
         dialect: org.hibernate.dialect.H2Dialect
 
+logging:
   level:
     org.springframework.orm.jpa: DEBUG
     org.springframework.transaction: DEBUG
