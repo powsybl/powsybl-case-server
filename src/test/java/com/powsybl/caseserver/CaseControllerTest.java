@@ -402,7 +402,7 @@ public class CaseControllerTest {
         MvcResult deleteExpirationResult = mvc.perform(put("/v1/cases/{caseUuid}/disableExpiration", randomUuid))
                 .andExpect(status().isNotFound())
                 .andReturn();
-        assertTrue(deleteExpirationResult.getResponse().getErrorMessage().contains("case " + randomUuid + " not found"));
+        assertTrue(deleteExpirationResult.getResponse().getContentAsString().contains("case " + randomUuid + " not found"));
 
         // assert that duplicating a non existing case should return a 404
         mvc.perform(post("/v1/cases").param("duplicateFrom", UUID.randomUUID().toString()))
@@ -443,20 +443,19 @@ public class CaseControllerTest {
 
     @Test
     public void validateCaseNameTest() {
-        CaseService.validateCaseName("test");
         CaseService.validateCaseName("test.xiidm");
-        CaseService.validateCaseName("te-st");
         CaseService.validateCaseName("test-case.7zip");
         CaseService.validateCaseName("testcase1.7zip");
         CaseService.validateCaseName("testcase1.xiidm.gz");
+        CaseService.validateCaseName("test..xiidm");
 
         try {
-            CaseService.validateCaseName("../test.xiidm");
+            CaseService.validateCaseName("test");
             fail();
         } catch (CaseException ignored) {
         }
         try {
-            CaseService.validateCaseName("test..xiidm");
+            CaseService.validateCaseName("../test.xiidm");
             fail();
         } catch (CaseException ignored) {
         }

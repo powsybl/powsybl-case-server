@@ -268,7 +268,7 @@ public class CaseService {
     UUID importCase(MultipartFile mpf, boolean withExpiration) {
         UUID caseUuid = UUID.randomUUID();
 
-        String caseName = mpf.getOriginalFilename();
+        String caseName = Objects.requireNonNull(mpf.getOriginalFilename()).trim();
         validateCaseName(caseName);
 
         //TODO, remove this ? can't happend with a randomUUID
@@ -393,7 +393,7 @@ public class CaseService {
 
     static void validateCaseName(String caseName) {
         Objects.requireNonNull(caseName);
-        if (!caseName.matches("[\\w\\-]+(\\.[\\w]+)*+")) {
+        if (!caseName.matches("[^<>:\"/|?*]+(\\.[\\w]+)")) {
             throw CaseException.createIllegalCaseName(caseName);
         }
     }

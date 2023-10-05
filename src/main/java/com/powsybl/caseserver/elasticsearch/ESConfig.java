@@ -6,7 +6,6 @@
  */
 package com.powsybl.caseserver.elasticsearch;
 
-import org.elasticsearch.client.RestHighLevelClient;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
@@ -17,15 +16,10 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.convert.ReadingConverter;
 import org.springframework.data.convert.WritingConverter;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
-import org.springframework.data.elasticsearch.client.ClientConfiguration.TerminalClientConfigurationBuilder;
-import org.springframework.data.elasticsearch.client.RestClients;
-import org.springframework.data.elasticsearch.config.AbstractElasticsearchConfiguration;
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
-import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
+import org.springframework.data.elasticsearch.client.elc.ElasticsearchConfiguration;
 import org.springframework.data.elasticsearch.core.convert.ElasticsearchCustomConversions;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 
-import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -37,7 +31,7 @@ import java.util.Optional;
 
 @Configuration
 @EnableElasticsearchRepositories
-public class ESConfig extends AbstractElasticsearchConfiguration {
+public class ESConfig extends ElasticsearchConfiguration {
 
     @Value("#{'${spring.data.elasticsearch.embedded:false}' ? 'localhost' : '${spring.data.elasticsearch.host}'}")
     private String esHost;
@@ -54,24 +48,19 @@ public class ESConfig extends AbstractElasticsearchConfiguration {
     @Value("${spring.data.elasticsearch.password:#{null}}")
     private Optional<String> password;
 
-    @Bean
+    //It should be detected without specifying the name, but it isn't. To investigate.
+    @Bean(name = "elasticsearchClientConfiguration")
     @Override
-    @SuppressWarnings("squid:S2095")
-    public RestHighLevelClient elasticsearchClient() {
-        TerminalClientConfigurationBuilder clientConfiguration = ClientConfiguration.builder()
-                .connectedTo(InetSocketAddress.createUnresolved(esHost, esPort))
+    public ClientConfiguration clientConfiguration() {
+        var clientConfiguration = ClientConfiguration.builder()
+                .connectedTo(esHost + ":" + esPort)
                 .withConnectTimeout(timeout * 1000L).withSocketTimeout(timeout * 1000L);
 
         if (username.isPresent() && password.isPresent()) {
-            clientConfiguration = clientConfiguration.withBasicAuth(username.get(), password.get());
+            clientConfiguration.withBasicAuth(username.get(), password.get());
         }
 
-        return RestClients.create(clientConfiguration.build()).rest();
-    }
-
-    @Bean
-    public ElasticsearchOperations elasticsearchOperations() {
-        return new ElasticsearchRestTemplate(elasticsearchClient());
+        return clientConfiguration.build();
     }
 
     @Override
@@ -99,5 +88,4 @@ public class ESConfig extends AbstractElasticsearchConfiguration {
             return parser.parseDateTime(s);
         }
     }
-
 }
