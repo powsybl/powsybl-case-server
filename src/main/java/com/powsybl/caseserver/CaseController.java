@@ -22,7 +22,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -34,6 +36,7 @@ import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
+@PropertySource(value = "classpath:config/application.yaml")
 @RestController
 @RequestMapping(value = "/" + CaseConstants.API_VERSION)
 @Tag(name = "Case server")
@@ -43,7 +46,11 @@ public class CaseController {
     private static final Logger LOGGER = LoggerFactory.getLogger(CaseController.class);
 
     @Autowired
+    @Qualifier("storageService")
     private CaseService caseService;
+
+    public CaseController() {
+    }
 
     @GetMapping(value = "/cases")
     @Operation(summary = "Get all cases")
@@ -128,6 +135,21 @@ public class CaseController {
 
     }
 
+    @GetMapping(value = "/cases/metadata")
+    @Operation(summary = "Get cases Metadata")
+    public ResponseEntity<List<CaseInfos>> getMetadata(@RequestParam("ids") List<UUID> ids) {
+        LOGGER.debug("get Case metadata");
+        return ResponseEntity.ok().body(caseService.getMetadata(ids));
+    }
+
+    @GetMapping(value = "/cases/search")
+    @Operation(summary = "Search cases by metadata")
+    public ResponseEntity<List<CaseInfos>> searchCases(@RequestParam(value = "q") String query) {
+        LOGGER.debug("search cases request received");
+        List<CaseInfos> cases = caseService.searchCases(query);
+        return ResponseEntity.ok().body(cases);
+    }
+
     @PostMapping(value = "/cases", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "import a case")
     @SuppressWarnings("javasecurity:S5145")
@@ -149,6 +171,14 @@ public class CaseController {
         LOGGER.debug("duplicateCase request received with parameter sourceCaseUuid = {}", sourceCaseUuid);
         UUID newCaseUuid = caseService.duplicateCase(sourceCaseUuid, withExpiration);
         return ResponseEntity.ok().body(newCaseUuid);
+    }
+
+    @PostMapping(value = "/cases/reindex-all")
+    @Operation(summary = "reindex all cases")
+    public ResponseEntity<Void> reindexAllCases() {
+        LOGGER.debug("reindex all cases request received");
+        caseService.reindexAllCases();
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping(value = "/cases/{caseUuid}/disableExpiration")
@@ -179,29 +209,6 @@ public class CaseController {
         LOGGER.debug("deleteCases request received");
         caseService.deleteAllCases();
         return ResponseEntity.ok().build();
-    }
-
-    @GetMapping(value = "/cases/search")
-    @Operation(summary = "Search cases by metadata")
-    public ResponseEntity<List<CaseInfos>> searchCases(@RequestParam(value = "q") String query) {
-        LOGGER.debug("search cases request received");
-        List<CaseInfos> cases = caseService.searchCases(query);
-        return ResponseEntity.ok().body(cases);
-    }
-
-    @PostMapping(value = "/cases/reindex-all")
-    @Operation(summary = "reindex all cases")
-    public ResponseEntity<Void> reindexAllCases() {
-        LOGGER.debug("reindex all cases request received");
-        caseService.reindexAllCases();
-        return ResponseEntity.ok().build();
-    }
-
-    @GetMapping(value = "/cases/metadata")
-    @Operation(summary = "Get cases Metadata")
-    public ResponseEntity<List<CaseInfos>> getMetadata(@RequestParam("ids") List<UUID> ids) {
-        LOGGER.debug("get Case metadata");
-        return ResponseEntity.ok().body(caseService.getMetadata(ids));
     }
 
 }
