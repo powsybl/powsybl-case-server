@@ -39,6 +39,9 @@ public class CaseInfosELRepositoryTests {
     private static final String D4_UCTE_CASE_FILE_NAME = "20200430_1530_2D4_D41.uct";
     private static final String TEST_CGMES_CASE_FILE_NAME = "20200424T1330Z_2D_RTEFRANCE_001.zip";
 
+    private static final String UCTE_FORMAT = "UCTE";
+    private static final String CGMES_FORMAT = "CGMES";
+
     @Autowired
     private CaseService caseService;
 
@@ -47,13 +50,13 @@ public class CaseInfosELRepositoryTests {
 
     @Test
     public void testAddDeleteCaseInfos() {
-        EntsoeCaseInfos caseInfos1 = (EntsoeCaseInfos) caseInfosService.addCaseInfos(createInfos(SN_UCTE_CASE_FILE_NAME));
+        EntsoeCaseInfos caseInfos1 = (EntsoeCaseInfos) caseInfosService.addCaseInfos(createInfos(SN_UCTE_CASE_FILE_NAME, UCTE_FORMAT));
         Optional<CaseInfos> caseInfosAfter1 = caseInfosService.getCaseInfosByUuid(caseInfos1.getUuid().toString());
         assertFalse(caseInfosAfter1.isEmpty());
         assertEquals(caseInfos1, caseInfosAfter1.get());
         testEquals(caseInfos1, caseInfosAfter1.get());
 
-        EntsoeCaseInfos caseInfos2 = (EntsoeCaseInfos) caseInfosService.addCaseInfos(createInfos(ID2_UCTE_CASE_FILE_NAME));
+        EntsoeCaseInfos caseInfos2 = (EntsoeCaseInfos) caseInfosService.addCaseInfos(createInfos(ID2_UCTE_CASE_FILE_NAME, UCTE_FORMAT));
         Optional<CaseInfos> caseInfosAfter2 = caseInfosService.getCaseInfosByUuid(caseInfos2.getUuid().toString());
         assertFalse(caseInfosAfter2.isEmpty());
         assertEquals(caseInfos2, caseInfosAfter2.get());
@@ -75,7 +78,7 @@ public class CaseInfosELRepositoryTests {
         all = caseInfosService.getAllCaseInfos();
         assertTrue(all.isEmpty());
 
-        caseInfosService.recreateAllCaseInfos(List.of(createInfos(SN_UCTE_CASE_FILE_NAME), createInfos(TEST_CGMES_CASE_FILE_NAME)));
+        caseInfosService.recreateAllCaseInfos(List.of(createInfos(SN_UCTE_CASE_FILE_NAME, UCTE_FORMAT), createInfos(TEST_CGMES_CASE_FILE_NAME, CGMES_FORMAT)));
         all = caseInfosService.getAllCaseInfos();
         assertEquals(2, all.size());
         assertEquals(SN_UCTE_CASE_FILE_NAME, all.get(0).getName());
@@ -90,13 +93,13 @@ public class CaseInfosELRepositoryTests {
         List<CaseInfos> all = caseInfosService.getAllCaseInfos();
         assertTrue(all.isEmpty());
 
-        EntsoeCaseInfos ucte1 = (EntsoeCaseInfos) caseInfosService.addCaseInfos(createInfos(SN_UCTE_CASE_FILE_NAME));
-        EntsoeCaseInfos ucte2 = (EntsoeCaseInfos) caseInfosService.addCaseInfos(createInfos(ID1_UCTE_CASE_FILE_NAME));
-        EntsoeCaseInfos ucte3 = (EntsoeCaseInfos) caseInfosService.addCaseInfos(createInfos(ID2_UCTE_CASE_FILE_NAME));
-        EntsoeCaseInfos ucte4 = (EntsoeCaseInfos) caseInfosService.addCaseInfos(createInfos(FO1_UCTE_CASE_FILE_NAME));
-        EntsoeCaseInfos ucte5 = (EntsoeCaseInfos) caseInfosService.addCaseInfos(createInfos(FO2_UCTE_CASE_FILE_NAME));
-        EntsoeCaseInfos ucte6 = (EntsoeCaseInfos) caseInfosService.addCaseInfos(createInfos(D4_UCTE_CASE_FILE_NAME));
-        CgmesCaseInfos cgmes = (CgmesCaseInfos) caseInfosService.addCaseInfos(createInfos(TEST_CGMES_CASE_FILE_NAME));
+        EntsoeCaseInfos ucte1 = (EntsoeCaseInfos) caseInfosService.addCaseInfos(createInfos(SN_UCTE_CASE_FILE_NAME, UCTE_FORMAT));
+        EntsoeCaseInfos ucte2 = (EntsoeCaseInfos) caseInfosService.addCaseInfos(createInfos(ID1_UCTE_CASE_FILE_NAME, UCTE_FORMAT));
+        EntsoeCaseInfos ucte3 = (EntsoeCaseInfos) caseInfosService.addCaseInfos(createInfos(ID2_UCTE_CASE_FILE_NAME, UCTE_FORMAT));
+        EntsoeCaseInfos ucte4 = (EntsoeCaseInfos) caseInfosService.addCaseInfos(createInfos(FO1_UCTE_CASE_FILE_NAME, UCTE_FORMAT));
+        EntsoeCaseInfos ucte5 = (EntsoeCaseInfos) caseInfosService.addCaseInfos(createInfos(FO2_UCTE_CASE_FILE_NAME, UCTE_FORMAT));
+        EntsoeCaseInfos ucte6 = (EntsoeCaseInfos) caseInfosService.addCaseInfos(createInfos(D4_UCTE_CASE_FILE_NAME, UCTE_FORMAT));
+        CgmesCaseInfos cgmes = (CgmesCaseInfos) caseInfosService.addCaseInfos(createInfos(TEST_CGMES_CASE_FILE_NAME, CGMES_FORMAT));
 
         all = caseInfosService.searchCaseInfos("*");
         assertFalse(all.isEmpty());
@@ -173,10 +176,9 @@ public class CaseInfosELRepositoryTests {
                 .testEquals();
     }
 
-    private CaseInfos createInfos(String fileName) {
+    private CaseInfos createInfos(String fileName, String format) {
         Path casePath = Path.of(this.getClass().getResource("/" + fileName).getPath());
         String fileBaseName = casePath.getFileName().toString();
-        String format = caseService.getFormat(casePath);
         return caseService.createInfos(fileBaseName, UUID.randomUUID(), format);
     }
 }

@@ -17,26 +17,17 @@ import com.powsybl.computation.ComputationManager;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.stream.binder.test.OutputDestination;
 import org.springframework.http.MediaType;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-import org.testcontainers.Testcontainers;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,7 +35,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
@@ -60,52 +50,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-@RunWith(SpringRunner.class)
-@AutoConfigureMockMvc
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, properties = {"case-store-directory=/cases"})
-@ContextConfigurationWithTestChannel
-public class CaseControllerTest {
 
-    // TODO MOVE THIS TO SEPARATE CLASS
-    private static final String MINIO_DOCKER_IMAGE_NAME = "minio/minio";
-    // Just a fixed version, latest at the time of writing this
-    private static final String MINIO_DOCKER_IMAGE_VERSION = "RELEASE.2023-06-23T20-26-00Z";
-    private static GenericContainer minioContainer;
-    private static final int MINIO_PORT = 9000;
-
-    // can't use a bean because we need it before spring aws autoconfiguration TODO
-    static {
-        minioContainer = new GenericContainer(
-                String.format("%s:%s", MINIO_DOCKER_IMAGE_NAME, MINIO_DOCKER_IMAGE_VERSION))
-                // .withClasspathResourceMapping("/", "/data/", BindMode.READ_WRITE)
-                .withCommand("server /data").withExposedPorts(MINIO_PORT).waitingFor(new HttpWaitStrategy()
-                        .forPath("/minio/health/ready").forPort(MINIO_PORT).withStartupTimeout(Duration.ofSeconds(10)));
-        minioContainer.start();
-        try {
-            minioContainer.execInContainer("mkdir", "/data/bucket-gridsuite");
-        } catch (Exception e) {
-            System.out.println("Error");
-        }
-
-        // can't use System.setProperty because spring cloud aws gets the url early
-        // System.setProperty("spring.cloud.aws.s3.endpoint", minioContainerUrl);
-    }
-
-    @DynamicPropertySource
-    static void registerPgProperties(DynamicPropertyRegistry registry) {
-        Integer mappedPort = minioContainer.getFirstMappedPort();
-        Testcontainers.exposeHostPorts(mappedPort);
-        String minioContainerUrl = String.format("http://172.17.0.1:%s", mappedPort);
-
-        registry.add("cloud.aws.s3.endpoint", () -> minioContainerUrl);
-    }
-    // END TODO
+public abstract class AbstractCaseControllerTest {
 
     private static final String TEST_CASE = "testCase.xiidm";
     private static final String TEST_CASE_FORMAT = "XIIDM";
     private static final String NOT_A_NETWORK = "notANetwork.txt";
     private static final String STILL_NOT_A_NETWORK = "stillNotANetwork.xiidm";
-
     private static final String GET_CASE_URL = "/v1/cases/{caseUuid}";
     private static final String GET_CASE_FORMAT_URL = "/v1/cases/{caseName}/format";
 
@@ -123,7 +74,7 @@ public class CaseControllerTest {
     @Autowired
     private OutputDestination outputDestination;
 
-    @Value("${case-store-directory}")
+    @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
     private String rootDirectory;
 
     private FileSystem fileSystem;
@@ -153,7 +104,7 @@ public class CaseControllerTest {
     }
 
     private static MockMultipartFile createMockMultipartFile(String fileName) throws IOException {
-        try (InputStream inputStream = CaseControllerTest.class.getResourceAsStream("/" + fileName)) {
+        try (InputStream inputStream = AbstractCaseControllerTest.class.getResourceAsStream("/" + fileName)) {
             return new MockMultipartFile("file", fileName, MediaType.TEXT_PLAIN_VALUE, inputStream);
         }
     }
@@ -439,31 +390,6 @@ public class CaseControllerTest {
                     .andReturn().getResponse().getContentAsString();
         }
         return UUID.fromString(importedCase.substring(1, importedCase.length() - 1));
-    }
-
-    @Test
-    public void validateCaseNameTest() {
-        CaseService.validateCaseName("test.xiidm");
-        CaseService.validateCaseName("test-case.7zip");
-        CaseService.validateCaseName("testcase1.7zip");
-        CaseService.validateCaseName("testcase1.xiidm.gz");
-        CaseService.validateCaseName("test..xiidm");
-
-        try {
-            CaseService.validateCaseName("test");
-            fail();
-        } catch (CaseException ignored) {
-        }
-        try {
-            CaseService.validateCaseName("../test.xiidm");
-            fail();
-        } catch (CaseException ignored) {
-        }
-        try {
-            CaseService.validateCaseName("test/xiidm");
-            fail();
-        } catch (CaseException ignored) {
-        }
     }
 
     @Test
