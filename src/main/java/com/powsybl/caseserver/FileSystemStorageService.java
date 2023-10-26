@@ -77,17 +77,8 @@ public class FileSystemStorageService implements CaseService {
         this.caseMetadataRepository = caseMetadataRepository;
     }
 
-    Importer getImporterOrThrowsException(Path caseFile) {
-        DataSource dataSource = DataSource.fromPath(caseFile);
-        Importer importer = Importer.find(dataSource, computationManager);
-        if (importer == null) {
-            throw CaseException.createFileNotImportable(caseFile);
-        }
-        return importer;
-    }
-
     String getFormat(Path caseFile) {
-        Importer importer = getImporterOrThrowsException(caseFile);
+        Importer importer = getImporterOrThrowsException(caseFile, computationManager);
         return importer.getFormat();
     }
 
@@ -207,7 +198,7 @@ public class FileSystemStorageService implements CaseService {
 
         Importer importer;
         try {
-            importer = getImporterOrThrowsException(caseFile);
+            importer = getImporterOrThrowsException(caseFile, computationManager);
         } catch (CaseException e) {
             try {
                 Files.deleteIfExists(caseFile);
@@ -218,7 +209,7 @@ public class FileSystemStorageService implements CaseService {
             throw e;
         }
 
-        createCaseMetadataEntity(caseUuid, withExpiration);
+        createCaseMetadataEntity(caseUuid, withExpiration, caseMetadataRepository);
         CaseInfos caseInfos = createInfos(caseFile.getFileName().toString(), caseUuid, importer.getFormat());
         caseInfosService.addCaseInfos(caseInfos);
         sendImportMessage(caseInfos.createMessage());
@@ -242,7 +233,7 @@ public class FileSystemStorageService implements CaseService {
             CaseInfos existingCaseInfos = caseInfosService.getCaseInfosByUuid(sourceCaseUuid.toString()).orElseThrow();
             CaseInfos caseInfos = createInfos(existingCaseInfos.getName(), newCaseUuid, existingCaseInfos.getFormat());
             caseInfosService.addCaseInfos(caseInfos);
-            createCaseMetadataEntity(newCaseUuid, withExpiration);
+            createCaseMetadataEntity(newCaseUuid, withExpiration, caseMetadataRepository);
 
             sendImportMessage(caseInfos.createMessage());
             return newCaseUuid;
@@ -250,14 +241,6 @@ public class FileSystemStorageService implements CaseService {
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred during case duplication");
         }
-    }
-
-    private void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration) {
-        LocalDateTime expirationTime = null;
-        if (withExpiration) {
-            expirationTime = LocalDateTime.now(ZoneOffset.UTC).plusHours(1);
-        }
-        caseMetadataRepository.save(new CaseMetadataEntity(newCaseUuid, expirationTime));
     }
 
     @Override

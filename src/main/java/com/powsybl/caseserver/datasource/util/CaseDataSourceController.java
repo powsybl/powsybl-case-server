@@ -26,7 +26,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping(value = "/" + CaseConstants.API_VERSION)
 @Tag(name = "Case datasource util")
-@ComponentScan(basePackageClasses = {S3CaseDataSourceService.class})
+@ComponentScan(basePackageClasses = {CaseDataSourceService.class})
 public class CaseDataSourceController {
 
     @Autowired

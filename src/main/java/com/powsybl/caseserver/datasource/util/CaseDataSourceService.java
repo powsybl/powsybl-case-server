@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * @author Rehili Ghazwa <ghazwa.rehili at rte-france.com>
+ * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  */
 public interface CaseDataSourceService {
     String getBaseName(UUID caseUuid);
