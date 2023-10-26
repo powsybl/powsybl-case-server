@@ -49,9 +49,6 @@ public class CaseController {
     @Qualifier("storageService")
     private CaseService caseService;
 
-    public CaseController() {
-    }
-
     @GetMapping(value = "/cases")
     @Operation(summary = "Get all cases")
     //For maintenance purpose

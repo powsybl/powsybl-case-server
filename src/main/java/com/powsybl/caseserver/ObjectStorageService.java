@@ -81,17 +81,8 @@ public class ObjectStorageService implements CaseService {
         this.caseMetadataRepository = caseMetadataRepository;
     }
 
-    Importer getImporterOrThrowsException(Path caseFile) {
-        DataSource dataSource = DataSource.fromPath(caseFile);
-        Importer importer = Importer.find(dataSource, computationManager);
-        if (importer == null) {
-            throw CaseException.createFileNotImportable(caseFile);
-        }
-        return importer;
-    }
-
     String getFormat(Path caseFile) {
-        Importer importer = getImporterOrThrowsException(caseFile);
+        Importer importer = getImporterOrThrowsException(caseFile, computationManager);
         return importer.getFormat();
     }
 
@@ -320,7 +311,7 @@ public class ObjectStorageService implements CaseService {
             throw new RuntimeException("Error uploading object to S3", e);
         }
 
-        createCaseMetadataEntity(caseUuid, withExpiration);
+        createCaseMetadataEntity(caseUuid, withExpiration, caseMetadataRepository);
         CaseInfos caseInfos = createInfos(caseName, caseUuid, format);
         caseInfosService.addCaseInfos(caseInfos);
         sendImportMessage(caseInfos.createMessage());
@@ -347,17 +338,9 @@ public class ObjectStorageService implements CaseService {
         }
         CaseInfos caseInfos = createInfos(existingCaseInfos.getName(), newCaseUuid, existingCaseInfos.getFormat());
         caseInfosService.addCaseInfos(caseInfos);
-        createCaseMetadataEntity(newCaseUuid, withExpiration);
+        createCaseMetadataEntity(newCaseUuid, withExpiration, caseMetadataRepository);
         sendImportMessage(caseInfos.createMessage());
         return newCaseUuid;
-    }
-
-    private void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration) {
-        LocalDateTime expirationTime = null;
-        if (withExpiration) {
-            expirationTime = LocalDateTime.now(ZoneOffset.UTC).plusHours(1);
-        }
-        caseMetadataRepository.save(new CaseMetadataEntity(newCaseUuid, expirationTime));
     }
 
     @Transactional
