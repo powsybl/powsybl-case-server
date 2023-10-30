@@ -111,10 +111,6 @@ public abstract class AbstractCaseControllerTest {
 
     @Test
     public void test() throws Exception {
-        // TODO do this when the bucket is not created ?? not very interesting ?
-        // expect a fail since the storage dir. is not created
-        // mvc.perform(delete("/v1/cases"))
-        //         .andExpect(status().isUnprocessableEntity());
 
         // create the storage dir
         createStorageDir();

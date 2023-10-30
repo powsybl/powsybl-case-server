@@ -20,6 +20,9 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.file.*;
 
+/**
+ * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
+ */
 @RunWith(SpringRunner.class)
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)

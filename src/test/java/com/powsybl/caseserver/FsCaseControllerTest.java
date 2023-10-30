@@ -12,6 +12,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
+/**
+ * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
+ */
 @RunWith(SpringRunner.class)
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)

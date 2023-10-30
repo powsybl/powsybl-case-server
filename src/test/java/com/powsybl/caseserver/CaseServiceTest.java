@@ -26,6 +26,9 @@ import java.util.UUID;
 
 import static org.junit.Assert.*;
 
+/**
+ * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
+ */
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @DisableElasticsearch

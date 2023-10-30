@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2019, RTE (http://www.rte-france.com)
+ * Copyright (c) 2023, RTE (http://www.rte-france.com)
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -10,7 +10,6 @@ import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
-import com.powsybl.commons.datasource.DataSource;
 import com.powsybl.computation.ComputationManager;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
@@ -40,13 +39,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.*;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 /**
- * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
- * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
+ * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
  */
 
 @Service
