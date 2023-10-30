@@ -135,7 +135,7 @@ public class CaseController {
     @GetMapping(value = "/cases/metadata")
     @Operation(summary = "Get cases Metadata")
     public ResponseEntity<List<CaseInfos>> getMetadata(@RequestParam("ids") List<UUID> ids) {
-        LOGGER.debug("get Case metadata");
+        LOGGER.debug("get Cases metadata");
         return ResponseEntity.ok().body(caseService.getMetadata(ids));
     }
 

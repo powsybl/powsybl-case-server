@@ -40,20 +40,20 @@ public abstract class AbstractCaseDataSourceControllerTest {
     StreamBridge streamBridge;
 
     @Autowired
-     MockMvc mvc;
+    private MockMvc mvc;
 
     @MockBean
-     CaseMetadataRepository caseMetadataRepository;
+    CaseMetadataRepository caseMetadataRepository;
 
     @MockBean
     CaseInfosRepository caseInfosRepository;
 
     @Autowired
     @Qualifier("storageService")
-    CaseService caseService;
+    protected CaseService caseService;
 
     @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
-    String rootDirectory;
+    protected String rootDirectory;
 
     String cgmesName = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2.zip";
 
@@ -61,9 +61,9 @@ public abstract class AbstractCaseDataSourceControllerTest {
 
     static final UUID CASE_UUID = UUID.randomUUID();
 
-    DataSource dataSource;
+    protected DataSource dataSource;
 
-    ObjectMapper mapper = new ObjectMapper();
+    private ObjectMapper mapper = new ObjectMapper();
 
     @Test
     public void testBaseName() throws Exception {

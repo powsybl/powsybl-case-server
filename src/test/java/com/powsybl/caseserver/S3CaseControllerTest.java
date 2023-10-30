@@ -19,6 +19,9 @@ import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 
 import java.time.Duration;
 
+/**
+ * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
+ */
 @RunWith(SpringRunner.class)
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, properties = {"case-store-directory=/cases"})

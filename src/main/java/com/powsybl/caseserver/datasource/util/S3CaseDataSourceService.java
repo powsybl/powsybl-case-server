@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
+ * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
  */
 @Service
 @ComponentScan(basePackageClasses = CaseService.class)
