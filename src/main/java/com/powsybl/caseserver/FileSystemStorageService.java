@@ -89,6 +89,7 @@ public class FileSystemStorageService implements CaseService {
         }
     }
 
+    @Override
     public String getCaseName(UUID caseUuid) {
         Path file = getCaseFile(caseUuid);
         if (file == null) {
@@ -104,6 +105,7 @@ public class FileSystemStorageService implements CaseService {
         return caseInfo.orElseThrow();
     }
 
+    @Override
     public Path getCaseFile(UUID caseUuid) {
         return walkCaseDirectory(getStorageRootDir().resolve(caseUuid.toString()));
     }
@@ -131,6 +133,7 @@ public class FileSystemStorageService implements CaseService {
         return null;
     }
 
+    @Override
     public Optional<byte[]> getCaseBytes(UUID caseUuid) {
         checkStorageInitialization();
 
@@ -150,6 +153,7 @@ public class FileSystemStorageService implements CaseService {
         return Optional.empty();
     }
 
+    @Override
     public boolean caseExists(UUID caseName) {
         checkStorageInitialization();
         Path caseFile = getCaseFile(caseName);
@@ -171,6 +175,7 @@ public class FileSystemStorageService implements CaseService {
         return getFormat(file);
     }
 
+    @Override
     public UUID importCase(MultipartFile mpf, boolean withExpiration) {
         checkStorageInitialization();
 
@@ -213,6 +218,7 @@ public class FileSystemStorageService implements CaseService {
         return caseUuid;
     }
 
+    @Override
     public UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration) {
         try {
             Path existingCaseFile = getCaseFile(sourceCaseUuid);
@@ -246,11 +252,13 @@ public class FileSystemStorageService implements CaseService {
     }
 
     @Transactional
+    @Override
     public void disableCaseExpiration(UUID caseUuid) {
         CaseMetadataEntity caseMetadataEntity = caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
         caseMetadataEntity.setExpirationDate(null);
     }
 
+    @Override
     public Optional<Network> loadNetwork(UUID caseUuid) {
         checkStorageInitialization();
 
@@ -284,6 +292,7 @@ public class FileSystemStorageService implements CaseService {
         }
     }
 
+    @Override
     public void deleteCase(UUID caseUuid) {
         checkStorageInitialization();
         Path caseDirectory = getCaseDirectory(caseUuid);
@@ -292,6 +301,7 @@ public class FileSystemStorageService implements CaseService {
         caseMetadataRepository.deleteById(caseUuid);
     }
 
+    @Override
     public void deleteAllCases() {
         checkStorageInitialization();
 
@@ -314,16 +324,19 @@ public class FileSystemStorageService implements CaseService {
         return Files.exists(storageRootDir) && Files.isDirectory(storageRootDir);
     }
 
+    @Override
     public void checkStorageInitialization() {
         if (!isStorageCreated()) {
             throw CaseException.createStorageNotInitialized(getStorageRootDir());
         }
     }
 
+    @Override
     public void setFileSystem(FileSystem fileSystem) {
         this.fileSystem = Objects.requireNonNull(fileSystem);
     }
 
+    @Override
     public void setComputationManager(ComputationManager computationManager) {
         this.computationManager = Objects.requireNonNull(computationManager);
     }
@@ -344,6 +357,7 @@ public class FileSystemStorageService implements CaseService {
      date:XXX AND geographicalCode:(X)
      date:XXX AND geographicalCode:(X OR Y OR Z)
     */
+    @Override
     public List<CaseInfos> searchCases(String query) {
         checkStorageInitialization();
 
@@ -355,10 +369,12 @@ public class FileSystemStorageService implements CaseService {
         caseInfosPublisher.send("publishCaseImport-out-0", message);
     }
 
+    @Override
     public void reindexAllCases() {
         caseInfosService.recreateAllCaseInfos(getCases(getStorageRootDir()));
     }
 
+    @Override
     public List<CaseInfos> getMetadata(List<UUID> ids) {
         List<CaseInfos> cases = new ArrayList<>();
         ids.forEach(caseUuid -> {

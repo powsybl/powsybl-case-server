@@ -129,6 +129,7 @@ public class ObjectStorageService implements CaseService {
     }
 
     // downloads from s3 and cleanup
+    @Override
     public <R, T extends Throwable> R withS3DownloadedTempPath(UUID caseUuid, FailableFunction<Path, R, T> f) {
         String caseFileKey = getCaseFileObjectKey(caseUuid);
         String filename = parseFilenameFromKey(caseFileKey);
@@ -137,6 +138,7 @@ public class ObjectStorageService implements CaseService {
                 f);
     }
 
+    @Override
     public String getFormat(UUID caseUuid) {
 
         String caseFileKey = getCaseFileObjectKey(caseUuid);
@@ -178,7 +180,6 @@ public class ObjectStorageService implements CaseService {
         return uuidToPrefixKey(uuid) + filename;
     }
 
-    //TODO try to remove amazon client objects from APIs
     private List<S3Object> getCasesSummaries(String prefix) {
 
         List<S3Object> s3Objects = new ArrayList<>();
@@ -233,6 +234,7 @@ public class ObjectStorageService implements CaseService {
         return caseInfosList;
     }
 
+    @Override
     public CaseInfos getCase(UUID caseUuid) {
         var caseFileSummaries = getCaseFileSummaries(caseUuid);
         if (caseFileSummaries.isEmpty()) {
@@ -242,11 +244,13 @@ public class ObjectStorageService implements CaseService {
         }
     }
 
+    @Override
     public String getCaseName(UUID caseUuid) {
         CaseInfos caseInfos = getCase(caseUuid);
         return caseInfos.getName();
     }
 
+    @Override
     public Optional<byte[]> getCaseBytes(UUID caseUuid) {
         String caseFileKey = getCaseFileObjectKey(caseUuid);
 
@@ -274,10 +278,12 @@ public class ObjectStorageService implements CaseService {
         return infosFromDownloadCaseFileSummaries(s3ObjectSummaries);
     }
 
+    @Override
     public boolean caseExists(UUID caseName) {
         return !getCasesSummaries(uuidToPrefixKey(caseName)).isEmpty();
     }
 
+    @Override
     public UUID importCase(MultipartFile mpf, boolean withExpiration) {
         UUID caseUuid = UUID.randomUUID();
 
@@ -315,6 +321,7 @@ public class ObjectStorageService implements CaseService {
         return caseUuid;
     }
 
+    @Override
     public UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration) {
 
         String sourceKey = getCaseFileObjectKey(sourceCaseUuid);
@@ -340,11 +347,13 @@ public class ObjectStorageService implements CaseService {
     }
 
     @Transactional
+    @Override
     public void disableCaseExpiration(UUID caseUuid) {
         CaseMetadataEntity caseMetadataEntity = caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
         caseMetadataEntity.setExpirationDate(null);
     }
 
+    @Override
     public Optional<Network> loadNetwork(UUID caseUuid) {
 
         if (!caseExists(caseUuid)) {
@@ -360,6 +369,7 @@ public class ObjectStorageService implements CaseService {
         }));
     }
 
+    @Override
     public void deleteCase(UUID caseUuid) {
         String prefixKey = uuidToPrefixKey(caseUuid);
         List<ObjectIdentifier> objectsToDelete = s3Client.listObjectsV2(builder -> builder.bucket(bucketName).prefix(prefixKey))
@@ -379,6 +389,7 @@ public class ObjectStorageService implements CaseService {
         }
     }
 
+    @Override
     public void deleteAllCases() {
         ListObjectsV2Request listObjectsRequest = ListObjectsV2Request.builder()
                 .bucket(bucketName)
@@ -404,6 +415,7 @@ public class ObjectStorageService implements CaseService {
 
     }
 
+    @Override
     public void setComputationManager(ComputationManager computationManager) {
         this.computationManager = Objects.requireNonNull(computationManager);
     }
@@ -413,6 +425,7 @@ public class ObjectStorageService implements CaseService {
      date:XXX AND geographicalCode:(X OR Y OR Z)
     */
 
+    @Override
     public List<CaseInfos> searchCases(String query) {
         return caseInfosService.searchCaseInfos(query);
     }
@@ -422,10 +435,12 @@ public class ObjectStorageService implements CaseService {
         caseInfosPublisher.send("publishCaseImport-out-0", message);
     }
 
+    @Override
     public void reindexAllCases() {
         caseInfosService.recreateAllCaseInfos(getCases());
     }
 
+    @Override
     public List<CaseInfos> getMetadata(List<UUID> ids) {
         List<CaseInfos> cases = new ArrayList<>();
         ids.forEach(caseUuid -> {

@@ -34,14 +34,17 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
     @Qualifier("objectStorageService")
     private CaseService caseService;
 
+    @Override
     public String getBaseName(UUID caseUuid) {
         return withS3DownloadedDataSource(caseUuid, DataSource::getBaseName);
     }
 
+    @Override
     public Boolean datasourceExists(UUID caseUuid, String suffix, String ext) {
         return withS3DownloadedDataSource(caseUuid, datasource -> datasource.exists(suffix, ext));
     }
 
+    @Override
     public Boolean datasourceExists(UUID caseUuid, String fileName) {
         try {
             return withS3DownloadedDataSource(caseUuid, datasource -> datasource.exists(fileName));
@@ -50,16 +53,19 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
         }
     }
 
+    @Override
     public byte[] getInputStream(UUID caseUuid, String fileName) {
         return withS3DownloadedDataSource(caseUuid,
             datasource -> IOUtils.toByteArray(datasource.newInputStream(fileName)));
     }
 
+    @Override
     public byte[] getInputStream(UUID caseUuid, String suffix, String ext) {
         return withS3DownloadedDataSource(caseUuid,
             datasource -> IOUtils.toByteArray(datasource.newInputStream(suffix, ext)));
     }
 
+    @Override
     public Set<String> listName(UUID caseUuid, String regex) {
         return withS3DownloadedDataSource(caseUuid, datasource -> {
             String decodedRegex = URLDecoder.decode(regex, StandardCharsets.UTF_8);
