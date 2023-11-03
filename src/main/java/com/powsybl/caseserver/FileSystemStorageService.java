@@ -246,7 +246,6 @@ public class FileSystemStorageService implements CaseService {
         }
     }
 
-    @Override
     public <R, T extends Throwable> R withS3DownloadedTempPath(UUID caseUuid, Functions.FailableFunction<Path, R, T> f) {
         return null;
     }
