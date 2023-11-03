@@ -46,13 +46,13 @@ class CaseServiceTest {
     private static final String TEST_OTHER_CASE_FILE_NAME = "testCase.xiidm";
 
     @Test
-    public void testCreateDefaultCaseInfo() {
+    void testCreateDefaultCaseInfo() {
         CaseInfos infos = caseService.createInfos(TEST_OTHER_CASE_FILE_NAME, UUID.randomUUID(), "UNKNOW");
         assertEquals(infos.getClass(), CaseInfos.class);
     }
 
     @Test
-    public void validateCaseNameTest() {
+    void validateCaseNameTest() {
         caseService.validateCaseName("test.xiidm");
         caseService.validateCaseName("test-case.7zip");
         caseService.validateCaseName("testcase1.7zip");
@@ -67,7 +67,7 @@ class CaseServiceTest {
     }
 
     @Test
-    public void testValidNameUcteSN() {
+    void testValidNameUcteSN() {
         EntsoeCaseInfos caseInfos = (EntsoeCaseInfos) createInfos(SN_UCTE_CASE_FILE_NAME, "UCTE");
         assertEquals(SN_UCTE_CASE_FILE_NAME, caseInfos.getName());
         assertEquals("UCTE", caseInfos.getFormat());
@@ -79,7 +79,7 @@ class CaseServiceTest {
     }
 
     @Test
-    public void testValidNameUcteID() {
+    void testValidNameUcteID() {
         EntsoeCaseInfos caseInfos = (EntsoeCaseInfos) createInfos(ID_UCTE_CASE_FILE_NAME, "UCTE");
         assertEquals(ID_UCTE_CASE_FILE_NAME, caseInfos.getName());
         assertEquals("UCTE", caseInfos.getFormat());
@@ -91,7 +91,7 @@ class CaseServiceTest {
     }
 
     @Test
-    public void testValidNameUcte1D() {
+    void testValidNameUcte1D() {
         EntsoeCaseInfos caseInfos = (EntsoeCaseInfos) createInfos(D1_UCTE_CASE_FILE_NAME, "UCTE");
         assertEquals(D1_UCTE_CASE_FILE_NAME, caseInfos.getName());
         assertEquals("UCTE", caseInfos.getFormat());
@@ -103,7 +103,7 @@ class CaseServiceTest {
     }
 
     @Test
-    public void testValidNameUcte2D() {
+    void testValidNameUcte2D() {
         EntsoeCaseInfos caseInfos = (EntsoeCaseInfos) createInfos(D2_UCTE_CASE_FILE_NAME, "UCTE");
         assertEquals(D2_UCTE_CASE_FILE_NAME, caseInfos.getName());
         assertEquals("UCTE", caseInfos.getFormat());
@@ -115,7 +115,7 @@ class CaseServiceTest {
     }
 
     @Test
-    public void testValidNameCgmes() {
+    void testValidNameCgmes() {
         CgmesCaseInfos caseInfos = (CgmesCaseInfos) createInfos(TEST_CGMES_CASE_FILE_NAME, "CGMES");
         assertEquals(TEST_CGMES_CASE_FILE_NAME, caseInfos.getName());
         assertEquals("CGMES", caseInfos.getFormat());

@@ -70,6 +70,10 @@ public class ObjectStorageService implements CaseService {
 
     private static final String CASES_PREFIX = "gsi-cases/";
 
+    public static final String FORMAT_HEADER_KEY = "format";
+
+    public static final String NOT_FOUND = " not found";
+
     @Autowired
     private S3Client s3Client;
 
@@ -150,7 +154,7 @@ public class ObjectStorageService implements CaseService {
 
         Map<String, String> userMetadata = headObjectResponse.metadata();
 
-        String format = userMetadata.get("format");
+        String format = userMetadata.get(FORMAT_HEADER_KEY);
 
         if (format == null) {
             return withS3DownloadedTempPath(caseUuid, this::getFormat);
@@ -218,7 +222,7 @@ public class ObjectStorageService implements CaseService {
     private CaseInfos infosFromDownloadCaseFileSummary(S3Object objectSummary) {
         UUID uuid = parseUuidFromKey(objectSummary.key());
         HeadObjectResponse headObjectResponse = s3Client.headObject(builder -> builder.bucket(bucketName).key(objectSummary.key()));
-        String format = headObjectResponse.metadata().get("format"); // get format from metadata
+        String format = headObjectResponse.metadata().get(FORMAT_HEADER_KEY); // get format from metadata
         return createInfos(parseFilenameFromKey(objectSummary.key()), uuid, format);
     }
 
@@ -227,7 +231,7 @@ public class ObjectStorageService implements CaseService {
         for (S3Object objectSummary : objectSummaries) {
             UUID uuid = parseUuidFromKey(objectSummary.key());
             HeadObjectResponse headObjectResponse = s3Client.headObject(builder -> builder.bucket(bucketName).key(objectSummary.key()));
-            String format = headObjectResponse.metadata().get("format");  // get format from metadata
+            String format = headObjectResponse.metadata().get(FORMAT_HEADER_KEY);  // get format from metadata
             CaseInfos caseInfos = createInfos(parseFilenameFromKey(objectSummary.key()), uuid, format);
             caseInfosList.add(caseInfos);
         }
@@ -296,7 +300,7 @@ public class ObjectStorageService implements CaseService {
             String key = uuidAndFilenameToKey(caseUuid, caseName);
 
             Map<String, String> userMetadata = new HashMap<>();
-            userMetadata.put("format", format);
+            userMetadata.put(FORMAT_HEADER_KEY, format);
 
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
@@ -326,7 +330,7 @@ public class ObjectStorageService implements CaseService {
 
         String sourceKey = getCaseFileObjectKey(sourceCaseUuid);
         CaseInfos existingCaseInfos = caseInfosService.getCaseInfosByUuid(sourceCaseUuid.toString())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Source case " + sourceCaseUuid + " not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Source case " + sourceCaseUuid + NOT_FOUND));
         UUID newCaseUuid = UUID.randomUUID();
         String targetKey = uuidAndFilenameToKey(newCaseUuid, parseFilenameFromKey(sourceKey));
         CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
@@ -337,7 +341,7 @@ public class ObjectStorageService implements CaseService {
         try {
             s3Client.copyObject(copyObjectRequest);
         } catch (S3Exception e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "source case " + sourceCaseUuid + " not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "source case " + sourceCaseUuid + NOT_FOUND);
         }
         CaseInfos caseInfos = createInfos(existingCaseInfos.getName(), newCaseUuid, existingCaseInfos.getFormat());
         caseInfosService.addCaseInfos(caseInfos);
@@ -349,7 +353,7 @@ public class ObjectStorageService implements CaseService {
     @Transactional
     @Override
     public void disableCaseExpiration(UUID caseUuid) {
-        CaseMetadataEntity caseMetadataEntity = caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
+        CaseMetadataEntity caseMetadataEntity = caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + NOT_FOUND));
         caseMetadataEntity.setExpirationDate(null);
     }
 
@@ -452,9 +456,9 @@ public class ObjectStorageService implements CaseService {
         return cases;
     }
 
-    @Override
     public void setFileSystem(FileSystem fileSystem) {
-
+        // This method is intentionally left empty.
+        // For now, there is no specific action required, so it remains empty.
     }
 
     @Override
@@ -462,8 +466,8 @@ public class ObjectStorageService implements CaseService {
         return null;
     }
 
-    @Override
     public void checkStorageInitialization() {
-
+        // This method is intentionally left empty.
+        // For now, there is no specific action required, so it remains empty.
     }
 }
