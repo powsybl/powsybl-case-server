@@ -37,7 +37,6 @@ import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.nio.file.*;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
@@ -96,27 +95,28 @@ public class ObjectStorageService implements CaseService {
         Path tempCasePath;
         try {
             FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
-            tempdirPath = Files.createTempDirectory(caseUuid.toString(), attr);            // after this line, need to cleanup the dir
+            tempdirPath = Files.createTempDirectory(caseUuid.toString(), attr);
+            // after this line, need to cleanup the dir
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            throw CaseException.createTempDirectory(caseUuid, e);
         }
         try {
             tempCasePath = tempdirPath.resolve(filename);
             try {
                 contentInitializer.accept(tempCasePath);
             } catch (CaseException e) {
-                throw e; // don't wrap our exceptions
+                throw CaseException.initTempFile(caseUuid, e);
             } catch (Throwable ex) {
-                throw new RuntimeException(ex);
+                throw CaseException.initTempFile(caseUuid);
             }
             // after this line, need to cleanup the file
             try {
                 try {
                     return f.apply(tempCasePath);
                 } catch (CaseException e) {
-                    throw e; // don't wrap our exceptions
+                    throw CaseException.createFileNotImportable(tempdirPath);
                 } catch (Throwable t) {
-                    throw new RuntimeException(t);
+                    throw CaseException.processTempFile(caseUuid);
                 }
             } finally {
                 try {
@@ -134,7 +134,7 @@ public class ObjectStorageService implements CaseService {
         }
     }
 
-        // downloads from s3 and cleanup
+    // downloads from s3 and cleanup
     @Override
     public <R, T extends Throwable> R withS3DownloadedTempPath(UUID caseUuid, FailableFunction<Path, R, T> f) {
         String caseFileKey = getCaseFileObjectKey(caseUuid);
