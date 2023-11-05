@@ -55,6 +55,11 @@ public final class CaseException extends RuntimeException {
         return new CaseException(Type.FILE_NOT_IMPORTABLE, "This file cannot be imported: " + file);
     }
 
+    public static CaseException createFileNotImportable(String file) {
+        Objects.requireNonNull(file);
+        return new CaseException(Type.FILE_NOT_IMPORTABLE, "This file cannot be imported: " + file);
+    }
+
     public static CaseException createStorageNotInitialized(Path storageRootDir) {
         Objects.requireNonNull(storageRootDir);
         return new CaseException(Type.STORAGE_DIR_NOT_CREATED, "The storage is not initialized: " + storageRootDir);
