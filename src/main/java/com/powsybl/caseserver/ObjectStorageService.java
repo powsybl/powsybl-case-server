@@ -17,7 +17,6 @@ import com.powsybl.iidm.network.Network;
 
 import org.apache.commons.lang3.Functions.FailableConsumer;
 import org.apache.commons.lang3.Functions.FailableFunction;
-import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +35,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -97,17 +95,8 @@ public class ObjectStorageService implements CaseService {
         Path tempdirPath;
         Path tempCasePath;
         try {
-            if (SystemUtils.IS_OS_UNIX) {
-                FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
-                tempdirPath = Files.createTempDirectory(caseUuid.toString(), attr);
-            } else {
-                File tempDir = Files.createTempDirectory(caseUuid.toString()).toFile();
-                tempDir.setReadable(true, true);
-                tempDir.setWritable(true, true);
-                tempDir.setExecutable(true, true);
-                tempdirPath = tempDir.toPath();
-            }
-            // after this line, need to cleanup the dir
+            FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
+            tempdirPath = Files.createTempDirectory(caseUuid.toString(), attr);            // after this line, need to cleanup the dir
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -145,7 +134,7 @@ public class ObjectStorageService implements CaseService {
         }
     }
 
-    // downloads from s3 and cleanup
+        // downloads from s3 and cleanup
     @Override
     public <R, T extends Throwable> R withS3DownloadedTempPath(UUID caseUuid, FailableFunction<Path, R, T> f) {
         String caseFileKey = getCaseFileObjectKey(caseUuid);
