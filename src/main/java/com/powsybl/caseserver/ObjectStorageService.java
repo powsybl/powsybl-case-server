@@ -17,6 +17,7 @@ import com.powsybl.iidm.network.Network;
 
 import org.apache.commons.lang3.Functions.FailableConsumer;
 import org.apache.commons.lang3.Functions.FailableFunction;
+import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,12 +36,15 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.*;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
-import java.util.stream.Collectors;
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
  */
@@ -90,16 +94,25 @@ public class ObjectStorageService implements CaseService {
     // After applying f to the file, deletes the file and the directory.
     private <R, T1 extends Throwable, T2 extends Throwable> R withTempCopy(UUID caseUuid, String filename,
                                                                            FailableConsumer<Path, T1> contentInitializer, FailableFunction<Path, R, T2> f) {
-        Path tempdir;
+        Path tempdirPath;
         Path tempCasePath;
         try {
-            tempdir = Files.createTempDirectory(caseUuid.toString());
+            if (SystemUtils.IS_OS_UNIX) {
+                FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
+                tempdirPath = Files.createTempDirectory(caseUuid.toString(), attr);
+            } else {
+                File tempDir = Files.createTempDirectory(caseUuid.toString()).toFile();
+                tempDir.setReadable(true, true);
+                tempDir.setWritable(true, true);
+                tempDir.setExecutable(true, true);
+                tempdirPath = tempDir.toPath();
+            }
             // after this line, need to cleanup the dir
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
         try {
-            tempCasePath = tempdir.resolve(filename);
+            tempCasePath = tempdirPath.resolve(filename);
             try {
                 contentInitializer.accept(tempCasePath);
             } catch (CaseException e) {
@@ -125,7 +138,7 @@ public class ObjectStorageService implements CaseService {
             }
         } finally {
             try {
-                Files.delete(tempdir);
+                Files.delete(tempdirPath);
             } catch (IOException e) {
                 LOGGER.error("Error cleaning up temporary case dir", e);
             }
@@ -189,13 +202,12 @@ public class ObjectStorageService implements CaseService {
         List<S3Object> s3Objects = new ArrayList<>();
 
         ListObjectsV2Iterable listObjectsV2Iterable = s3Client.listObjectsV2Paginator(getListObjectsV2Request());
-        listObjectsV2Iterable.iterator().forEachRemaining(listObjectsChunk -> {
-            s3Objects.addAll(listObjectsChunk.contents());
-
-        });
+        listObjectsV2Iterable.iterator().forEachRemaining(listObjectsChunk ->
+            s3Objects.addAll(listObjectsChunk.contents())
+        );
 
         return s3Objects.stream()
-                .filter(x -> x.key().contains(prefix)).collect(Collectors.toList());
+                .filter(x -> x.key().contains(prefix)).toList();
     }
 
     private ListObjectsV2Request getListObjectsV2Request() {
@@ -205,7 +217,7 @@ public class ObjectStorageService implements CaseService {
     private List<S3Object> getCaseFileSummaries(UUID caseUuid) {
         List<S3Object> files = getCasesSummaries(uuidToPrefixKey(caseUuid));
         if (files.size() > 1) {
-            LOGGER.warn("Multiple files for case " + caseUuid);
+            LOGGER.warn("Multiple files for case {}", caseUuid);
         }
         return files;
     }
@@ -268,10 +280,7 @@ public class ObjectStorageService implements CaseService {
             byte[] content = objectBytes.asByteArray();
             return Optional.of(content);
         } catch (NoSuchKeyException e) {
-            // the expected key dons't exist in the backet s3
-            return Optional.empty();
-        } catch (S3Exception e) {
-            // handle error s3
+            LOGGER.error("The expected key does not exist in the bucket s3 : {}", caseFileKey);
             return Optional.empty();
         }
     }
@@ -312,9 +321,7 @@ public class ObjectStorageService implements CaseService {
             // Use putObject to upload the file with metadata
             s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, mpf.getSize()));
         } catch (IOException e) {
-            throw new RuntimeException("Error reading file", e);
-        } catch (S3Exception e) {
-            throw new RuntimeException("Error uploading object to S3", e);
+            throw CaseException.createFileNotImportable(caseName);
         }
 
         createCaseMetadataEntity(caseUuid, withExpiration, caseMetadataRepository);
@@ -334,9 +341,10 @@ public class ObjectStorageService implements CaseService {
         UUID newCaseUuid = UUID.randomUUID();
         String targetKey = uuidAndFilenameToKey(newCaseUuid, parseFilenameFromKey(sourceKey));
         CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
-                .copySource(bucketName + "/" + sourceKey)
-                .bucket(bucketName)
-                .key(targetKey)
+                .sourceBucket(bucketName)
+                .sourceKey(sourceKey)
+                .destinationBucket(bucketName)
+                .destinationKey(targetKey)
                 .build();
         try {
             s3Client.copyObject(copyObjectRequest);
@@ -380,7 +388,7 @@ public class ObjectStorageService implements CaseService {
             .contents()
             .stream()
             .map(s3Object -> ObjectIdentifier.builder().key(s3Object.key()).build())
-            .collect(Collectors.toList());
+            .toList();
 
         if (!objectsToDelete.isEmpty()) {
             DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
@@ -403,7 +411,7 @@ public class ObjectStorageService implements CaseService {
         ListObjectsV2Response listObjectsResponse = s3Client.listObjectsV2(listObjectsRequest);
         List<ObjectIdentifier> objectsToDelete = listObjectsResponse.contents().stream()
                 .map(s3Object -> ObjectIdentifier.builder().key(s3Object.key()).build())
-                .collect(Collectors.toList());
+                .toList();
 
         if (!objectsToDelete.isEmpty()) {
             DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
