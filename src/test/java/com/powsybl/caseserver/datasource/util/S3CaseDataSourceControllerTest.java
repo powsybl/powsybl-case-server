@@ -7,14 +7,12 @@
 package com.powsybl.caseserver.datasource.util;
 
 import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
-import com.powsybl.caseserver.ObjectStorageService;
 import com.powsybl.commons.datasource.DataSource;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
@@ -22,25 +20,16 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
-import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
@@ -54,6 +43,7 @@ public class S3CaseDataSourceControllerTest extends AbstractCaseDataSourceContro
 
     // TODO MOVE THIS TO SEPARATE CLASS
     private static final String MINIO_DOCKER_IMAGE_NAME = "minio/minio";
+    private static final String BUCKET_NAME = "bucket-gridsuite";
     // Just a fixed version, latest at the time of writing this
     private static final String MINIO_DOCKER_IMAGE_VERSION = "RELEASE.2023-09-27T15-22-50Z";
     private static GenericContainer minioContainer;
@@ -68,7 +58,7 @@ public class S3CaseDataSourceControllerTest extends AbstractCaseDataSourceContro
                         .forPath("/minio/health/ready").forPort(MINIO_PORT).withStartupTimeout(Duration.ofSeconds(10)));
         minioContainer.start();
         try {
-            minioContainer.execInContainer("mkdir", "/data/bucket-gridsuite");
+            minioContainer.execInContainer("mkdir", "/data/" + BUCKET_NAME);
         } catch (Exception e) {
             System.out.println("Error");
         }
@@ -87,54 +77,31 @@ public class S3CaseDataSourceControllerTest extends AbstractCaseDataSourceContro
     }
     // END TODO
 
-    @MockBean
-    private S3Client s3Client;
-
     @Autowired
-    ObjectStorageService objectStorageService;
-
-    @MockBean
-    ListObjectsV2Iterable listObjectsV2Iterable;
+    private S3Client s3Client;
 
     private static final String CASES_PREFIX = "gsi-cases/";
 
     @Before
-    public void setUp() throws URISyntaxException {
+    public void setUp() throws URISyntaxException, IOException {
 
         // TODO : mock S3CaseDataSourceService methods
 
         final var key = CASES_PREFIX + CASE_UUID + "/" + cgmesName;
 
-        S3Object objectSummary1 = mock(S3Object.class);
+        //insert a cgmes file in the S3
+        try (InputStream cgmesURL = getClass().getResourceAsStream("/" + cgmesName)) {
 
-        // Create a mock response for listObjectsV2Paginator
-
-        List<S3Object> s3Objects = Arrays.asList(
-                S3Object.builder().key(key).build()
-        );
-
-        ListObjectsV2Response response = ListObjectsV2Response.builder()
-                .contents(s3Objects)
-                .build();
-
-        // Mock the behavior of listObjectsV2Paginator
-        when(s3Client.listObjectsV2Paginator((ListObjectsV2Request) any())).thenReturn(listObjectsV2Iterable);
-        when(listObjectsV2Iterable.iterator()).thenReturn(Collections.singletonList(response).iterator());
-
-        // Mocking s3Client.getObject() method
-        when(s3Client.getObject(any(GetObjectRequest.class), any(Path.class))).then(invocation -> {
-            Path file = invocation.getArgument(1);
-            try (InputStream cgmesURL = getClass().getResourceAsStream("/" + cgmesName)) {
-                Files.copy(cgmesURL, file, StandardCopyOption.REPLACE_EXISTING);
-            } catch (IOException e) {
-                // Handle the exception appropriately
-                e.printStackTrace();
-            }
-            return null;
-        });
-
-        // Mocking s3Object.key() method
-        when(objectSummary1.key()).thenReturn("gsi-cases/" + CASE_UUID + "/" + cgmesName);
+            Map<String, String> userMetadata = new HashMap<>();
+            userMetadata.put("format", "CGMES");
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(BUCKET_NAME)
+                    .key(key)
+                    .contentType("application/octet-stream")
+                    .metadata(userMetadata)
+                    .build();
+            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(cgmesURL.readAllBytes()));
+        }
 
         dataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + cgmesName).toURI()));
 
