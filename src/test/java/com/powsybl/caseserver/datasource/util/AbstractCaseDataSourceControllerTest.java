@@ -8,6 +8,7 @@ package com.powsybl.caseserver.datasource.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.caseserver.CaseService;
+import com.powsybl.caseserver.AbstractContainerConfig;
 import com.powsybl.caseserver.elasticsearch.CaseInfosRepository;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.commons.datasource.DataSource;
@@ -34,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  */
 
-public abstract class AbstractCaseDataSourceControllerTest {
+public abstract class AbstractCaseDataSourceControllerTest extends AbstractContainerConfig {
 
     @MockBean
     StreamBridge streamBridge;

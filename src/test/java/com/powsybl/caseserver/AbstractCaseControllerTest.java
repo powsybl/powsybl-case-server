@@ -51,7 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 
-public abstract class AbstractCaseControllerTest {
+public abstract class AbstractCaseControllerTest extends AbstractContainerConfig {
 
     private static final String TEST_CASE = "testCase.xiidm";
     private static final String TEST_CASE_FORMAT = "XIIDM";
