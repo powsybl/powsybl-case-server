@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +35,6 @@ import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-@PropertySource(value = "classpath:config/application.yaml")
 @RestController
 @RequestMapping(value = "/" + CaseConstants.API_VERSION)
 @Tag(name = "Case server")
