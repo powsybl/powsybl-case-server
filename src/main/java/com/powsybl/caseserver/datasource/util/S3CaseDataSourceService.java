@@ -6,13 +6,13 @@
  */
 package com.powsybl.caseserver.datasource.util;
 
-import com.powsybl.caseserver.CaseService;
+import com.powsybl.caseserver.server.CaseService;
+import com.powsybl.caseserver.server.S3CaseService;
 import com.powsybl.commons.datasource.DataSource;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Functions.FailableFunction;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Service;
 
@@ -31,8 +31,7 @@ import java.util.UUID;
 public class S3CaseDataSourceService implements CaseDataSourceService {
 
     @Autowired
-    @Qualifier("objectStorageService")
-    private CaseService caseService;
+    private S3CaseService caseService;
 
     @Override
     public String getBaseName(UUID caseUuid) {

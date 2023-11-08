@@ -7,6 +7,7 @@
 package com.powsybl.caseserver;
 
 import com.google.common.testing.EqualsTester;
+import com.powsybl.caseserver.server.CaseService;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.dto.cgmes.CgmesCaseInfos;
 import com.powsybl.caseserver.dto.entsoe.EntsoeCaseInfos;

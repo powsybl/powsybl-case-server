@@ -7,14 +7,12 @@
 package com.powsybl.caseserver.datasource.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.powsybl.caseserver.CaseService;
-import com.powsybl.caseserver.AbstractContainerConfig;
+import com.powsybl.caseserver.server.AbstractContainerConfig;
 import com.powsybl.caseserver.elasticsearch.CaseInfosRepository;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.commons.datasource.DataSource;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cloud.stream.function.StreamBridge;
@@ -48,10 +46,6 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
 
     @MockBean
     CaseInfosRepository caseInfosRepository;
-
-    @Autowired
-    @Qualifier("storageService")
-    protected CaseService caseService;
 
     @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
     protected String rootDirectory;

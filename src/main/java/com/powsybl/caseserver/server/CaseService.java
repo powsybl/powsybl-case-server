@@ -4,8 +4,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.powsybl.caseserver;
+package com.powsybl.caseserver.server;
 
+import com.powsybl.caseserver.CaseException;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.parsers.FileNameInfos;
 import com.powsybl.caseserver.parsers.FileNameParser;
@@ -16,10 +17,8 @@ import com.powsybl.commons.datasource.DataSource;
 import com.powsybl.computation.ComputationManager;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
-import org.apache.commons.lang3.Functions;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -95,12 +94,4 @@ public interface CaseService {
     List<CaseInfos> getMetadata(List<UUID> ids);
 
     void setComputationManager(ComputationManager mock);
-
-    <R, T extends Throwable> R withS3DownloadedTempPath(UUID caseUuid, Functions.FailableFunction<Path, R, T> f);
-
-    void setFileSystem(FileSystem fileSystem);
-
-    Path getCaseFile(UUID caseUuid);
-
-    void checkStorageInitialization();
 }

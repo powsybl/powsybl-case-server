@@ -6,11 +6,11 @@
  */
 package com.powsybl.caseserver.datasource.util;
 
-import com.powsybl.caseserver.CaseService;
+import com.powsybl.caseserver.server.CaseService;
+import com.powsybl.caseserver.server.FsCaseService;
 import com.powsybl.commons.datasource.DataSource;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Service;
 
@@ -31,8 +31,7 @@ import java.util.UUID;
 public class FsCaseDataSourceService implements CaseDataSourceService {
 
     @Autowired
-    @Qualifier("fileSystemStorageService")
-    private CaseService caseService;
+    private FsCaseService caseService;
 
     @Override
     public String getBaseName(UUID caseUuid) {

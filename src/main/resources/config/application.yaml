@@ -9,6 +9,8 @@ spring:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}case.import
       output-bindings: publishCaseImport-out-0
     aws:
+      s3:
+        path-style-access-enabled: true
       endpoint: http://172.17.0.1:19000
       region:
         profile:
@@ -26,4 +28,4 @@ powsybl-ws:
 cleaning-cases-cron: 0 * 2 * * ?
 
 storage:
-  type: S3  # file
+  type: S3  # file or S3
