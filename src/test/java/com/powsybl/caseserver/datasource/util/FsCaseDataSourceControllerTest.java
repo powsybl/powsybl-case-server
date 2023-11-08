@@ -7,9 +7,11 @@
 package com.powsybl.caseserver.datasource.util;
 
 import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
+import com.powsybl.caseserver.server.FsCaseService;
 import com.powsybl.commons.datasource.DataSource;
 import org.junit.Before;
 import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
@@ -29,6 +31,9 @@ import java.nio.file.*;
 @TestPropertySource(properties = {"storage.type=file"})
 @ContextConfigurationWithTestChannel
 public class FsCaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTest {
+
+    @Autowired
+    protected FsCaseService caseService;
 
     FileSystem fileSystem = FileSystems.getDefault();
 

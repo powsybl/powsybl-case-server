@@ -4,8 +4,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.powsybl.caseserver;
+package com.powsybl.caseserver.server;
 
+import com.powsybl.caseserver.CaseException;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
@@ -48,7 +49,7 @@ import java.util.*;
 
 @Service
 @ComponentScan(basePackageClasses = {CaseInfosService.class})
-public class ObjectStorageService implements CaseService {
+public class ObjectStorageService implements S3CaseService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ObjectStorageService.class);
 
@@ -135,34 +136,18 @@ public class ObjectStorageService implements CaseService {
     }
 
     // downloads from s3 and cleanup
-    @Override
     public <R, T extends Throwable> R withS3DownloadedTempPath(UUID caseUuid, FailableFunction<Path, R, T> f) {
         String caseFileKey = getCaseFileObjectKey(caseUuid);
         String filename = parseFilenameFromKey(caseFileKey);
         return withTempCopy(caseUuid, filename, path ->
-                        s3Client.getObject(GetObjectRequest.builder().bucket(bucketName).key(caseFileKey).build(), path.toFile().toPath()),
+                        s3Client.getObject(GetObjectRequest.builder().bucket(bucketName).key(caseFileKey).build(), path),
                 f);
     }
 
     @Override
     public String getFormat(UUID caseUuid) {
-
-        String caseFileKey = getCaseFileObjectKey(caseUuid);
-
-        HeadObjectResponse headObjectResponse = s3Client.headObject(HeadObjectRequest.builder()
-                .bucket(bucketName)
-                .key(caseFileKey)
-                .build());
-
-        Map<String, String> userMetadata = headObjectResponse.metadata();
-
-        String format = userMetadata.get(FORMAT_HEADER_KEY);
-
-        if (format == null) {
-            return withS3DownloadedTempPath(caseUuid, this::getFormat);
-
-        }
-        return format;
+        final var caseInfos = caseInfosService.getCaseInfosByUuid(caseUuid.toString());
+        return caseInfos.map(CaseInfos::getFormat).orElse(null);
     }
 
     // key format is "gsi-cases/UUID/filename"
@@ -222,19 +207,17 @@ public class ObjectStorageService implements CaseService {
 
     private CaseInfos infosFromDownloadCaseFileSummary(S3Object objectSummary) {
         UUID uuid = parseUuidFromKey(objectSummary.key());
-        HeadObjectResponse headObjectResponse = s3Client.headObject(builder -> builder.bucket(bucketName).key(objectSummary.key()));
-        String format = headObjectResponse.metadata().get(FORMAT_HEADER_KEY); // get format from metadata
-        return createInfos(parseFilenameFromKey(objectSummary.key()), uuid, format);
+        Optional<CaseInfos> caseInfos = caseInfosService.getCaseInfosByUuid(uuid.toString());
+        return caseInfos.orElse(null);
     }
 
     private List<CaseInfos> infosFromDownloadCaseFileSummaries(List<S3Object> objectSummaries) {
         List<CaseInfos> caseInfosList = new ArrayList<>();
         for (S3Object objectSummary : objectSummaries) {
-            UUID uuid = parseUuidFromKey(objectSummary.key());
-            HeadObjectResponse headObjectResponse = s3Client.headObject(builder -> builder.bucket(bucketName).key(objectSummary.key()));
-            String format = headObjectResponse.metadata().get(FORMAT_HEADER_KEY);  // get format from metadata
-            CaseInfos caseInfos = createInfos(parseFilenameFromKey(objectSummary.key()), uuid, format);
-            caseInfosList.add(caseInfos);
+            final var caseInfo = infosFromDownloadCaseFileSummary(objectSummary);
+            if (Objects.nonNull(caseInfo)) {
+                caseInfosList.add(caseInfo);
+            }
         }
         return caseInfosList;
     }
@@ -297,17 +280,13 @@ public class ObjectStorageService implements CaseService {
         try (InputStream inputStream = mpf.getInputStream()) {
             String key = uuidAndFilenameToKey(caseUuid, caseName);
 
-            Map<String, String> userMetadata = new HashMap<>();
-            userMetadata.put(FORMAT_HEADER_KEY, format);
-
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(key)
                     .contentType(mpf.getContentType())
-                    .metadata(userMetadata)
                     .build();
 
-            // Use putObject to upload the file with metadata
+            // Use putObject to upload the file
             s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, mpf.getSize()));
         } catch (IOException e) {
             throw CaseException.createFileNotImportable(caseName);
@@ -420,6 +399,7 @@ public class ObjectStorageService implements CaseService {
     public void setComputationManager(ComputationManager computationManager) {
         this.computationManager = Objects.requireNonNull(computationManager);
     }
+
     /*
      The query is an elasticsearch (Lucene) form query, so here it will be :
      date:XXX AND geographicalCode:(X)
@@ -451,20 +431,5 @@ public class ObjectStorageService implements CaseService {
             }
         });
         return cases;
-    }
-
-    public void setFileSystem(FileSystem fileSystem) {
-        // This method is intentionally left empty.
-        // For now, there is no specific action required, so it remains empty.
-    }
-
-    @Override
-    public Path getCaseFile(UUID caseUuid) {
-        return null;
-    }
-
-    public void checkStorageInitialization() {
-        // This method is intentionally left empty.
-        // For now, there is no specific action required, so it remains empty.
     }
 }

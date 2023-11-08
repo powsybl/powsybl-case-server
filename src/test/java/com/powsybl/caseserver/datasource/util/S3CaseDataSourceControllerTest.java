@@ -7,6 +7,7 @@
 package com.powsybl.caseserver.datasource.util;
 
 import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
+import com.powsybl.caseserver.server.S3CaseService;
 import com.powsybl.commons.datasource.DataSource;
 import org.junit.Before;
 import org.junit.runner.RunWith;
@@ -34,6 +35,9 @@ import java.util.*;
 @TestPropertySource(properties = {"storage.type=S3"})
 @ContextConfigurationWithTestChannel
 public class S3CaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTest {
+
+    @Autowired
+    protected S3CaseService caseService;
 
     @Autowired
     private S3Client s3Client;

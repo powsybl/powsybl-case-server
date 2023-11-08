@@ -4,8 +4,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.powsybl.caseserver;
+package com.powsybl.caseserver.server;
 
+import com.powsybl.caseserver.CaseException;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
@@ -14,7 +15,6 @@ import com.powsybl.computation.ComputationManager;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
-import org.apache.commons.lang3.Functions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +47,7 @@ import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
  */
 @Service
 @ComponentScan(basePackageClasses = {CaseInfosService.class})
-public class FileSystemStorageService implements CaseService {
+public class FileSystemStorageService implements FsCaseService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FileSystemStorageService.class);
 
@@ -244,10 +244,6 @@ public class FileSystemStorageService implements CaseService {
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred during case duplication");
         }
-    }
-
-    public <R, T extends Throwable> R withS3DownloadedTempPath(UUID caseUuid, Functions.FailableFunction<Path, R, T> f) {
-        return null;
     }
 
     @Transactional
