@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.powsybl.caseserver;
+package com.powsybl.caseserver.server;
 
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -44,7 +44,7 @@ public abstract class AbstractContainerConfig {
     }
 
     @DynamicPropertySource
-    static void registerPgProperties(DynamicPropertyRegistry registry) {
+    static void registerAwsProperties(DynamicPropertyRegistry registry) {
         Integer mappedPort = minioContainer.getFirstMappedPort();
         Testcontainers.exposeHostPorts(mappedPort);
         String minioContainerUrl = String.format("http://172.17.0.1:%s", mappedPort);

@@ -4,8 +4,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.powsybl.caseserver;
+package com.powsybl.caseserver.server;
 
+import com.powsybl.caseserver.CaseException;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
@@ -14,7 +15,6 @@ import com.powsybl.computation.ComputationManager;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
-import org.apache.commons.lang3.Functions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,7 +47,7 @@ import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
  */
 @Service
 @ComponentScan(basePackageClasses = {CaseInfosService.class})
-public class FileSystemStorageService implements CaseService {
+public class FileSystemStorageService implements FsCaseService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FileSystemStorageService.class);
 
@@ -59,7 +59,7 @@ public class FileSystemStorageService implements CaseService {
 
     private ComputationManager computationManager = LocalComputationManager.getDefault();
 
-    private CaseMetadataRepository caseMetadataRepository;
+    private final CaseMetadataRepository caseMetadataRepository;
 
     @Autowired
     private StreamBridge caseInfosPublisher;
@@ -74,19 +74,21 @@ public class FileSystemStorageService implements CaseService {
         this.caseMetadataRepository = caseMetadataRepository;
     }
 
+    @Override
+    public String getFormat(UUID caseUuid) {
+        Path file = getCaseFile(caseUuid);
+        return getFormat(file);
+    }
+
     String getFormat(Path caseFile) {
         Importer importer = getImporterOrThrowsException(caseFile, computationManager);
         return importer.getFormat();
     }
 
-    public List<CaseInfos> getCases(Path directory) {
-        try (Stream<Path> walk = Files.walk(directory)) {
-            return walk.filter(Files::isRegularFile)
-                    .map(file -> createInfos(file.getFileName().toString(), UUID.fromString(file.getParent().getFileName().toString()), getFormat(file)))
-                    .collect(Collectors.toList());
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+    public CaseInfos getCase(Path casePath) {
+        checkStorageInitialization();
+        Optional<CaseInfos> caseInfo = getCases(casePath).stream().findFirst();
+        return caseInfo.orElseThrow();
     }
 
     @Override
@@ -97,12 +99,6 @@ public class FileSystemStorageService implements CaseService {
         }
         CaseInfos caseInfos = getCase(file);
         return caseInfos.getName();
-    }
-
-    public CaseInfos getCase(Path casePath) {
-        checkStorageInitialization();
-        Optional<CaseInfos> caseInfo = getCases(casePath).stream().findFirst();
-        return caseInfo.orElseThrow();
     }
 
     @Override
@@ -167,12 +163,6 @@ public class FileSystemStorageService implements CaseService {
     public CaseInfos getCase(UUID caseUuid) {
         Path file = getCaseFile(caseUuid);
         return getCase(file);
-    }
-
-    @Override
-    public String getFormat(UUID caseUuid) {
-        Path file = getCaseFile(caseUuid);
-        return getFormat(file);
     }
 
     @Override
@@ -244,10 +234,6 @@ public class FileSystemStorageService implements CaseService {
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred during case duplication");
         }
-    }
-
-    public <R, T extends Throwable> R withS3DownloadedTempPath(UUID caseUuid, Functions.FailableFunction<Path, R, T> f) {
-        return null;
     }
 
     @Transactional
@@ -345,7 +331,7 @@ public class FileSystemStorageService implements CaseService {
         try (Stream<Path> walk = Files.walk(getStorageRootDir())) {
             return walk.filter(Files::isRegularFile)
                     .map(file -> createInfos(file.getFileName().toString(), UUID.fromString(file.getParent().getFileName().toString()), getFormat(file)))
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -366,6 +352,16 @@ public class FileSystemStorageService implements CaseService {
     private void sendImportMessage(Message<String> message) {
         OUTPUT_MESSAGE_LOGGER.debug("Sending message : {}", message);
         caseInfosPublisher.send("publishCaseImport-out-0", message);
+    }
+
+    public List<CaseInfos> getCases(Path directory) {
+        try (Stream<Path> walk = Files.walk(directory)) {
+            return walk.filter(Files::isRegularFile)
+                    .map(file -> createInfos(file.getFileName().toString(), UUID.fromString(file.getParent().getFileName().toString()), getFormat(file)))
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override

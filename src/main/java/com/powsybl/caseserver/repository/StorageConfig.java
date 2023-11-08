@@ -6,9 +6,9 @@
  */
 package com.powsybl.caseserver.repository;
 
-import com.powsybl.caseserver.CaseService;
-import com.powsybl.caseserver.FileSystemStorageService;
-import com.powsybl.caseserver.ObjectStorageService;
+import com.powsybl.caseserver.server.CaseService;
+import com.powsybl.caseserver.server.FileSystemStorageService;
+import com.powsybl.caseserver.server.ObjectStorageService;
 import com.powsybl.caseserver.datasource.util.CaseDataSourceService;
 import com.powsybl.caseserver.datasource.util.FsCaseDataSourceService;
 import com.powsybl.caseserver.datasource.util.S3CaseDataSourceService;
