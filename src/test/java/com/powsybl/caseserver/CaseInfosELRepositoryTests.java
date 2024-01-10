@@ -17,6 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -46,7 +48,7 @@ public class CaseInfosELRepositoryTests {
     private CaseInfosService caseInfosService;
 
     @Test
-    public void testAddDeleteCaseInfos() {
+    public void testAddDeleteCaseInfos() throws IOException {
         EntsoeCaseInfos caseInfos1 = (EntsoeCaseInfos) caseInfosService.addCaseInfos(createInfos(SN_UCTE_CASE_FILE_NAME));
         Optional<CaseInfos> caseInfosAfter1 = caseInfosService.getCaseInfosByUuid(caseInfos1.getUuid().toString());
         assertFalse(caseInfosAfter1.isEmpty());
@@ -85,7 +87,7 @@ public class CaseInfosELRepositoryTests {
     }
 
     @Test
-    public void searchCaseInfos() {
+    public void searchCaseInfos() throws IOException {
         caseInfosService.deleteAllCaseInfos();
         List<CaseInfos> all = caseInfosService.getAllCaseInfos();
         assertTrue(all.isEmpty());
@@ -173,10 +175,11 @@ public class CaseInfosELRepositoryTests {
                 .testEquals();
     }
 
-    private CaseInfos createInfos(String fileName) {
+    private CaseInfos createInfos(String fileName) throws IOException {
         Path casePath = Path.of(this.getClass().getResource("/" + fileName).getPath());
+        long fileSize = Files.size(casePath);
         String fileBaseName = casePath.getFileName().toString();
         String format = caseService.getFormat(casePath);
-        return caseService.createInfos(fileBaseName, UUID.randomUUID(), format);
+        return caseService.createInfos(fileBaseName, UUID.randomUUID(), format, fileSize);
     }
 }

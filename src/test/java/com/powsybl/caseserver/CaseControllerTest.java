@@ -146,6 +146,7 @@ public class CaseControllerTest {
         assertEquals("testCase.xiidm", headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals(firstCaseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
+        assertEquals(267L, headersCase.get(CaseInfos.SIZE_HEADER_KEY));
 
         //check that the case doesn't have an expiration date
         CaseMetadataEntity caseMetadataEntity = caseMetadataRepository.findById(firstCaseUuid).orElseThrow();
@@ -247,6 +248,7 @@ public class CaseControllerTest {
         assertEquals("testCase.xiidm", headersPrivateCase2.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals(secondCaseUuid, headersPrivateCase2.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("XIIDM", headersPrivateCase2.get(CaseInfos.FORMAT_HEADER_KEY));
+        assertEquals(267L, headersPrivateCase2.get(CaseInfos.SIZE_HEADER_KEY));
 
         //check that the case doesn't have an expiration date
         caseMetadataEntity = caseMetadataRepository.findById(secondCaseUuid).orElseThrow();
@@ -269,6 +271,7 @@ public class CaseControllerTest {
         assertEquals("testCase.xiidm", headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals(caseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
+        assertEquals(267L, headersPrivateCase2.get(CaseInfos.SIZE_HEADER_KEY));
 
         //check that the case doesn't have an expiration date
         caseMetadataEntity = caseMetadataRepository.findById(caseUuid).orElseThrow();
@@ -289,6 +292,7 @@ public class CaseControllerTest {
         assertEquals(UUID.fromString(duplicateCaseUuid), headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("testCase.xiidm", headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
+        assertEquals(267L, headersPrivateCase2.get(CaseInfos.SIZE_HEADER_KEY));
 
         //check that the duplicated case doesn't have an expiration date
         caseMetadataEntity = caseMetadataRepository.findById(UUID.fromString(duplicateCaseUuid)).orElseThrow();
@@ -307,6 +311,7 @@ public class CaseControllerTest {
         assertEquals("testCase.xiidm", headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals(thirdCaseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
+        assertEquals(267L, headersPrivateCase2.get(CaseInfos.SIZE_HEADER_KEY));
 
         //check that the case does have an expiration date
         caseMetadataEntity = caseMetadataRepository.findById(thirdCaseUuid).orElseThrow();
@@ -333,6 +338,7 @@ public class CaseControllerTest {
         assertEquals(UUID.fromString(duplicateCaseUuid2), headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("testCase.xiidm", headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
+        assertEquals(267L, headersPrivateCase2.get(CaseInfos.SIZE_HEADER_KEY));
 
         //check that the duplicated case does have an expiration date
         caseMetadataEntity = caseMetadataRepository.findById(UUID.fromString(duplicateCaseUuid2)).orElseThrow();
@@ -448,6 +454,7 @@ public class CaseControllerTest {
         assertEquals("testCase.xiidm", headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals(aCaseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
+        assertEquals(267L, headersCase.get(CaseInfos.SIZE_HEADER_KEY));
 
         // import CGMES french file
         aCase = mvc.perform(multipart("/v1/cases")
@@ -464,6 +471,7 @@ public class CaseControllerTest {
         assertEquals("20200424T1330Z_2D_RTEFRANCE_001.zip", headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals(aCaseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("CGMES", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
+        assertEquals(2569L, headersCase.get(CaseInfos.SIZE_HEADER_KEY));
 
         // import UCTE french file
         aCase = mvc.perform(multipart("/v1/cases")
@@ -480,6 +488,7 @@ public class CaseControllerTest {
         assertEquals("20200103_0915_FO5_FR0.UCT", headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals(aCaseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("UCTE", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
+        assertEquals(15L, headersCase.get(CaseInfos.SIZE_HEADER_KEY));
 
         // import UCTE german file
         aCase = mvc.perform(multipart("/v1/cases")
@@ -496,6 +505,7 @@ public class CaseControllerTest {
         assertEquals("20200103_0915_SN5_D80.UCT", headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals(aCaseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("UCTE", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
+        assertEquals(15L, headersCase.get(CaseInfos.SIZE_HEADER_KEY));
 
         // import UCTE swiss file
         aCase = mvc.perform(multipart("/v1/cases")
@@ -512,6 +522,7 @@ public class CaseControllerTest {
         assertEquals("20200103_0915_135_CH2.UCT", headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals(aCaseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("UCTE", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
+        assertEquals(15L, headersCase.get(CaseInfos.SIZE_HEADER_KEY));
 
         // list the cases
         MvcResult mvcResult = mvc.perform(get("/v1/cases"))

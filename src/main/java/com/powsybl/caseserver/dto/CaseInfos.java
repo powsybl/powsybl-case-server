@@ -39,11 +39,13 @@ public class CaseInfos {
     public static final String NAME_HEADER_KEY = "name";
     public static final String UUID_HEADER_KEY = "uuid";
     public static final String FORMAT_HEADER_KEY = "format";
+    public static final String SIZE_HEADER_KEY = "size";
 
     @Id
     @NonNull protected UUID uuid;
     @NonNull protected String name;
     @NonNull protected String format;
+    @NonNull protected Long size;
 
     @Override
     public boolean equals(Object obj) {
@@ -62,28 +64,29 @@ public class CaseInfos {
         CaseInfos other = (CaseInfos) obj;
         return Objects.equals(this.uuid, other.uuid) &&
             Objects.equals(this.name, other.name) &&
-            Objects.equals(this.format, other.format);
+            Objects.equals(this.format, other.format) &&
+            Objects.equals(this.size, other.size);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(uuid, name, format);
+        return Objects.hash(uuid, name, format, size);
     }
 
-    public static CaseInfos create(String fileBaseName, UUID caseUuid, String format, FileNameInfos fileNameInfos) {
+    public static CaseInfos create(String fileBaseName, UUID caseUuid, String format, Long size, FileNameInfos fileNameInfos) {
         switch (fileNameInfos.getType()) {
             case ENTSOE:
                 EntsoeFileName entsoeFileName = (EntsoeFileName) fileNameInfos;
-                return EntsoeCaseInfos.builder().name(fileBaseName).uuid(caseUuid).format(format)
+                return EntsoeCaseInfos.builder().name(fileBaseName).uuid(caseUuid).format(format).size(size)
                         .date(entsoeFileName.getDate()).forecastDistance(entsoeFileName.getForecastDistance())
                         .geographicalCode(entsoeFileName.getGeographicalCode()).version(entsoeFileName.getVersion()).build();
             case CGMES:
                 CgmesFileName cgmesFileName = (CgmesFileName) fileNameInfos;
-                return CgmesCaseInfos.builder().name(fileBaseName).uuid(caseUuid).format(format)
+                return CgmesCaseInfos.builder().name(fileBaseName).uuid(caseUuid).format(format).size(size)
                         .date(cgmesFileName.getDate()).businessProcess(cgmesFileName.getBusinessProcess())
                         .tso(cgmesFileName.getTso()).version(cgmesFileName.getVersion()).build();
             default:
-                return CaseInfos.builder().name(fileBaseName).uuid(caseUuid).format(format).build();
+                return CaseInfos.builder().name(fileBaseName).uuid(caseUuid).format(format).size(size).build();
         }
     }
 
@@ -91,7 +94,8 @@ public class CaseInfos {
         return MessageBuilder.withPayload("")
                 .setHeader(NAME_HEADER_KEY, getName())
                 .setHeader(UUID_HEADER_KEY, getUuid())
-                .setHeader(FORMAT_HEADER_KEY, getFormat());
+                .setHeader(FORMAT_HEADER_KEY, getFormat())
+                .setHeader(SIZE_HEADER_KEY, getSize());
     }
 
     public Message<String> createMessage() {

@@ -96,7 +96,13 @@ public class CaseService {
     public List<CaseInfos> getCases(Path directory) {
         try (Stream<Path> walk = Files.walk(directory)) {
             return walk.filter(Files::isRegularFile)
-                .map(file -> createInfos(file.getFileName().toString(), UUID.fromString(file.getParent().getFileName().toString()), getFormat(file)))
+                .map(file -> {
+                    try {
+                        return createInfos(file.getFileName().toString(), UUID.fromString(file.getParent().getFileName().toString()), getFormat(file), Files.size(file));
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
                 .collect(Collectors.toList());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -209,7 +215,7 @@ public class CaseService {
         }
 
         createCaseMetadataEntity(caseUuid, withExpiration);
-        CaseInfos caseInfos = createInfos(caseFile.getFileName().toString(), caseUuid, importer.getFormat());
+        CaseInfos caseInfos = createInfos(caseFile.getFileName().toString(), caseUuid, importer.getFormat(), mpf.getSize());
         caseInfosService.addCaseInfos(caseInfos);
         sendImportMessage(caseInfos.createMessage());
         return caseUuid;
@@ -230,7 +236,7 @@ public class CaseService {
             Files.copy(existingCaseFile, newCaseFile, StandardCopyOption.COPY_ATTRIBUTES);
 
             CaseInfos existingCaseInfos = caseInfosService.getCaseInfosByUuid(sourceCaseUuid.toString()).orElseThrow();
-            CaseInfos caseInfos = createInfos(existingCaseInfos.getName(), newCaseUuid, existingCaseInfos.getFormat());
+            CaseInfos caseInfos = createInfos(existingCaseInfos.getName(), newCaseUuid, existingCaseInfos.getFormat(), existingCaseInfos.getSize());
             caseInfosService.addCaseInfos(caseInfos);
             createCaseMetadataEntity(newCaseUuid, withExpiration);
 
@@ -250,15 +256,15 @@ public class CaseService {
         caseMetadataRepository.save(new CaseMetadataEntity(newCaseUuid, expirationTime));
     }
 
-    CaseInfos createInfos(String fileBaseName, UUID caseUuid, String format) {
+    CaseInfos createInfos(String fileBaseName, UUID caseUuid, String format, long size) {
         FileNameParser parser = FileNameParsers.findParser(fileBaseName);
         if (parser != null) {
             Optional<? extends FileNameInfos> fileNameInfos = parser.parse(fileBaseName);
             if (fileNameInfos.isPresent()) {
-                return CaseInfos.create(fileBaseName, caseUuid, format, fileNameInfos.get());
+                return CaseInfos.create(fileBaseName, caseUuid, format, size, fileNameInfos.get());
             }
         }
-        return CaseInfos.builder().name(fileBaseName).uuid(caseUuid).format(format).build();
+        return CaseInfos.builder().name(fileBaseName).uuid(caseUuid).format(format).size(size).build();
     }
 
     @Transactional
