@@ -8,7 +8,7 @@ package com.powsybl.caseserver;
 
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.iidm.network.Network;
-import com.powsybl.iidm.xml.NetworkXml;
+import com.powsybl.iidm.serde.NetworkSerDe;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -101,7 +101,7 @@ public class CaseController {
                 return ResponseEntity.noContent().build();
             }
             try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-                NetworkXml.write(network, os);
+                NetworkSerDe.write(network, os);
                 os.flush();
                 return ResponseEntity.ok()
                         .contentType(MediaType.APPLICATION_XML)

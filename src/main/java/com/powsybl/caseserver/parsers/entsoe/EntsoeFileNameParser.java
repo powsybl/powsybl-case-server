@@ -9,12 +9,11 @@ package com.powsybl.caseserver.parsers.entsoe;
 import com.google.auto.service.AutoService;
 import com.powsybl.caseserver.parsers.FileNameParser;
 import com.powsybl.entsoe.util.EntsoeGeographicalCode;
-import java.util.Optional;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -29,9 +28,11 @@ public class EntsoeFileNameParser implements FileNameParser {
     public static final Pattern FILE_NAME_REGEX = Pattern.compile("(\\d{8}[_]\\d{4})[_](\\w{3})[_](\\w{3}).*");
     public static final String DATE_FORMAT = "yyyyMMdd_HHmm";
 
-    public static DateTime parseDateTime(String dateStr) {
-        DateTimeFormatter df = DateTimeFormat.forPattern(DATE_FORMAT);
-        return df.withZone(DateTimeZone.forID("Europe/Brussels")).parseDateTime(dateStr);
+    public static ZonedDateTime parseDateTime(String dateStr) {
+        DateTimeFormatter formatter = DateTimeFormatter
+                .ofPattern(DATE_FORMAT)
+                .withZone(ZoneId.of("Europe/Brussels"));
+        return ZonedDateTime.parse(dateStr, formatter);
     }
 
     @Override
@@ -45,7 +46,7 @@ public class EntsoeFileNameParser implements FileNameParser {
         if (!m.matches()) {
             return Optional.empty();
         }
-        DateTime date = parseDateTime(m.group(1));
+        ZonedDateTime date = parseDateTime(m.group(1));
         String timeScope = m.group(2).substring(0, 2);
         int forecastDistance;
         EntsoeGeographicalCode geographicalCode;
@@ -55,10 +56,10 @@ public class EntsoeFileNameParser implements FileNameParser {
                 forecastDistance = 0;
                 break;
             case "FO":
-                forecastDistance = 60 * (6 + date.getHourOfDay()) + date.getMinuteOfHour();                 // DACF generated at 18:00 one day ahead
+                forecastDistance = 60 * (6 + date.getHour()) + date.getMinute();                 // DACF generated at 18:00 one day ahead
                 break;
             case "2D":
-                forecastDistance = (60 * 24) + (60 * (6 + date.getHourOfDay())) + date.getMinuteOfHour();   // D2CF generated at 18:00 two day ahead
+                forecastDistance = (60 * 24) + (60 * (6 + date.getHour())) + date.getMinute();   // D2CF generated at 18:00 two day ahead
                 break;
             default:
                 try { // ID ?

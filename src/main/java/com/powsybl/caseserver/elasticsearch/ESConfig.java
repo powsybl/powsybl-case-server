@@ -6,9 +6,6 @@
  */
 package com.powsybl.caseserver.elasticsearch;
 
-import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +17,8 @@ import org.springframework.data.elasticsearch.client.elc.ElasticsearchConfigurat
 import org.springframework.data.elasticsearch.core.convert.ElasticsearchCustomConversions;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -69,23 +68,22 @@ public class ESConfig extends ElasticsearchConfiguration {
     }
 
     @WritingConverter
-    enum DateToStringConverter implements Converter<DateTime, String> {
+    enum DateToStringConverter implements Converter<ZonedDateTime, String> {
         INSTANCE;
 
         @Override
-        public String convert(DateTime date) {
-            return date.toDateTimeISO().toString();
+        public String convert(ZonedDateTime date) {
+            return date.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         }
     }
 
     @ReadingConverter
-    enum StringToDateConverter implements Converter<String, DateTime> {
+    enum StringToDateConverter implements Converter<String, ZonedDateTime> {
         INSTANCE;
 
         @Override
-        public DateTime convert(String s) {
-            DateTimeFormatter parser = ISODateTimeFormat.dateTimeParser();
-            return parser.parseDateTime(s);
+        public ZonedDateTime convert(String s) {
+            return ZonedDateTime.parse(s, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         }
     }
 }

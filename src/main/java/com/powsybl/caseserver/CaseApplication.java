@@ -7,7 +7,7 @@
 package com.powsybl.caseserver;
 
 import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.datatype.joda.JodaModule;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -27,6 +27,6 @@ public class CaseApplication {
 
     @Bean
     public Module module() {
-        return new JodaModule();
+        return new JavaTimeModule();
     }
 }

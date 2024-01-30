@@ -12,11 +12,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
-import org.joda.time.DateTime;
 import org.springframework.data.annotation.TypeAlias;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.messaging.Message;
 
+import java.time.ZonedDateTime;
 import java.util.Objects;
 
 /**
@@ -37,7 +37,7 @@ public class CgmesCaseInfos extends CaseInfos {
     public static final String TSO_HEADER_KEY = "tso";
     public static final String VERSION_HEADER_KEY = "version";
 
-    @NonNull private DateTime date;
+    @NonNull private ZonedDateTime date;
     @NonNull private String businessProcess;
     @NonNull private String tso;
     @NonNull private Integer version;
@@ -67,6 +67,6 @@ public class CgmesCaseInfos extends CaseInfos {
 
     @Override
     public int hashCode() {
-        return super.hashCode() + Objects.hash(date.getMillis(), businessProcess, tso, version);
+        return super.hashCode() + Objects.hash(date.toInstant().toEpochMilli(), businessProcess, tso, version);
     }
 }
