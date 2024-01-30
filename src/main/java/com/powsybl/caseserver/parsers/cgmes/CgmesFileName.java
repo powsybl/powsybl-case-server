@@ -10,7 +10,8 @@ import com.powsybl.caseserver.parsers.FileNameInfos;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
-import org.joda.time.DateTime;
+
+import java.time.ZonedDateTime;
 
 /**
  * A utility class to work with Cgmes file name parsers.
@@ -21,7 +22,7 @@ import org.joda.time.DateTime;
 @Getter
 public class CgmesFileName implements FileNameInfos {
 
-    @NonNull private DateTime date;
+    @NonNull private ZonedDateTime date;
     @NonNull private String businessProcess;
     @NonNull private String tso;
     @NonNull private Integer version;

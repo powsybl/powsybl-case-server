@@ -9,17 +9,17 @@ package com.powsybl.caseserver.dto.entsoe;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.entsoe.util.EntsoeGeographicalCode;
 import com.powsybl.iidm.network.Country;
-import java.util.Objects;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
-import org.joda.time.DateTime;
 import org.springframework.data.annotation.TypeAlias;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.messaging.Message;
+
+import java.time.ZonedDateTime;
+import java.util.Objects;
 
 /**
  * A class to store metatada for Entsoe file name parser
@@ -40,7 +40,7 @@ public class EntsoeCaseInfos extends CaseInfos {
     public static final String COUNTRY_HEADER_KEY = "country";
     public static final String VERSION_HEADER_KEY = "version";
 
-    @NonNull private DateTime date;
+    @NonNull private ZonedDateTime date;
     @NonNull private Integer forecastDistance;
     @NonNull private EntsoeGeographicalCode geographicalCode;
     @NonNull private Integer version;
@@ -75,6 +75,6 @@ public class EntsoeCaseInfos extends CaseInfos {
 
     @Override
     public int hashCode() {
-        return super.hashCode() + Objects.hash(date.getMillis(), forecastDistance, geographicalCode, version);
+        return super.hashCode() + Objects.hash(date.toInstant().toEpochMilli(), forecastDistance, geographicalCode, version);
     }
 }
