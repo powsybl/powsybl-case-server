@@ -27,11 +27,12 @@ public class EntsoeFileNameParser implements FileNameParser {
 
     public static final Pattern FILE_NAME_REGEX = Pattern.compile("(\\d{8}[_]\\d{4})[_](\\w{3})[_](\\w{3}).*");
     public static final String DATE_FORMAT = "yyyyMMdd_HHmm";
+    public static final String ZONE_ID = "Europe/Brussels";
 
     public static ZonedDateTime parseDateTime(String dateStr) {
         DateTimeFormatter formatter = DateTimeFormatter
                 .ofPattern(DATE_FORMAT)
-                .withZone(ZoneId.of("Europe/Brussels"));
+                .withZone(ZoneId.of(ZONE_ID));
         return ZonedDateTime.parse(dateStr, formatter);
     }
 
