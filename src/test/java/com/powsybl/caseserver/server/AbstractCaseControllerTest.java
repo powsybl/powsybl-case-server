@@ -37,6 +37,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -615,7 +616,7 @@ public abstract class AbstractCaseControllerTest extends AbstractContainerConfig
     }
 
     private String getDateSearchTerm(String entsoeFormatDate) {
-        String utcFormattedDate = EntsoeFileNameParser.parseDateTime(entsoeFormatDate).toDateTimeISO().toString();
+        String utcFormattedDate = EntsoeFileNameParser.parseDateTime(entsoeFormatDate).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         return "date:\"" + utcFormattedDate + "\"";
     }
 }
