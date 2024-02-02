@@ -6,6 +6,8 @@
  */
 package com.powsybl.caseserver;
 
+import lombok.Getter;
+
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.UUID;
@@ -13,6 +15,7 @@ import java.util.UUID;
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  */
+@Getter
 public final class CaseException extends RuntimeException {
 
     public enum Type {
@@ -21,7 +24,8 @@ public final class CaseException extends RuntimeException {
         ILLEGAL_FILE_NAME,
         DIRECTORY_ALREADY_EXISTS,
         DIRECTORY_EMPTY,
-        DIRECTORY_NOT_FOUND
+        DIRECTORY_NOT_FOUND,
+        UNSUPPORTED_FORMAT
     }
 
     private final Type type;
@@ -29,10 +33,6 @@ public final class CaseException extends RuntimeException {
     private CaseException(Type type, String msg) {
         super(msg);
         this.type = Objects.requireNonNull(type);
-    }
-
-    public Type getType() {
-        return type;
     }
 
     public static CaseException createDirectoryAreadyExists(Path directory) {
@@ -63,5 +63,9 @@ public final class CaseException extends RuntimeException {
     public static CaseException createIllegalCaseName(String caseName) {
         Objects.requireNonNull(caseName);
         return new CaseException(Type.ILLEGAL_FILE_NAME, "This is not an acceptable case name: " + caseName);
+    }
+
+    public static CaseException createUnsupportedFormat(String format) {
+        return new CaseException(Type.UNSUPPORTED_FORMAT, "The format: " + format + " is unsupported");
     }
 }

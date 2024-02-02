@@ -7,15 +7,6 @@
 package com.powsybl.caseserver;
 
 import com.powsybl.caseserver.dto.CaseInfos;
-import com.powsybl.iidm.network.Network;
-import com.powsybl.iidm.serde.NetworkSerDe;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.UUID;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -24,10 +15,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.UUID;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
 
@@ -92,32 +98,22 @@ public class CaseController {
 
     @GetMapping(value = "/cases/{caseUuid}")
     @Operation(summary = "Get a case")
-    public ResponseEntity<byte[]> getCase(@PathVariable("caseUuid") UUID caseUuid,
-                                                         @RequestParam(value = "xiidm", required = false, defaultValue = "true") boolean xiidmFormat) {
+    public ResponseEntity<byte[]> getCase(
+            @PathVariable UUID caseUuid,
+            @RequestParam(required = false, defaultValue = "XIIDM") String format) throws IOException {
         LOGGER.debug("getCase request received with parameter caseUuid = {}", caseUuid);
-        if (xiidmFormat) {
-            Network network = caseService.loadNetwork(caseUuid).orElse(null);
-            if (network == null) {
-                return ResponseEntity.noContent().build();
-            }
-            try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-                NetworkSerDe.write(network, os);
-                os.flush();
-                return ResponseEntity.ok()
-                        .contentType(MediaType.APPLICATION_XML)
-                        .body(os.toByteArray());
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        } else {
-            byte[] bytes = caseService.getCaseBytes(caseUuid).orElse(null);
-            if (bytes == null) {
-                return ResponseEntity.noContent().build();
-            }
+        return caseService.exportCase(caseUuid, format).map(networkInfos -> {
+            var headers = new HttpHeaders();
+            headers.setContentDisposition(
+                    ContentDisposition.builder("attachment")
+                    .filename(networkInfos.networkName(), StandardCharsets.UTF_8)
+                    .build()
+            );
             return ResponseEntity.ok()
+                    .headers(headers)
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                    .body(bytes);
-        }
+                    .body(networkInfos.networkData());
+        }).orElse(ResponseEntity.noContent().build());
     }
 
     @GetMapping(value = "/cases/{caseUuid}/exists")

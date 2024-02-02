@@ -7,6 +7,7 @@
 package com.powsybl.caseserver;
 
 import com.powsybl.caseserver.dto.CaseInfos;
+import com.powsybl.caseserver.dto.ExportNetworkInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.parsers.FileNameInfos;
 import com.powsybl.caseserver.parsers.FileNameParser;
@@ -14,10 +15,13 @@ import com.powsybl.caseserver.parsers.FileNameParsers;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.commons.datasource.DataSource;
+import com.powsybl.commons.datasource.MemDataSource;
 import com.powsybl.computation.ComputationManager;
 import com.powsybl.computation.local.LocalComputationManager;
+import com.powsybl.iidm.network.Exporter;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
+import com.powsybl.iidm.network.VariantManagerConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,18 +35,27 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.*;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.ArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
 
@@ -143,25 +156,6 @@ public class CaseService {
             }
         }
         return null;
-    }
-
-    Optional<byte[]> getCaseBytes(UUID caseUuid) {
-        checkStorageInitialization();
-
-        Path caseFile = getCaseFile(caseUuid);
-        if (caseFile == null) {
-            return Optional.empty();
-        }
-
-        if (Files.exists(caseFile) && Files.isRegularFile(caseFile)) {
-            try {
-                byte[] bytes = Files.readAllBytes(caseFile);
-                return Optional.of(bytes);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-        return Optional.empty();
     }
 
     boolean caseExists(UUID caseName) {
@@ -381,5 +375,46 @@ public class CaseService {
             }
         });
         return cases;
+    }
+
+    public Optional<ExportNetworkInfos> exportCase(UUID caseUuid, String format) throws IOException {
+        if (!Exporter.getFormats().contains(format)) {
+            throw CaseException.createUnsupportedFormat(format);
+        }
+
+        var optionalNetwork = loadNetwork(caseUuid);
+        if (optionalNetwork.isPresent()) {
+            var network = optionalNetwork.get();
+            var memDataSource = new MemDataSource();
+
+            network.write(format, null, memDataSource);
+
+            var names = memDataSource.listNames(".*");
+            String networkName = network.getNameOrId() + "_" + VariantManagerConstants.INITIAL_VARIANT_ID;
+            byte[] networkData;
+            if (names.size() == 1) {
+                String name = names.stream().findFirst().get();
+                networkName += name;
+                networkData = memDataSource.getData(name);
+            } else {
+                networkName += ".zip";
+                networkData = createZipFile(names, memDataSource);
+            }
+            return Optional.of(new ExportNetworkInfos(networkName, networkData));
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    private byte[] createZipFile(Collection<String> names, MemDataSource dataSource) throws IOException {
+        try (var outputStream = new ByteArrayOutputStream();
+             var zipOutputStream = new ZipOutputStream(outputStream)) {
+            for (String name : names) {
+                zipOutputStream.putNextEntry(new ZipEntry(name));
+                zipOutputStream.write(dataSource.getData(name));
+                zipOutputStream.closeEntry();
+            }
+            return outputStream.toByteArray();
+        }
     }
 }
