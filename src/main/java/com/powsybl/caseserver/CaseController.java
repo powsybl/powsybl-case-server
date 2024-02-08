@@ -30,7 +30,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
@@ -106,7 +105,7 @@ public class CaseController {
             var headers = new HttpHeaders();
             headers.setContentDisposition(
                     ContentDisposition.builder("attachment")
-                    .filename(networkInfos.networkName(), StandardCharsets.UTF_8)
+                    .filename(networkInfos.networkName())
                     .build()
             );
             return ResponseEntity.ok()

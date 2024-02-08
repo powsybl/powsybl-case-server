@@ -21,7 +21,7 @@ import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Exporter;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
-import com.powsybl.iidm.network.VariantManagerConstants;
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -389,16 +389,16 @@ public class CaseService {
 
             network.write(format, null, memDataSource);
 
-            var names = memDataSource.listNames(".*");
-            String networkName = network.getNameOrId() + "_" + VariantManagerConstants.INITIAL_VARIANT_ID;
+            var extensions = memDataSource.listNames(".*");
+            String networkName = FilenameUtils.removeExtension(getCaseName(caseUuid));
             byte[] networkData;
-            if (names.size() == 1) {
-                String name = names.stream().findFirst().get();
-                networkName += name;
-                networkData = memDataSource.getData(name);
+            if (extensions.size() == 1) {
+                String extension = extensions.stream().findFirst().get();
+                networkName += extension;
+                networkData = memDataSource.getData(extension);
             } else {
                 networkName += ".zip";
-                networkData = createZipFile(names, memDataSource);
+                networkData = createZipFile(extensions, memDataSource);
             }
             return Optional.of(new ExportCaseInfos(networkName, networkData));
         } else {
