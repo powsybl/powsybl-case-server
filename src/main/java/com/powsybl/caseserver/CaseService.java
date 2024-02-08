@@ -7,7 +7,7 @@
 package com.powsybl.caseserver;
 
 import com.powsybl.caseserver.dto.CaseInfos;
-import com.powsybl.caseserver.dto.ExportNetworkInfos;
+import com.powsybl.caseserver.dto.ExportCaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.parsers.FileNameInfos;
 import com.powsybl.caseserver.parsers.FileNameParser;
@@ -377,7 +377,7 @@ public class CaseService {
         return cases;
     }
 
-    public Optional<ExportNetworkInfos> exportCase(UUID caseUuid, String format) throws IOException {
+    public Optional<ExportCaseInfos> exportCase(UUID caseUuid, String format) throws IOException {
         if (!Exporter.getFormats().contains(format)) {
             throw CaseException.createUnsupportedFormat(format);
         }
@@ -400,7 +400,7 @@ public class CaseService {
                 networkName += ".zip";
                 networkData = createZipFile(names, memDataSource);
             }
-            return Optional.of(new ExportNetworkInfos(networkName, networkData));
+            return Optional.of(new ExportCaseInfos(networkName, networkData));
         } else {
             return Optional.empty();
         }

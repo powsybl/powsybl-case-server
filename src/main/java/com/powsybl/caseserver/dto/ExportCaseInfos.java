@@ -9,5 +9,5 @@ package com.powsybl.caseserver.dto;
 /**
  * @author David SARTORI <david.sartori_externe at rte-france.com>
  */
-public record ExportNetworkInfos(String networkName, byte[] networkData) {
+public record ExportCaseInfos(String networkName, byte[] networkData) {
 }
