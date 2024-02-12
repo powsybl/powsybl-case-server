@@ -44,10 +44,21 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -210,24 +221,23 @@ public class CaseControllerTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].format").value(TEST_CASE_FORMAT))
                 .andReturn();
 
-        // retrieve a case as a network
-        String testCaseContent = new String(ByteStreams.toByteArray(getClass().getResourceAsStream("/" + TEST_CASE)), StandardCharsets.UTF_8);
-        mvc.perform(get(GET_CASE_URL, firstCaseUuid)
-                .param("xiidm", "false"))
-                .andExpect(status().isOk())
-                .andExpect(content().xml(testCaseContent))
-                .andReturn();
-
         // retrieve a case
-        mvc.perform(get(GET_CASE_URL, firstCaseUuid))
+        String testCaseContent = new String(ByteStreams.toByteArray(getClass().getResourceAsStream("/" + TEST_CASE)), StandardCharsets.UTF_8);
+        var mvcResult = mvc.perform(post(GET_CASE_URL, firstCaseUuid))
                 .andExpect(status().isOk())
                 .andExpect(content().xml(testCaseContent))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_OCTET_STREAM))
                 .andReturn();
+        assertThat(mvcResult.getResponse().getHeader("content-disposition")).contains("attachment;");
 
-        // retrieve a non existing case
-        mvc.perform(get(GET_CASE_URL, UUID.randomUUID()))
+        // retrieve a non-existing case
+        mvc.perform(post(GET_CASE_URL, UUID.randomUUID()))
                 .andExpect(status().isNoContent())
                 .andReturn();
+
+        // retrieve a case in a non-existing format
+        mvc.perform(post(GET_CASE_URL, firstCaseUuid).param("format", "JPEG"))
+                        .andExpect(status().isUnprocessableEntity());
 
         // delete the case
         mvc.perform(delete(GET_CASE_URL, firstCaseUuid))
@@ -369,7 +379,7 @@ public class CaseControllerTest {
                 .andReturn();
 
         // list the cases and expect one case
-        MvcResult mvcResult = mvc.perform(get("/v1/cases"))
+        mvcResult = mvc.perform(get("/v1/cases"))
                 .andExpect(status().isOk())
                 .andReturn();
 
