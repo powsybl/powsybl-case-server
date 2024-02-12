@@ -49,8 +49,10 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -377,7 +379,7 @@ public class CaseService {
         return cases;
     }
 
-    public Optional<ExportCaseInfos> exportCase(UUID caseUuid, String format) throws IOException {
+    public Optional<ExportCaseInfos> exportCase(UUID caseUuid, String format, Map<String, Object> formatParameters) throws IOException {
         if (!Exporter.getFormats().contains(format)) {
             throw CaseException.createUnsupportedFormat(format);
         }
@@ -386,8 +388,13 @@ public class CaseService {
         if (optionalNetwork.isPresent()) {
             var network = optionalNetwork.get();
             var memDataSource = new MemDataSource();
+            Properties exportProperties = null;
+            if (formatParameters != null) {
+                exportProperties = new Properties();
+                exportProperties.putAll(formatParameters);
+            }
 
-            network.write(format, null, memDataSource);
+            network.write(format, exportProperties, memDataSource);
 
             var extensions = memDataSource.listNames(".*");
             String networkName = FilenameUtils.removeExtension(getCaseName(caseUuid));

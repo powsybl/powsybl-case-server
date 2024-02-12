@@ -8,6 +8,8 @@ package com.powsybl.caseserver;
 
 import com.powsybl.caseserver.dto.CaseInfos;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,6 +35,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.UUID;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
@@ -95,13 +100,18 @@ public class CaseController {
         return ResponseEntity.ok().body(caseName);
     }
 
-    @GetMapping(value = "/cases/{caseUuid}")
-    @Operation(summary = "Get a case")
-    public ResponseEntity<byte[]> getCase(
+    @PostMapping(value = "/cases/{caseUuid}", consumes = "application/json")
+    @Operation(summary = "Export a case",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Parameters for chosen format",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = Properties.class))
+            )
+    )
+    public ResponseEntity<byte[]> exportCase(
             @PathVariable UUID caseUuid,
-            @RequestParam(required = false, defaultValue = "XIIDM") String format) throws IOException {
+            @RequestParam(required = false, defaultValue = "XIIDM") String format,
+            @RequestBody(required = false) Map<String, Object> formatParameters) throws IOException {
         LOGGER.debug("getCase request received with parameter caseUuid = {}", caseUuid);
-        return caseService.exportCase(caseUuid, format).map(networkInfos -> {
+        return caseService.exportCase(caseUuid, format, formatParameters).map(networkInfos -> {
             var headers = new HttpHeaders();
             headers.setContentDisposition(
                     ContentDisposition.builder("attachment")
