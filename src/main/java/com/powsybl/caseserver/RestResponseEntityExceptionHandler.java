@@ -30,11 +30,12 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
             LOGGER.error(ex.getMessage(), ex);
         }
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
-        if (ex instanceof CaseException) {
-            switch (((CaseException) ex).getType()) {
+        if (ex instanceof CaseException caseException) {
+            switch (caseException.getType()) {
                 case FILE_NOT_IMPORTABLE:
                 case ILLEGAL_FILE_NAME:
                 case STORAGE_DIR_NOT_CREATED:
+                case UNSUPPORTED_FORMAT:
                     status = HttpStatus.UNPROCESSABLE_ENTITY;
                     break;
                 default:
