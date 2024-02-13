@@ -16,6 +16,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import static com.powsybl.caseserver.CaseException.Type.FILE_NOT_IMPORTABLE;
+import static com.powsybl.caseserver.CaseException.Type.ILLEGAL_FILE_NAME;
+import static com.powsybl.caseserver.CaseException.Type.STORAGE_DIR_NOT_CREATED;
+import static com.powsybl.caseserver.CaseException.Type.UNSUPPORTED_FORMAT;
+
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  */
@@ -31,18 +36,11 @@ public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionH
         }
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
         if (ex instanceof CaseException caseException) {
-            switch (caseException.getType()) {
-                case FILE_NOT_IMPORTABLE:
-                case ILLEGAL_FILE_NAME:
-                case STORAGE_DIR_NOT_CREATED:
-                case UNSUPPORTED_FORMAT:
-                    status = HttpStatus.UNPROCESSABLE_ENTITY;
-                    break;
-                default:
-                    break;
+            var type = caseException.getType();
+            if (type == FILE_NOT_IMPORTABLE || type == ILLEGAL_FILE_NAME || type == STORAGE_DIR_NOT_CREATED || type == UNSUPPORTED_FORMAT) {
+                status = HttpStatus.UNPROCESSABLE_ENTITY;
             }
         }
-
         return handleExceptionInternal(ex, ex.getMessage(), new HttpHeaders(), status, request);
     }
 }

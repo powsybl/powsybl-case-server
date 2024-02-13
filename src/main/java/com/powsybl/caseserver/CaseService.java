@@ -400,7 +400,7 @@ public class CaseService {
             String networkName = FilenameUtils.removeExtension(getCaseName(caseUuid));
             byte[] networkData;
             if (extensions.size() == 1) {
-                String extension = extensions.stream().findFirst().get();
+                String extension = extensions.iterator().next();
                 networkName += extension;
                 networkData = memDataSource.getData(extension);
             } else {
