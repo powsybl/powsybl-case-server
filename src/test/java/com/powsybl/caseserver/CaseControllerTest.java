@@ -230,6 +230,13 @@ public class CaseControllerTest {
                 .andReturn();
         assertThat(mvcResult.getResponse().getHeader("content-disposition")).contains("attachment;");
 
+        // retrieve a case in CGMES format
+        mvcResult = mvc.perform(post(GET_CASE_URL, firstCaseUuid).param("format", "CGMES"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_OCTET_STREAM))
+                .andReturn();
+        assertThat(mvcResult.getResponse().getHeader("content-disposition")).contains("attachment;");
+
         // retrieve a non-existing case
         mvc.perform(post(GET_CASE_URL, UUID.randomUUID()))
                 .andExpect(status().isNoContent())
