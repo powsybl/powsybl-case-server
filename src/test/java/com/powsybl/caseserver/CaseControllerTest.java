@@ -221,9 +221,10 @@ public class CaseControllerTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].format").value(TEST_CASE_FORMAT))
                 .andReturn();
 
-        // retrieve a case
         String testCaseContent = new String(ByteStreams.toByteArray(getClass().getResourceAsStream("/" + TEST_CASE)), StandardCharsets.UTF_8);
-        var mvcResult = mvc.perform(post(GET_CASE_URL, firstCaseUuid))
+
+        // retrieve a case in XIIDM format
+        var mvcResult = mvc.perform(post(GET_CASE_URL, firstCaseUuid).param("format", "XIIDM"))
                 .andExpect(status().isOk())
                 .andExpect(content().xml(testCaseContent))
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_OCTET_STREAM))
@@ -238,7 +239,7 @@ public class CaseControllerTest {
         assertThat(mvcResult.getResponse().getHeader("content-disposition")).contains("attachment;");
 
         // retrieve a non-existing case
-        mvc.perform(post(GET_CASE_URL, UUID.randomUUID()))
+        mvc.perform(post(GET_CASE_URL, UUID.randomUUID()).param("format", "XIIDM"))
                 .andExpect(status().isNoContent())
                 .andReturn();
 

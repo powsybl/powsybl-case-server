@@ -108,7 +108,7 @@ public class CaseController {
     )
     public ResponseEntity<byte[]> exportCase(
             @PathVariable UUID caseUuid,
-            @RequestParam(required = false, defaultValue = "XIIDM") String format,
+            @RequestParam String format,
             @RequestBody(required = false) Map<String, Object> formatParameters) throws IOException {
         LOGGER.debug("getCase request received with parameter caseUuid = {}", caseUuid);
         return caseService.exportCase(caseUuid, format, formatParameters).map(networkInfos -> {
