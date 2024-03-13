@@ -396,16 +396,16 @@ public class CaseService {
 
             network.write(format, exportProperties, memDataSource);
 
-            var extensions = memDataSource.listNames(".*");
+            var listNames = memDataSource.listNames(".*");
             String networkName = FilenameUtils.removeExtension(getCaseName(caseUuid));
             byte[] networkData;
-            if (extensions.size() == 1) {
-                String extension = extensions.iterator().next();
+            if (listNames.size() == 1) {
+                String extension = listNames.iterator().next();
                 networkName += extension;
                 networkData = memDataSource.getData(extension);
             } else {
                 networkName += ".zip";
-                networkData = createZipFile(extensions, memDataSource);
+                networkData = createZipFile(listNames, memDataSource);
             }
             return Optional.of(new ExportCaseInfos(networkName, networkData));
         } else {
