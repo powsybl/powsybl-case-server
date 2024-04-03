@@ -379,6 +379,25 @@ public class CaseService {
         return cases;
     }
 
+    Optional<byte[]> getCaseBytes(UUID caseUuid) {
+        checkStorageInitialization();
+
+        Path caseFile = getCaseFile(caseUuid);
+        if (caseFile == null) {
+            return Optional.empty();
+        }
+
+        if (Files.exists(caseFile) && Files.isRegularFile(caseFile)) {
+            try {
+                byte[] bytes = Files.readAllBytes(caseFile);
+                return Optional.of(bytes);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        return Optional.empty();
+    }
+
     public Optional<ExportCaseInfos> exportCase(UUID caseUuid, String format, Map<String, Object> formatParameters) throws IOException {
         if (!Exporter.getFormats().contains(format)) {
             throw CaseException.createUnsupportedFormat(format);
