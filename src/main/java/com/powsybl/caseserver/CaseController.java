@@ -100,6 +100,20 @@ public class CaseController {
         return ResponseEntity.ok().body(caseName);
     }
 
+    @GetMapping(value = "/cases/{caseUuid}")
+    @Operation(summary = "Download a case")
+    public ResponseEntity<byte[]> downloadCase(@PathVariable("caseUuid") UUID caseUuid) {
+        LOGGER.debug("getCase request received with parameter caseUuid = {}", caseUuid);
+        byte[] bytes = caseService.getCaseBytes(caseUuid).orElse(null);
+        if (bytes == null) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(bytes);
+
+    }
+
     @PostMapping(value = "/cases/{caseUuid}", consumes = "application/json")
     @Operation(summary = "Export a case",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Parameters for chosen format",
@@ -110,7 +124,7 @@ public class CaseController {
             @PathVariable UUID caseUuid,
             @RequestParam String format,
             @RequestBody(required = false) Map<String, Object> formatParameters) throws IOException {
-        LOGGER.debug("getCase request received with parameter caseUuid = {}", caseUuid);
+        LOGGER.debug("exportCase request received with parameter caseUuid = {}", caseUuid);
         return caseService.exportCase(caseUuid, format, formatParameters).map(networkInfos -> {
             var headers = new HttpHeaders();
             headers.setContentDisposition(

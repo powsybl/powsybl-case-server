@@ -231,19 +231,30 @@ public class CaseControllerTest {
                 .andReturn();
         assertThat(mvcResult.getResponse().getHeader("content-disposition")).contains("attachment;");
 
-        // retrieve a case in CGMES format
+        // downlaod a case
+        mvc.perform(get(GET_CASE_URL, firstCaseUuid))
+                .andExpect(status().isOk())
+                .andExpect(content().xml(testCaseContent))
+                .andReturn();
+
+        // downlaod a non existing case
+        mvc.perform(get(GET_CASE_URL, UUID.randomUUID()))
+                .andExpect(status().isNoContent())
+                .andReturn();
+
+        // export a case in CGMES format
         mvcResult = mvc.perform(post(GET_CASE_URL, firstCaseUuid).param("format", "CGMES"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_OCTET_STREAM))
                 .andReturn();
         assertThat(mvcResult.getResponse().getHeader("content-disposition")).contains("attachment;");
 
-        // retrieve a non-existing case
+        // export a non-existing case
         mvc.perform(post(GET_CASE_URL, UUID.randomUUID()).param("format", "XIIDM"))
                 .andExpect(status().isNoContent())
                 .andReturn();
 
-        // retrieve a case in a non-existing format
+        // export a case in a non-existing format
         mvc.perform(post(GET_CASE_URL, firstCaseUuid).param("format", "JPEG"))
                         .andExpect(status().isUnprocessableEntity());
 
