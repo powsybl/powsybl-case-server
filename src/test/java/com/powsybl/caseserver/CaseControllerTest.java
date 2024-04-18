@@ -306,7 +306,7 @@ public class CaseControllerTest {
         assertNull(caseMetadataEntity.getExpirationDate());
 
         //duplicate an existing case
-        MvcResult duplicateResult = mvc.perform(post("/v1/cases").param("duplicateFrom", caseUuid.toString()))
+        MvcResult duplicateResult = mvc.perform(post("/v1/cases/" + caseUuid + "/duplicate"))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -347,8 +347,7 @@ public class CaseControllerTest {
         assertNotNull(caseMetadataEntity.getExpirationDate());
 
         //duplicate an existing case withExpiration
-        MvcResult duplicateResult2 = mvc.perform(post("/v1/cases")
-                .param("duplicateFrom", caseUuid.toString())
+        MvcResult duplicateResult2 = mvc.perform(post("/v1/cases/" + caseUuid + "/duplicate")
                 .param("withExpiration", "true"))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -393,7 +392,7 @@ public class CaseControllerTest {
         assertTrue(deleteExpirationResult.getResponse().getContentAsString().contains("case " + randomUuid + " not found"));
 
         // assert that duplicating a non existing case should return a 404
-        mvc.perform(post("/v1/cases").param("duplicateFrom", UUID.randomUUID().toString()))
+        mvc.perform(post("/v1/cases/" + UUID.randomUUID() + "/duplicate"))
                 .andExpect(status().isNotFound())
                 .andReturn();
 
