@@ -157,13 +157,13 @@ public class CaseController {
         return ResponseEntity.ok().body(caseUuid);
     }
 
-    @PostMapping(value = "/cases/{caseId}/duplicate")
+    @PostMapping(value = "/cases", params = "duplicateFrom")
     @Operation(summary = "create a case from an existing one")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "The case has been duplicated"),
         @ApiResponse(responseCode = "404", description = "Source case not found"),
         @ApiResponse(responseCode = "500", description = "An error occurred during the case file duplication")})
     public ResponseEntity<UUID> duplicateCase(
-            @PathVariable("caseId") UUID caseId,
+            @RequestParam("duplicateFrom") UUID caseId,
             @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration) {
         LOGGER.debug("duplicateCase request received with parameter sourceCaseUuid = {}", caseId);
         UUID newCaseUuid = caseService.duplicateCase(caseId, withExpiration);
