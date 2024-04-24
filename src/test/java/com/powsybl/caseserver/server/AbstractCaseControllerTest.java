@@ -266,7 +266,7 @@ public abstract class AbstractCaseControllerTest extends AbstractContainerConfig
         assertNull(caseMetadataEntity.getExpirationDate());
 
         //duplicate an existing case
-        MvcResult duplicateResult = mvc.perform(post("/v1/cases/" + caseUuid + "/duplicate"))
+        MvcResult duplicateResult = mvc.perform(post("/v1/cases?duplicateFrom=" + caseUuid))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -307,7 +307,7 @@ public abstract class AbstractCaseControllerTest extends AbstractContainerConfig
         assertNotNull(caseMetadataEntity.getExpirationDate());
 
         //duplicate an existing case withExpiration
-        MvcResult duplicateResult2 = mvc.perform(post("/v1/cases/" + caseUuid + "/duplicate")
+        MvcResult duplicateResult2 = mvc.perform(post("/v1/cases?duplicateFrom=" + caseUuid )
                 .param("withExpiration", "true"))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -352,7 +352,7 @@ public abstract class AbstractCaseControllerTest extends AbstractContainerConfig
         assertTrue(deleteExpirationResult.getResponse().getContentAsString().contains("case " + randomUuid + " not found"));
 
         // assert that duplicating a non existing case should return a 404
-        mvc.perform(post("/v1/cases/" + UUID.randomUUID() + "/duplicate"))
+        mvc.perform(post("/v1/cases?duplicateFrom=" + UUID.randomUUID()))
                 .andExpect(status().isNotFound())
                 .andReturn();
 
