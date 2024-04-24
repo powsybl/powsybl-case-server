@@ -6,6 +6,8 @@
  */
 package com.powsybl.caseserver;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteStreams;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -42,6 +44,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -93,6 +96,9 @@ public class CaseControllerTest {
 
     @Autowired
     private OutputDestination outputDestination;
+
+    @Autowired
+    private ObjectMapper mapper;
 
     @Value("${case-store-directory}")
     private String rootDirectory;
@@ -683,5 +689,25 @@ public class CaseControllerTest {
     private String getDateSearchTerm(String entsoeFormatDate) {
         String utcFormattedDate = EntsoeFileNameParser.parseDateTime(entsoeFormatDate).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         return "date:\"" + utcFormattedDate + "\"";
+    }
+
+    @Test
+    public void invalidFileInCaseDirectoryShouldBeIgnored() throws Exception {
+        createStorageDir();
+        Path filePath = fileSystem.getPath(rootDirectory).resolve("randomFile.txt");
+        Files.createFile(filePath);
+        importCase(TEST_CASE, false);
+
+        MvcResult mvcResult = mvc.perform(get("/v1/cases"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String resultAsString = mvcResult.getResponse().getContentAsString();
+        List<CaseInfos> caseInfos = mapper.readValue(resultAsString, new TypeReference<>() { });
+        assertEquals(1, caseInfos.size());
+        assertEquals("testCase.xiidm", caseInfos.get(0).getName());
+
+        Files.delete(filePath);
+        mvc.perform(delete("/v1/cases"))
+                .andExpect(status().isOk());
     }
 }

@@ -111,10 +111,20 @@ public class CaseService {
     public List<CaseInfos> getCases(Path directory) {
         try (Stream<Path> walk = Files.walk(directory)) {
             return walk.filter(Files::isRegularFile)
-                .map(file -> createInfos(file.getFileName().toString(), UUID.fromString(file.getParent().getFileName().toString()), getFormat(file)))
-                .collect(Collectors.toList());
+                    .map(this::getCaseInfos)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        }
+    }
+
+    private CaseInfos getCaseInfos(Path file) {
+        try {
+            return createInfos(file.getFileName().toString(), UUID.fromString(file.getParent().getFileName().toString()), getFormat(file));
+        } catch (Exception e) {
+            LOGGER.error("Error processing file {}: {}", file.getFileName(), e.getMessage(), e);
+            return null;
         }
     }
 
