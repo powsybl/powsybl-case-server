@@ -347,7 +347,7 @@ public class CaseControllerTest {
         assertNotNull(caseMetadataEntity.getExpirationDate());
 
         //duplicate an existing case withExpiration
-        MvcResult duplicateResult2 = mvc.perform(post("/v1/cases?duplicateFrom=" + caseUuid )
+        MvcResult duplicateResult2 = mvc.perform(post("/v1/cases?duplicateFrom=" + caseUuid)
                 .param("withExpiration", "true"))
                 .andExpect(status().isOk())
                 .andReturn();
