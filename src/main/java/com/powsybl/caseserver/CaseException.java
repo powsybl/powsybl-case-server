@@ -6,6 +6,8 @@
  */
 package com.powsybl.caseserver;
 
+import lombok.Getter;
+
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.UUID;
@@ -13,6 +15,7 @@ import java.util.UUID;
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  */
+@Getter
 public final class CaseException extends RuntimeException {
 
     public enum Type {
@@ -23,7 +26,8 @@ public final class CaseException extends RuntimeException {
         DIRECTORY_EMPTY,
         DIRECTORY_NOT_FOUND,
         TEMP_FILE_INIT,
-        TEMP_FILE_PROCESS, TEMP_DIRECTORY_CREATION
+        TEMP_FILE_PROCESS, TEMP_DIRECTORY_CREATION,
+        UNSUPPORTED_FORMAT
     }
 
     private final Type type;
@@ -100,4 +104,7 @@ public final class CaseException extends RuntimeException {
         return CaseException.processTempFile(uuid, null);
     }
 
+    public static CaseException createUnsupportedFormat(String format) {
+        return new CaseException(Type.UNSUPPORTED_FORMAT, "The format: " + format + " is unsupported");
+    }
 }

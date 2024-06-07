@@ -8,6 +8,7 @@ package com.powsybl.caseserver.server;
 
 import com.powsybl.caseserver.CaseException;
 import com.powsybl.caseserver.dto.CaseInfos;
+import com.powsybl.caseserver.dto.ExportCaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
@@ -221,7 +222,7 @@ public class ObjectStorageService implements S3CaseService {
     }
 
     @Override
-    public CaseInfos getCase(UUID caseUuid) {
+    public CaseInfos getCaseInfos(UUID caseUuid) {
         var caseFileSummaries = getCaseFileSummaries(caseUuid);
         if (caseFileSummaries.isEmpty()) {
             return null;
@@ -232,7 +233,7 @@ public class ObjectStorageService implements S3CaseService {
 
     @Override
     public String getCaseName(UUID caseUuid) {
-        CaseInfos caseInfos = getCase(caseUuid);
+        CaseInfos caseInfos = getCaseInfos(caseUuid);
         return caseInfos.getName();
     }
 
@@ -253,6 +254,11 @@ public class ObjectStorageService implements S3CaseService {
             LOGGER.error("The expected key does not exist in the bucket s3 : {}", caseFileKey);
             return Optional.empty();
         }
+    }
+
+    @Override
+    public Optional<ExportCaseInfos> exportCase(UUID caseUuid, String format, Map<String, Object> formatParameters) throws IOException {
+        return Optional.empty();
     }
 
     @Override
@@ -423,7 +429,7 @@ public class ObjectStorageService implements S3CaseService {
     public List<CaseInfos> getMetadata(List<UUID> ids) {
         List<CaseInfos> cases = new ArrayList<>();
         ids.forEach(caseUuid -> {
-            CaseInfos caseInfos = getCase(caseUuid);
+            CaseInfos caseInfos = getCaseInfos(caseUuid);
             if (Objects.nonNull(caseInfos)) {
                 cases.add(caseInfos);
             }

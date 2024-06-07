@@ -6,6 +6,8 @@
  */
 package com.powsybl.caseserver.server;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteStreams;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
@@ -37,8 +39,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.*;
@@ -75,6 +80,11 @@ public abstract class AbstractCaseControllerTest extends AbstractContainerConfig
     private OutputDestination outputDestination;
 
     @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
+
+    @Autowired
+    private ObjectMapper mapper;
+
+    @Value("${case-store-directory}")
     private String rootDirectory;
 
     private FileSystem fileSystem;
@@ -198,24 +208,42 @@ public abstract class AbstractCaseControllerTest extends AbstractContainerConfig
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].format").value(TEST_CASE_FORMAT))
                 .andReturn();
 
-        // retrieve a case as a network
         String testCaseContent = new String(ByteStreams.toByteArray(getClass().getResourceAsStream("/" + TEST_CASE)), StandardCharsets.UTF_8);
-        mvc.perform(get(GET_CASE_URL, firstCaseUuid)
-                .param("xiidm", "false"))
+
+        // retrieve a case in XIIDM format
+        var mvcResult = mvc.perform(post(GET_CASE_URL, firstCaseUuid).param("format", "XIIDM"))
                 .andExpect(status().isOk())
                 .andExpect(content().xml(testCaseContent))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_OCTET_STREAM))
                 .andReturn();
+        assertThat(mvcResult.getResponse().getHeader("content-disposition")).contains("attachment;");
 
-        // retrieve a case
+        // downlaod a case
         mvc.perform(get(GET_CASE_URL, firstCaseUuid))
                 .andExpect(status().isOk())
                 .andExpect(content().xml(testCaseContent))
                 .andReturn();
 
-        // retrieve a non existing case
+        // downlaod a non existing case
         mvc.perform(get(GET_CASE_URL, UUID.randomUUID()))
                 .andExpect(status().isNoContent())
                 .andReturn();
+
+        // export a case in CGMES format
+        mvcResult = mvc.perform(post(GET_CASE_URL, firstCaseUuid).param("format", "CGMES"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_OCTET_STREAM))
+                .andReturn();
+        assertThat(mvcResult.getResponse().getHeader("content-disposition")).contains("attachment;");
+
+        // export a non-existing case
+        mvc.perform(post(GET_CASE_URL, UUID.randomUUID()).param("format", "XIIDM"))
+                .andExpect(status().isNoContent())
+                .andReturn();
+
+        // export a case in a non-existing format
+        mvc.perform(post(GET_CASE_URL, firstCaseUuid).param("format", "JPEG"))
+                        .andExpect(status().isUnprocessableEntity());
 
         // delete the case
         mvc.perform(delete(GET_CASE_URL, firstCaseUuid))
@@ -265,7 +293,7 @@ public abstract class AbstractCaseControllerTest extends AbstractContainerConfig
         assertNull(caseMetadataEntity.getExpirationDate());
 
         //duplicate an existing case
-        MvcResult duplicateResult = mvc.perform(post("/v1/cases").param("duplicateFrom", caseUuid.toString()))
+        MvcResult duplicateResult = mvc.perform(post("/v1/cases?duplicateFrom=" + caseUuid))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -306,8 +334,7 @@ public abstract class AbstractCaseControllerTest extends AbstractContainerConfig
         assertNotNull(caseMetadataEntity.getExpirationDate());
 
         //duplicate an existing case withExpiration
-        MvcResult duplicateResult2 = mvc.perform(post("/v1/cases")
-                .param("duplicateFrom", caseUuid.toString())
+        MvcResult duplicateResult2 = mvc.perform(post("/v1/cases?duplicateFrom=" + caseUuid)
                 .param("withExpiration", "true"))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -352,12 +379,12 @@ public abstract class AbstractCaseControllerTest extends AbstractContainerConfig
         assertTrue(deleteExpirationResult.getResponse().getContentAsString().contains("case " + randomUuid + " not found"));
 
         // assert that duplicating a non existing case should return a 404
-        mvc.perform(post("/v1/cases").param("duplicateFrom", UUID.randomUUID().toString()))
+        mvc.perform(post("/v1/cases?duplicateFrom=" + UUID.randomUUID()))
                 .andExpect(status().isNotFound())
                 .andReturn();
 
         // list the cases and expect one case
-        MvcResult mvcResult = mvc.perform(get("/v1/cases"))
+        mvcResult = mvc.perform(get("/v1/cases"))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -615,7 +642,27 @@ public abstract class AbstractCaseControllerTest extends AbstractContainerConfig
     }
 
     private String getDateSearchTerm(String entsoeFormatDate) {
-        String utcFormattedDate = EntsoeFileNameParser.parseDateTime(entsoeFormatDate).toDateTimeISO().toString();
+        String utcFormattedDate = EntsoeFileNameParser.parseDateTime(entsoeFormatDate).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         return "date:\"" + utcFormattedDate + "\"";
+    }
+
+    @Test
+    public void invalidFileInCaseDirectoryShouldBeIgnored() throws Exception {
+        createStorageDir();
+        Path filePath = fileSystem.getPath(rootDirectory).resolve("randomFile.txt");
+        Files.createFile(filePath);
+        importCase(TEST_CASE, false);
+
+        MvcResult mvcResult = mvc.perform(get("/v1/cases"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String resultAsString = mvcResult.getResponse().getContentAsString();
+        List<CaseInfos> caseInfos = mapper.readValue(resultAsString, new TypeReference<>() { });
+        assertEquals(1, caseInfos.size());
+        assertEquals("testCase.xiidm", caseInfos.get(0).getName());
+
+        Files.delete(filePath);
+        mvc.perform(delete("/v1/cases"))
+                .andExpect(status().isOk());
     }
 }

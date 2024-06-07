@@ -9,7 +9,6 @@ package com.powsybl.caseserver.elasticsearch;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryStringQuery;
 import com.google.common.collect.Lists;
 import com.powsybl.caseserver.dto.CaseInfos;
-import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.domain.Page;
@@ -21,6 +20,8 @@ import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -78,7 +79,7 @@ public class CaseInfosService {
         caseInfosRepository.saveAll(caseInfos);
     }
 
-    public static String getDateSearchTerm(@NonNull final DateTime... dates) {
-        return Arrays.stream(dates).map(date -> "\"" + date.toDateTimeISO().toString() + "\"").collect(Collectors.joining(" OR ", "date:", "")).toString();
+    public static String getDateSearchTerm(@NonNull final ZonedDateTime... dates) {
+        return Arrays.stream(dates).map(date -> "\"" + date.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME) + "\"").collect(Collectors.joining(" OR ", "date:", ""));
     }
 }

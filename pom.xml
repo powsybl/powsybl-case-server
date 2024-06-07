@@ -13,7 +13,7 @@
     <parent>
         <groupId>com.powsybl</groupId>
         <artifactId>powsybl-parent-ws</artifactId>
-        <version>15</version>
+        <version>19</version>
         <relativePath/>
     </parent>
 
@@ -48,7 +48,7 @@
 
         <mockito-inline.version>3.11.1</mockito-inline.version>
         <log4j2-mock-version>0.0.2</log4j2-mock-version>
-        <powsybl-ws-dependencies.version>2.4.0</powsybl-ws-dependencies.version>
+        <powsybl-ws-dependencies.version>2.10.0</powsybl-ws-dependencies.version>
         <testcontainers.version>1.18.3</testcontainers.version>
     </properties>
 
@@ -124,7 +124,7 @@
         </dependency>
         <dependency>
             <groupId>com.powsybl</groupId>
-            <artifactId>powsybl-iidm-xml-converter</artifactId>
+            <artifactId>powsybl-iidm-serde</artifactId>
         </dependency>
         <dependency>
             <groupId>com.powsybl</groupId>
@@ -142,10 +142,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         <!-- jpa, crud repository -->
         <dependency>
@@ -176,10 +172,6 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-joda</artifactId>
         </dependency>
         <!-- Runtime dependencies -->
         <dependency>
@@ -231,6 +223,16 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>log4j-over-slf4j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
             <scope>runtime</scope>
         </dependency>
         <!-- Test dependencies -->

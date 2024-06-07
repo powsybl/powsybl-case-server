@@ -8,6 +8,7 @@ package com.powsybl.caseserver.server;
 
 import com.powsybl.caseserver.CaseException;
 import com.powsybl.caseserver.dto.CaseInfos;
+import com.powsybl.caseserver.dto.ExportCaseInfos;
 import com.powsybl.caseserver.parsers.FileNameInfos;
 import com.powsybl.caseserver.parsers.FileNameParser;
 import com.powsybl.caseserver.parsers.FileNameParsers;
@@ -19,13 +20,11 @@ import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 public interface CaseService {
     default void validateCaseName(String caseName) {
@@ -67,7 +66,7 @@ public interface CaseService {
 
     boolean caseExists(UUID caseUuid);
 
-    CaseInfos getCase(UUID caseUuid);
+    CaseInfos getCaseInfos(UUID caseUuid);
 
     String getFormat(UUID caseUuid);
 
@@ -76,6 +75,8 @@ public interface CaseService {
     Optional<Network> loadNetwork(UUID caseUuid);
 
     Optional<byte[]> getCaseBytes(UUID caseUuid);
+
+    Optional<ExportCaseInfos> exportCase(UUID caseUuid, String format, Map<String, Object> formatParameters) throws IOException;
 
     UUID importCase(MultipartFile file, boolean withExpiration);
 

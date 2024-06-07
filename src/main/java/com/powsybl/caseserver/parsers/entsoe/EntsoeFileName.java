@@ -11,7 +11,8 @@ import com.powsybl.entsoe.util.EntsoeGeographicalCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
-import org.joda.time.DateTime;
+
+import java.time.ZonedDateTime;
 
 /**
  * A utility class to work with Entsoe file name parsers.
@@ -22,7 +23,7 @@ import org.joda.time.DateTime;
 @Getter
 public class EntsoeFileName implements FileNameInfos {
 
-    @NonNull private DateTime date;
+    @NonNull private ZonedDateTime date;
     @NonNull private Integer forecastDistance;
     @NonNull private EntsoeGeographicalCode geographicalCode;
     @NonNull private Integer version;
