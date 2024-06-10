@@ -426,7 +426,8 @@ public class CaseService {
             network.write(format, exportProperties, memDataSource);
 
             var listNames = memDataSource.listNames(".*");
-            String networkName = FilenameUtils.removeExtension(getCaseName(caseUuid));
+            // the network name corresponds to the case file base name
+            String networkName = network.getNameOrId();
             byte[] networkData;
             if (listNames.size() == 1) {
                 String extension = listNames.iterator().next();
