@@ -15,6 +15,7 @@ import com.powsybl.caseserver.parsers.FileNameParsers;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.commons.datasource.DataSource;
+import com.powsybl.commons.datasource.DataSourceUtil;
 import com.powsybl.commons.datasource.MemDataSource;
 import com.powsybl.computation.ComputationManager;
 import com.powsybl.computation.local.LocalComputationManager;
@@ -425,8 +426,7 @@ public class CaseService {
             network.write(format, exportProperties, memDataSource);
 
             var listNames = memDataSource.listNames(".*");
-            // the network name corresponds to the case file base name
-            String networkName = network.getNameOrId();
+            String networkName = DataSourceUtil.getBaseName(getCaseName(caseUuid));
             byte[] networkData;
             if (listNames.size() == 1) {
                 String extension = listNames.iterator().next();
