@@ -8,15 +8,11 @@ package com.powsybl.caseserver.server;
 
 import com.powsybl.caseserver.CaseException;
 import com.powsybl.caseserver.dto.CaseInfos;
-import com.powsybl.caseserver.dto.ExportCaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
-import com.powsybl.commons.datasource.DataSourceUtil;
-import com.powsybl.commons.datasource.MemDataSource;
 import com.powsybl.computation.ComputationManager;
 import com.powsybl.computation.local.LocalComputationManager;
-import com.powsybl.iidm.network.Exporter;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
 import org.slf4j.Logger;
@@ -32,27 +28,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.UUID;
+import java.nio.file.*;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
 
@@ -367,8 +348,9 @@ public class FileSystemStorageService implements FsCaseService {
     public List<CaseInfos> getCases() {
         try (Stream<Path> walk = Files.walk(getStorageRootDir())) {
             return walk.filter(Files::isRegularFile)
-                    .map(file -> createInfos(file.getFileName().toString(), UUID.fromString(file.getParent().getFileName().toString()), getFormat(file)))
-                    .toList();
+                    .map(this::getCaseInfos)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -417,52 +399,5 @@ public class FileSystemStorageService implements FsCaseService {
             }
         });
         return cases;
-    }
-
-    @Override
-    public Optional<ExportCaseInfos> exportCase(UUID caseUuid, String format, Map<String, Object> formatParameters) throws IOException {
-        if (!Exporter.getFormats().contains(format)) {
-            throw CaseException.createUnsupportedFormat(format);
-        }
-
-        var optionalNetwork = loadNetwork(caseUuid);
-        if (optionalNetwork.isPresent()) {
-            var network = optionalNetwork.get();
-            var memDataSource = new MemDataSource();
-            Properties exportProperties = null;
-            if (formatParameters != null) {
-                exportProperties = new Properties();
-                exportProperties.putAll(formatParameters);
-            }
-
-            network.write(format, exportProperties, memDataSource);
-
-            var listNames = memDataSource.listNames(".*");
-            String networkName = DataSourceUtil.getBaseName(getCaseName(caseUuid));
-            byte[] networkData;
-            if (listNames.size() == 1) {
-                String extension = listNames.iterator().next();
-                networkName += extension;
-                networkData = memDataSource.getData(extension);
-            } else {
-                networkName += ".zip";
-                networkData = createZipFile(listNames, memDataSource);
-            }
-            return Optional.of(new ExportCaseInfos(networkName, networkData));
-        } else {
-            return Optional.empty();
-        }
-    }
-
-    private byte[] createZipFile(Collection<String> names, MemDataSource dataSource) throws IOException {
-        try (var outputStream = new ByteArrayOutputStream();
-             var zipOutputStream = new ZipOutputStream(outputStream)) {
-            for (String name : names) {
-                zipOutputStream.putNextEntry(new ZipEntry(name));
-                zipOutputStream.write(dataSource.getData(name));
-                zipOutputStream.closeEntry();
-            }
-            return outputStream.toByteArray();
-        }
     }
 }

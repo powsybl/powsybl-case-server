@@ -82,7 +82,7 @@ public abstract class AbstractCaseControllerTest extends AbstractContainerConfig
     @Autowired
     private ObjectMapper mapper;
 
-    @Value("${case-store-directory}")
+    @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
     private String rootDirectory;
 
     private FileSystem fileSystem;
@@ -394,6 +394,10 @@ public abstract class AbstractCaseControllerTest extends AbstractContainerConfig
                 .andReturn();
         String response = mvcResult.getResponse().getContentAsString();
         assertTrue(response.contains("\"format\":\"XIIDM\""));
+
+        // delete all cases
+        mvc.perform(delete("/v1/cases"))
+                .andExpect(status().isOk());
     }
 
     private UUID importCase(String testCase, Boolean withExpiration) throws Exception {

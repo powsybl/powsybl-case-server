@@ -15,16 +15,22 @@ import com.powsybl.caseserver.parsers.FileNameParsers;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.commons.datasource.DataSource;
+import com.powsybl.commons.datasource.DataSourceUtil;
+import com.powsybl.commons.datasource.MemDataSource;
 import com.powsybl.computation.ComputationManager;
+import com.powsybl.iidm.network.Exporter;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public interface CaseService {
     default void validateCaseName(String caseName) {
@@ -62,6 +68,52 @@ public interface CaseService {
         return importer;
     }
 
+    default byte[] createZipFile(Collection<String> names, MemDataSource dataSource) throws IOException {
+        try (var outputStream = new ByteArrayOutputStream();
+             var zipOutputStream = new ZipOutputStream(outputStream)) {
+            for (String name : names) {
+                zipOutputStream.putNextEntry(new ZipEntry(name));
+                zipOutputStream.write(dataSource.getData(name));
+                zipOutputStream.closeEntry();
+            }
+            return outputStream.toByteArray();
+        }
+    }
+
+    default Optional<ExportCaseInfos> exportCase(UUID caseUuid, String format, Map<String, Object> formatParameters) throws IOException {
+        if (!Exporter.getFormats().contains(format)) {
+            throw CaseException.createUnsupportedFormat(format);
+        }
+
+        var optionalNetwork = loadNetwork(caseUuid);
+        if (optionalNetwork.isPresent()) {
+            var network = optionalNetwork.get();
+            var memDataSource = new MemDataSource();
+            Properties exportProperties = null;
+            if (formatParameters != null) {
+                exportProperties = new Properties();
+                exportProperties.putAll(formatParameters);
+            }
+
+            network.write(format, exportProperties, memDataSource);
+
+            var listNames = memDataSource.listNames(".*");
+            String networkName = DataSourceUtil.getBaseName(getCaseName(caseUuid));
+            byte[] networkData;
+            if (listNames.size() == 1) {
+                String extension = listNames.iterator().next();
+                networkName += extension;
+                networkData = memDataSource.getData(extension);
+            } else {
+                networkName += ".zip";
+                networkData = createZipFile(listNames, memDataSource);
+            }
+            return Optional.of(new ExportCaseInfos(networkName, networkData));
+        } else {
+            return Optional.empty();
+        }
+    }
+
     List<CaseInfos> getCases();
 
     boolean caseExists(UUID caseUuid);
@@ -75,8 +127,6 @@ public interface CaseService {
     Optional<Network> loadNetwork(UUID caseUuid);
 
     Optional<byte[]> getCaseBytes(UUID caseUuid);
-
-    Optional<ExportCaseInfos> exportCase(UUID caseUuid, String format, Map<String, Object> formatParameters) throws IOException;
 
     UUID importCase(MultipartFile file, boolean withExpiration);
 
