@@ -18,8 +18,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
@@ -58,10 +58,10 @@ public class ScheduledCaseCleanerTest {
 
     @Test
     public void test() {
-        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-        LocalDateTime yesterday = now.minusDays(1);
-        CaseMetadataEntity shouldNotExpireEntity = new CaseMetadataEntity(UUID.randomUUID(), now.plusHours(1));
-        CaseMetadataEntity shouldExpireEntity = new CaseMetadataEntity(UUID.randomUUID(), yesterday.plusHours(1));
+        Instant now = Instant.now();
+        Instant yesterday = now.minus(1, ChronoUnit.DAYS);
+        CaseMetadataEntity shouldNotExpireEntity = new CaseMetadataEntity(UUID.randomUUID(), now.plus(1, ChronoUnit.HOURS));
+        CaseMetadataEntity shouldExpireEntity = new CaseMetadataEntity(UUID.randomUUID(), yesterday.plus(1, ChronoUnit.HOURS));
         CaseMetadataEntity noExpireDateEntity = new CaseMetadataEntity(UUID.randomUUID(), null);
         caseMetadataRepository.save(shouldExpireEntity);
         caseMetadataRepository.save(shouldNotExpireEntity);

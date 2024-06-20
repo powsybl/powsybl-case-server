@@ -41,9 +41,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.Instant;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -332,9 +332,9 @@ public class CaseControllerTest {
         assertNull(caseMetadataEntity.getExpirationDate());
 
         // import a case with expiration
-        LocalDateTime beforeImportDate = LocalDateTime.now(ZoneOffset.UTC).plusHours(1);
+        Instant beforeImportDate = Instant.now().plus(1, ChronoUnit.HOURS);
         UUID thirdCaseUuid = importCase(TEST_CASE, true);
-        LocalDateTime afterImportDate = LocalDateTime.now(ZoneOffset.UTC).plusHours(1);
+        Instant afterImportDate = Instant.now().plus(1, ChronoUnit.HOURS);
 
         // assert that the broker message has been sent
         messageImport = outputDestination.receive(1000, "case.import.destination");
