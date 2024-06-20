@@ -20,6 +20,6 @@ import java.lang.annotation.Target;
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@ContextConfiguration(classes = {CaseApplication.class, TestChannelBinderConfiguration.class})
+@ContextConfiguration(classes = { CaseApplication.class, TestChannelBinderConfiguration.class })
 public @interface ContextConfigurationWithTestChannel {
 }
