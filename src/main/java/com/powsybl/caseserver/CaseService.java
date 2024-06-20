@@ -44,8 +44,8 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -249,9 +249,9 @@ public class CaseService {
     }
 
     private void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration) {
-        LocalDateTime expirationTime = null;
+        Instant expirationTime = null;
         if (withExpiration) {
-            expirationTime = LocalDateTime.now(ZoneOffset.UTC).plusHours(1);
+            expirationTime = Instant.now().plus(1, ChronoUnit.HOURS);
         }
         caseMetadataRepository.save(new CaseMetadataEntity(newCaseUuid, expirationTime));
     }
