@@ -12,8 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.Instant;
 
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
@@ -34,10 +33,10 @@ public class ScheduledCaseCleaner {
 
     @Scheduled(cron = "${cleaning-cases-cron}", zone = "UTC")
     public void deleteExpiredCases() {
-        LocalDateTime localDateTime = LocalDateTime.now(ZoneOffset.UTC);
-        LOGGER.info("Cleaning cases cron starting execution at {}", localDateTime);
+        Instant now = Instant.now();
+        LOGGER.info("Cleaning cases cron starting execution at {}", now);
         caseMetadataRepository.findAll().stream().filter(caseMetadataEntity -> caseMetadataEntity.getExpirationDate() != null)
-                .filter(caseMetadataEntity -> localDateTime.isAfter(caseMetadataEntity.getExpirationDate()))
+                .filter(caseMetadataEntity -> now.isAfter(caseMetadataEntity.getExpirationDate()))
                 .forEach(caseMetadataEntity -> {
                     caseService.deleteCase(caseMetadataEntity.getId());
                     caseMetadataRepository.deleteById(caseMetadataEntity.getId());
