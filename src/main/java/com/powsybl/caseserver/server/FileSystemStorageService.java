@@ -12,13 +12,13 @@ import com.powsybl.caseserver.dto.ExportCaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
+import com.powsybl.commons.datasource.DataSourceUtil;
 import com.powsybl.commons.datasource.MemDataSource;
 import com.powsybl.computation.ComputationManager;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Exporter;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
-import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -438,7 +438,7 @@ public class FileSystemStorageService implements FsCaseService {
             network.write(format, exportProperties, memDataSource);
 
             var listNames = memDataSource.listNames(".*");
-            String networkName = FilenameUtils.removeExtension(getCaseName(caseUuid));
+            String networkName = DataSourceUtil.getBaseName(getCaseName(caseUuid));
             byte[] networkData;
             if (listNames.size() == 1) {
                 String extension = listNames.iterator().next();

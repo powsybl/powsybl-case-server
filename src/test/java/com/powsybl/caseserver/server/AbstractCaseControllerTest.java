@@ -79,8 +79,6 @@ public abstract class AbstractCaseControllerTest extends AbstractContainerConfig
     @Autowired
     private OutputDestination outputDestination;
 
-    @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
-
     @Autowired
     private ObjectMapper mapper;
 
