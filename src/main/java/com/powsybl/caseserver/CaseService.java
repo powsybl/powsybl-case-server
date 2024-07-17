@@ -408,7 +408,7 @@ public class CaseService {
         return Optional.empty();
     }
 
-    public Optional<ExportCaseInfos> exportCase(UUID caseUuid, String format, Map<String, Object> formatParameters) throws IOException {
+    public Optional<ExportCaseInfos> exportCase(UUID caseUuid, String format, String fileName, Map<String, Object> formatParameters) throws IOException {
         if (!Exporter.getFormats().contains(format)) {
             throw CaseException.createUnsupportedFormat(format);
         }
@@ -426,17 +426,17 @@ public class CaseService {
             network.write(format, exportProperties, memDataSource);
 
             var listNames = memDataSource.listNames(".*");
-            String networkName = DataSourceUtil.getBaseName(getCaseName(caseUuid));
+            String fileOrNetworkName = fileName != null ? fileName : DataSourceUtil.getBaseName(getCaseName(caseUuid));
             byte[] networkData;
             if (listNames.size() == 1) {
                 String extension = listNames.iterator().next();
-                networkName += extension;
+                fileOrNetworkName += extension;
                 networkData = memDataSource.getData(extension);
             } else {
-                networkName += ".zip";
+                fileOrNetworkName += ".zip";
                 networkData = createZipFile(listNames, memDataSource);
             }
-            return Optional.of(new ExportCaseInfos(networkName, networkData));
+            return Optional.of(new ExportCaseInfos(fileOrNetworkName, networkData));
         } else {
             return Optional.empty();
         }
