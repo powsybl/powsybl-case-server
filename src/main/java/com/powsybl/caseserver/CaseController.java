@@ -123,9 +123,10 @@ public class CaseController {
     public ResponseEntity<byte[]> exportCase(
             @PathVariable UUID caseUuid,
             @RequestParam String format,
+            @RequestParam(value = "fileName", required = false) String fileName,
             @RequestBody(required = false) Map<String, Object> formatParameters) throws IOException {
         LOGGER.debug("exportCase request received with parameter caseUuid = {}", caseUuid);
-        return caseService.exportCase(caseUuid, format, formatParameters).map(networkInfos -> {
+        return caseService.exportCase(caseUuid, format, fileName, formatParameters).map(networkInfos -> {
             var headers = new HttpHeaders();
             headers.setContentDisposition(
                     ContentDisposition.builder("attachment")
