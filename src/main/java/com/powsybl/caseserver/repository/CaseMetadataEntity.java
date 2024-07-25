@@ -6,7 +6,7 @@
  */
 package com.powsybl.caseserver.repository;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 import lombok.*;
@@ -31,6 +31,6 @@ public class CaseMetadataEntity {
     @Column(name = "id")
     private UUID id;
 
-    @Column(name = "expirationDate")
-    private LocalDateTime expirationDate;
+    @Column(name = "expirationDate", columnDefinition = "timestamptz")
+    private Instant expirationDate;
 }

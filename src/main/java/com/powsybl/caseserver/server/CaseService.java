@@ -15,23 +15,19 @@ import com.powsybl.caseserver.parsers.FileNameParsers;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.commons.datasource.DataSource;
-import com.powsybl.computation.ComputationManager;
 import com.powsybl.commons.datasource.DataSourceUtil;
 import com.powsybl.commons.datasource.MemDataSource;
+import com.powsybl.computation.ComputationManager;
 import com.powsybl.iidm.network.Exporter;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -56,9 +52,9 @@ public interface CaseService {
     }
 
     default void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, CaseMetadataRepository caseMetadataRepository) {
-        LocalDateTime expirationTime = null;
+        Instant expirationTime = null;
         if (withExpiration) {
-            expirationTime = LocalDateTime.now(ZoneOffset.UTC).plusHours(1);
+            expirationTime = Instant.now().plus(1, ChronoUnit.HOURS);
         }
         caseMetadataRepository.save(new CaseMetadataEntity(newCaseUuid, expirationTime));
     }
