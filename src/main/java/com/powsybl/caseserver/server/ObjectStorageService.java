@@ -38,7 +38,8 @@ import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -199,7 +200,7 @@ public class ObjectStorageService implements S3CaseService {
         if (!s3ObjectSummaries.isEmpty()) {
             return s3ObjectSummaries.get(0).key();
         } else {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No files found for case " + caseUuid);
+            return null;
         }
     }
 
@@ -221,7 +222,7 @@ public class ObjectStorageService implements S3CaseService {
     }
 
     @Override
-    public CaseInfos getCase(UUID caseUuid) {
+    public CaseInfos getCaseInfos(UUID caseUuid) {
         var caseFileSummaries = getCaseFileSummaries(caseUuid);
         if (caseFileSummaries.isEmpty()) {
             return null;
@@ -232,7 +233,7 @@ public class ObjectStorageService implements S3CaseService {
 
     @Override
     public String getCaseName(UUID caseUuid) {
-        CaseInfos caseInfos = getCase(caseUuid);
+        CaseInfos caseInfos = getCaseInfos(caseUuid);
         return caseInfos.getName();
     }
 
@@ -240,17 +241,21 @@ public class ObjectStorageService implements S3CaseService {
     public Optional<byte[]> getCaseBytes(UUID caseUuid) {
         String caseFileKey = getCaseFileObjectKey(caseUuid);
 
-        try {
-            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(caseFileKey)
-                    .build();
+        if (Objects.nonNull(caseFileKey)) {
+            try {
+                GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(caseFileKey)
+                        .build();
 
-            ResponseBytes<GetObjectResponse> objectBytes = s3Client.getObjectAsBytes(getObjectRequest);
-            byte[] content = objectBytes.asByteArray();
-            return Optional.of(content);
-        } catch (NoSuchKeyException e) {
-            LOGGER.error("The expected key does not exist in the bucket s3 : {}", caseFileKey);
+                ResponseBytes<GetObjectResponse> objectBytes = s3Client.getObjectAsBytes(getObjectRequest);
+                byte[] content = objectBytes.asByteArray();
+                return Optional.of(content);
+            } catch (NoSuchKeyException e) {
+                LOGGER.error("The expected key does not exist in the bucket s3 : {}", caseFileKey);
+                return Optional.empty();
+            }
+        } else {
             return Optional.empty();
         }
     }
@@ -423,7 +428,7 @@ public class ObjectStorageService implements S3CaseService {
     public List<CaseInfos> getMetadata(List<UUID> ids) {
         List<CaseInfos> cases = new ArrayList<>();
         ids.forEach(caseUuid -> {
-            CaseInfos caseInfos = getCase(caseUuid);
+            CaseInfos caseInfos = getCaseInfos(caseUuid);
             if (Objects.nonNull(caseInfos)) {
                 cases.add(caseInfos);
             }

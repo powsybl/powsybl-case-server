@@ -85,10 +85,13 @@ public class FileSystemStorageService implements FsCaseService {
         return importer.getFormat();
     }
 
-    public CaseInfos getCase(Path casePath) {
-        checkStorageInitialization();
-        Optional<CaseInfos> caseInfo = getCases(casePath).stream().findFirst();
-        return caseInfo.orElseThrow();
+    private CaseInfos getCaseInfos(Path file) {
+        try {
+            return createInfos(file.getFileName().toString(), UUID.fromString(file.getParent().getFileName().toString()), getFormat(file));
+        } catch (Exception e) {
+            LOGGER.error("Error processing file {}: {}", file.getFileName(), e.getMessage(), e);
+            return null;
+        }
     }
 
     @Override
@@ -97,7 +100,7 @@ public class FileSystemStorageService implements FsCaseService {
         if (file == null) {
             throw createDirectoryNotFound(caseUuid);
         }
-        CaseInfos caseInfos = getCase(file);
+        CaseInfos caseInfos = getCaseInfos(file);
         return caseInfos.getName();
     }
 
@@ -160,9 +163,9 @@ public class FileSystemStorageService implements FsCaseService {
     }
 
     @Override
-    public CaseInfos getCase(UUID caseUuid) {
+    public CaseInfos getCaseInfos(UUID caseUuid) {
         Path file = getCaseFile(caseUuid);
-        return getCase(file);
+        return getCaseInfos(file);
     }
 
     @Override
@@ -327,11 +330,32 @@ public class FileSystemStorageService implements FsCaseService {
     }
 
     @Override
+    public void validateCaseName(String caseName) {
+        FsCaseService.super.validateCaseName(caseName);
+    }
+
+    @Override
+    public CaseInfos createInfos(String fileBaseName, UUID caseUuid, String format) {
+        return FsCaseService.super.createInfos(fileBaseName, caseUuid, format);
+    }
+
+    @Override
+    public void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, CaseMetadataRepository caseMetadataRepository) {
+        FsCaseService.super.createCaseMetadataEntity(newCaseUuid, withExpiration, caseMetadataRepository);
+    }
+
+    @Override
+    public Importer getImporterOrThrowsException(Path caseFile, ComputationManager computationManager) {
+        return FsCaseService.super.getImporterOrThrowsException(caseFile, computationManager);
+    }
+
+    @Override
     public List<CaseInfos> getCases() {
         try (Stream<Path> walk = Files.walk(getStorageRootDir())) {
             return walk.filter(Files::isRegularFile)
-                    .map(file -> createInfos(file.getFileName().toString(), UUID.fromString(file.getParent().getFileName().toString()), getFormat(file)))
-                    .toList();
+                    .map(this::getCaseInfos)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -375,7 +399,7 @@ public class FileSystemStorageService implements FsCaseService {
         ids.forEach(caseUuid -> {
             Path file = getCaseFile(caseUuid);
             if (file != null) {
-                CaseInfos caseInfos = getCase(file);
+                CaseInfos caseInfos = getCaseInfos(file);
                 cases.add(caseInfos);
             }
         });
