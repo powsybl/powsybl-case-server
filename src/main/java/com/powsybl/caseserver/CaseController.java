@@ -166,9 +166,10 @@ public class CaseController {
         @ApiResponse(responseCode = "500", description = "An error occurred during the case file duplication")})
     public ResponseEntity<UUID> duplicateCase(
             @RequestParam("duplicateFrom") UUID caseId,
-            @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration) {
+            @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration,
+            @RequestParam(value = "indexed", required = false, defaultValue = "false") boolean indexed) {
         LOGGER.debug("duplicateCase request received with parameter sourceCaseUuid = {}", caseId);
-        UUID newCaseUuid = caseService.duplicateCase(caseId, withExpiration);
+        UUID newCaseUuid = caseService.duplicateCase(caseId, withExpiration, indexed);
         return ResponseEntity.ok().body(newCaseUuid);
     }
 
@@ -205,14 +206,6 @@ public class CaseController {
         LOGGER.debug("search cases request received");
         List<CaseInfos> cases = caseService.searchCases(query);
         return ResponseEntity.ok().body(cases);
-    }
-
-    @PostMapping(value = "/cases/reindex-all")
-    @Operation(summary = "reindex all cases")
-    public ResponseEntity<Void> reindexAllCases() {
-        LOGGER.debug("reindex all cases request received");
-        caseService.reindexAllCases();
-        return ResponseEntity.ok().build();
     }
 
     @GetMapping(value = "/cases/metadata")
