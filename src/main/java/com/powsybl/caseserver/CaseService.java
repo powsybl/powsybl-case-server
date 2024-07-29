@@ -179,7 +179,7 @@ public class CaseService {
         return Files.exists(caseFile) && Files.isRegularFile(caseFile);
     }
 
-    UUID importCase(MultipartFile mpf, boolean withExpiration) {
+    UUID importCase(MultipartFile mpf, boolean withExpiration, boolean indexed) {
         checkStorageInitialization();
 
         UUID caseUuid = UUID.randomUUID();
@@ -216,7 +216,9 @@ public class CaseService {
 
         createCaseMetadataEntity(caseUuid, withExpiration);
         CaseInfos caseInfos = createInfos(caseFile.getFileName().toString(), caseUuid, importer.getFormat());
-        caseInfosService.addCaseInfos(caseInfos);
+        if(indexed) {
+            caseInfosService.addCaseInfos(caseInfos);
+        }
         sendImportMessage(caseInfos.createMessage());
         return caseUuid;
     }
@@ -253,7 +255,7 @@ public class CaseService {
         if (withExpiration) {
             expirationTime = Instant.now().plus(1, ChronoUnit.HOURS);
         }
-        caseMetadataRepository.save(new CaseMetadataEntity(newCaseUuid, expirationTime));
+        caseMetadataRepository.save(new CaseMetadataEntity(newCaseUuid, expirationTime, false));
     }
 
     CaseInfos createInfos(String fileBaseName, UUID caseUuid, String format) {

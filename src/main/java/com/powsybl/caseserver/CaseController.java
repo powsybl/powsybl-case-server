@@ -152,9 +152,10 @@ public class CaseController {
     @Operation(summary = "import a case")
     @SuppressWarnings("javasecurity:S5145")
     public ResponseEntity<UUID> importCase(@RequestParam("file") MultipartFile file,
-                                           @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration) {
+                                           @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration,
+                                           @RequestParam(value = "indexed", required = false, defaultValue = "false") boolean indexed) {
         LOGGER.debug("importCase request received with file = {}", file.getName());
-        UUID caseUuid = caseService.importCase(file, withExpiration);
+        UUID caseUuid = caseService.importCase(file, withExpiration, indexed);
         return ResponseEntity.ok().body(caseUuid);
     }
 
