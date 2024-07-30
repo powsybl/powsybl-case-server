@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.powsybl.caseserver;
+package com.powsybl.caseserver.server;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,18 +19,14 @@ import com.powsybl.computation.ComputationManager;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.stream.binder.test.OutputDestination;
 import org.springframework.http.MediaType;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -50,18 +46,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.junit.Assert.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -69,17 +55,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-@RunWith(SpringRunner.class)
-@AutoConfigureMockMvc
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, properties = {"case-store-directory=/cases"})
-@ContextConfigurationWithTestChannel
-public class CaseControllerTest {
+
+public abstract class AbstractCaseControllerTest extends AbstractContainerConfig {
 
     private static final String TEST_CASE = "testCase.xiidm";
     private static final String TEST_CASE_FORMAT = "XIIDM";
     private static final String NOT_A_NETWORK = "notANetwork.txt";
     private static final String STILL_NOT_A_NETWORK = "stillNotANetwork.xiidm";
-
     private static final String GET_CASE_URL = "/v1/cases/{caseUuid}";
     private static final String GET_CASE_FORMAT_URL = "/v1/cases/{caseName}/format";
 
@@ -89,7 +71,7 @@ public class CaseControllerTest {
     private MockMvc mvc;
 
     @Autowired
-    private CaseService caseService;
+    private FsCaseService caseService;
 
     @Autowired
     private CaseMetadataRepository caseMetadataRepository;
@@ -100,7 +82,7 @@ public class CaseControllerTest {
     @Autowired
     private ObjectMapper mapper;
 
-    @Value("${case-store-directory}")
+    @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
     private String rootDirectory;
 
     private FileSystem fileSystem;
@@ -130,16 +112,13 @@ public class CaseControllerTest {
     }
 
     private static MockMultipartFile createMockMultipartFile(String fileName) throws IOException {
-        try (InputStream inputStream = CaseControllerTest.class.getResourceAsStream("/" + fileName)) {
+        try (InputStream inputStream = AbstractCaseControllerTest.class.getResourceAsStream("/" + fileName)) {
             return new MockMultipartFile("file", fileName, MediaType.TEXT_PLAIN_VALUE, inputStream);
         }
     }
 
     @Test
     public void test() throws Exception {
-        // expect a fail since the storage dir. is not created
-        mvc.perform(delete("/v1/cases"))
-                .andExpect(status().isUnprocessableEntity());
 
         // create the storage dir
         createStorageDir();
@@ -415,6 +394,10 @@ public class CaseControllerTest {
                 .andReturn();
         String response = mvcResult.getResponse().getContentAsString();
         assertTrue(response.contains("\"format\":\"XIIDM\""));
+
+        // delete all cases
+        mvc.perform(delete("/v1/cases"))
+                .andExpect(status().isOk());
     }
 
     private UUID importCase(String testCase, Boolean withExpiration) throws Exception {
@@ -432,31 +415,6 @@ public class CaseControllerTest {
                     .andReturn().getResponse().getContentAsString();
         }
         return UUID.fromString(importedCase.substring(1, importedCase.length() - 1));
-    }
-
-    @Test
-    public void validateCaseNameTest() {
-        CaseService.validateCaseName("test.xiidm");
-        CaseService.validateCaseName("test-case.7zip");
-        CaseService.validateCaseName("testcase1.7zip");
-        CaseService.validateCaseName("testcase1.xiidm.gz");
-        CaseService.validateCaseName("test..xiidm");
-
-        try {
-            CaseService.validateCaseName("test");
-            fail();
-        } catch (CaseException ignored) {
-        }
-        try {
-            CaseService.validateCaseName("../test.xiidm");
-            fail();
-        } catch (CaseException ignored) {
-        }
-        try {
-            CaseService.validateCaseName("test/xiidm");
-            fail();
-        } catch (CaseException ignored) {
-        }
     }
 
     @Test
