@@ -212,7 +212,7 @@ public class CaseService {
 
         createCaseMetadataEntity(caseUuid, withExpiration, indexed);
         CaseInfos caseInfos = createInfos(caseFile.getFileName().toString(), caseUuid, importer.getFormat());
-        if(indexed) {
+        if (indexed) {
             caseInfosService.addCaseInfos(caseInfos);
         }
         sendImportMessage(caseInfos.createMessage());
@@ -235,7 +235,7 @@ public class CaseService {
 
             CaseInfos existingCaseInfos = caseInfosService.getCaseInfosByUuid(sourceCaseUuid.toString()).orElseThrow();
             CaseInfos caseInfos = createInfos(existingCaseInfos.getName(), newCaseUuid, existingCaseInfos.getFormat());
-            if(indexed) {
+            if (indexed) {
                 caseInfosService.addCaseInfos(caseInfos);
             }
             createCaseMetadataEntity(newCaseUuid, withExpiration, indexed);

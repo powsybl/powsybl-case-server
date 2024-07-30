@@ -23,19 +23,16 @@ public class SupervisionService {
     private final CaseInfosService caseInfosService;
     private final CaseService caseService;
 
-
     public SupervisionService(CaseInfosService caseInfosService, CaseService caseService) {
         this.caseInfosService = caseInfosService;
         this.caseService = caseService;
-
     }
 
     public void reindexAllCases() {
-        List<CaseInfos> allCases=  caseService.getCases(caseService.getStorageRootDir());
+        List<CaseInfos> allCases = caseService.getCases(caseService.getStorageRootDir());
         Set<UUID> casesToIndex = caseService.getCaseToReindex();
         List<CaseInfos> data = allCases.stream().filter(c -> casesToIndex.contains(c.getUuid())).toList();
         caseInfosService.recreateAllCaseInfos(data);
     }
-
 
 }
