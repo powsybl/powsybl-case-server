@@ -17,10 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @author Jamal KHEYYAD <jamal.kheyyad at rte-international.com>
@@ -41,14 +38,6 @@ public class SupervisionController {
         this.caseInfosService = caseInfosService;
     }
 
-    @PostMapping(value = "/cases/reindex-all")
-    @Operation(summary = "reindex all cases")
-    public ResponseEntity<Void> reindexAllCases() {
-        LOGGER.debug("reindex all cases request received");
-        supervisionService.reindexAllCases();
-        return ResponseEntity.ok().build();
-    }
-
     @GetMapping(value = "/elasticsearch-host")
     @Operation(summary = "get the elasticsearch address")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "the elasticsearch address")})
@@ -66,11 +55,19 @@ public class SupervisionController {
         return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(caseInfosService.getDirectoryElementsIndexName());
     }
 
-//    @GetMapping(value = "/elements/indexation-count")
-//    @Operation(summary = "get indexed directory elements count")
-//    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Indexed directory elements count")})
-//    public ResponseEntity<String> getIndexedDirectoryElementsCount() {
-//        return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Long.toString(caseInfosService.getIndexedDirectoryElementsCount()));
-//    }
+    @PostMapping(value = "/cases/reindex")
+    @Operation(summary = "reindex all cases")
+    public ResponseEntity<Void> reindexAllCases() {
+        LOGGER.debug("reindex all cases request received");
+        supervisionService.reindexAllCases();
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping(value = "/elements/indexation")
+    @Operation(summary = "delete indexed elements")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "all indexed elements have been deleted")})
+    public ResponseEntity<String> deleteIndexedDirectoryElements() {
+        return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Long.toString(supervisionService.deleteIndexedDirectoryElements()));
+    }
 
 }
