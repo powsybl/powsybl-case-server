@@ -48,7 +48,7 @@ public class SupervisionController {
         return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(host);
     }
 
-    @GetMapping(value = "/elements/index-name")
+    @GetMapping(value = "/cases/index-name")
     @Operation(summary = "get the indexed directory elements index name")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Indexed directory elements index name")})
     public ResponseEntity<String> getIndexedDirectoryElementsIndexName() {
@@ -63,7 +63,7 @@ public class SupervisionController {
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping(value = "/elements/indexation")
+    @DeleteMapping(value = "/cases/indexation")
     @Operation(summary = "delete indexed elements")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "all indexed elements have been deleted")})
     public ResponseEntity<String> deleteIndexedDirectoryElements() {
