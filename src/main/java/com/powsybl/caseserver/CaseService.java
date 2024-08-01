@@ -262,6 +262,9 @@ public class CaseService {
                 .map(CaseMetadataEntity::getId)
                 .collect(Collectors.toSet());
     }
+    public List<CaseInfos> getAllCases() {
+        return getCases(getStorageRootDir());
+    }
 
     CaseInfos createInfos(String fileBaseName, UUID caseUuid, String format) {
         FileNameParser parser = FileNameParsers.findParser(fileBaseName);

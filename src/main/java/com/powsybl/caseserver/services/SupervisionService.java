@@ -38,7 +38,7 @@ public class SupervisionService {
     }
 
     public void reindexAllCases() {
-        List<CaseInfos> allCases = caseService.getCases(caseService.getStorageRootDir());
+        List<CaseInfos> allCases = caseService.getAllCases();
         Set<UUID> casesToIndex = caseService.getCaseToReindex();
         List<CaseInfos> data = allCases.stream().filter(c -> casesToIndex.contains(c.getUuid())).toList();
         caseInfosService.recreateAllCaseInfos(data);
@@ -48,13 +48,13 @@ public class SupervisionService {
         AtomicReference<Long> startTime = new AtomicReference<>();
         startTime.set(System.nanoTime());
 
-        long nbIndexesToDelete = getIndexedDirectoryElementsCount();
+        long nbIndexesToDelete = getIndexedCaseElementsCount();
         caseInfosRepository.deleteAll();
         LOGGER.trace("Indexed directory elements deletion : {} seconds", TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startTime.get()));
         return nbIndexesToDelete;
     }
 
-    private long getIndexedDirectoryElementsCount() {
+    public long getIndexedCaseElementsCount() {
         return caseInfosRepository.count();
     }
 }
