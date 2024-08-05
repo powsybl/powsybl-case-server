@@ -94,14 +94,12 @@ public class SupervisionControllerTest {
         Assert.assertEquals(2, supervisionService.getIndexedCaseElementsCount());
     }
 
-    private UUID importCase(String testCase, Boolean indexed) throws Exception {
-        String importedCase = mockMvc.perform(multipart("/v1/cases")
+    private void importCase(String testCase, Boolean indexed) throws Exception {
+        mockMvc.perform(multipart("/v1/cases")
                             .file(createMockMultipartFile(testCase))
                             .param("indexed", indexed.toString()))
                     .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
-
-        return UUID.fromString(importedCase.substring(1, importedCase.length() - 1));
     }
 
     private static MockMultipartFile createMockMultipartFile(String fileName) throws IOException {
