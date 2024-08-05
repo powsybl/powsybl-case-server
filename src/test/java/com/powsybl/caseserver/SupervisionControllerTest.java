@@ -32,7 +32,6 @@ import java.io.InputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -66,9 +65,9 @@ public class SupervisionControllerTest {
     @Test
     public void testGetElementInfosCount() throws Exception {
         createStorageDir();
-        importCase(TEST_CASE, true);
-        importCase(TEST_CASE, true);
-        importCase(TEST_CASE, false);
+        importCase(true);
+        importCase(true);
+        importCase(false);
 
         mockMvc.perform(post("/v1/supervision/cases/reindex"))
                 .andExpect(status().isOk());
@@ -80,8 +79,8 @@ public class SupervisionControllerTest {
     @Test
     public void testDeleteElementInfos() throws Exception {
         createStorageDir();
-        importCase(TEST_CASE, true);
-        importCase(TEST_CASE, true);
+        importCase(true);
+        importCase(true);
 
         mockMvc.perform(delete("/v1/supervision/cases/indexation"))
                 .andExpect(status().isOk());
@@ -94,17 +93,17 @@ public class SupervisionControllerTest {
         Assert.assertEquals(2, supervisionService.getIndexedCaseElementsCount());
     }
 
-    private void importCase(String testCase, Boolean indexed) throws Exception {
+    private void importCase(Boolean indexed) throws Exception {
         mockMvc.perform(multipart("/v1/cases")
-                            .file(createMockMultipartFile(testCase))
+                            .file(createMockMultipartFile())
                             .param("indexed", indexed.toString()))
                     .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
     }
 
-    private static MockMultipartFile createMockMultipartFile(String fileName) throws IOException {
-        try (InputStream inputStream = CaseControllerTest.class.getResourceAsStream("/" + fileName)) {
-            return new MockMultipartFile("file", fileName, MediaType.TEXT_PLAIN_VALUE, inputStream);
+    private static MockMultipartFile createMockMultipartFile() throws IOException {
+        try (InputStream inputStream = CaseControllerTest.class.getResourceAsStream("/" + SupervisionControllerTest.TEST_CASE)) {
+            return new MockMultipartFile("file", SupervisionControllerTest.TEST_CASE, MediaType.TEXT_PLAIN_VALUE, inputStream);
         }
     }
 
