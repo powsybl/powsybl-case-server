@@ -54,5 +54,4 @@ public class SupervisionTest {
         verify(caseInfosRepository, times(1)).deleteAll();
     }
 
-
 }

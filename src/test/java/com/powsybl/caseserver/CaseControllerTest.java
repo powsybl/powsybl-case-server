@@ -422,12 +422,14 @@ public class CaseControllerTest {
         if (withExpiration) {
             importedCase = mvc.perform(multipart("/v1/cases")
                     .file(createMockMultipartFile(testCase))
-                    .param("withExpiration", withExpiration.toString()))
+                    .param("withExpiration", withExpiration.toString())
+                    .param("indexed", "true"))
                     .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
         } else {
             importedCase = mvc.perform(multipart("/v1/cases")
-                    .file(createMockMultipartFile(testCase)))
+                    .file(createMockMultipartFile(testCase))
+                    .param("indexed", "true"))
                     .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
         }
@@ -470,7 +472,8 @@ public class CaseControllerTest {
 
         // import IIDM test case
         String aCase = mvc.perform(multipart("/v1/cases")
-                .file(createMockMultipartFile("testCase.xiidm")))
+                .file(createMockMultipartFile("testCase.xiidm"))
+                        .param("indexed", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -486,7 +489,8 @@ public class CaseControllerTest {
 
         // import CGMES french file
         aCase = mvc.perform(multipart("/v1/cases")
-                .file(createMockMultipartFile("20200424T1330Z_2D_RTEFRANCE_001.zip")))
+                .file(createMockMultipartFile("20200424T1330Z_2D_RTEFRANCE_001.zip"))
+                        .param("indexed", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -502,7 +506,8 @@ public class CaseControllerTest {
 
         // import UCTE french file
         aCase = mvc.perform(multipart("/v1/cases")
-                .file(createMockMultipartFile("20200103_0915_FO5_FR0.UCT")))
+                .file(createMockMultipartFile("20200103_0915_FO5_FR0.UCT"))
+                        .param("indexed", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -518,7 +523,8 @@ public class CaseControllerTest {
 
         // import UCTE german file
         aCase = mvc.perform(multipart("/v1/cases")
-                .file(createMockMultipartFile("20200103_0915_SN5_D80.UCT")))
+                .file(createMockMultipartFile("20200103_0915_SN5_D80.UCT"))
+                        .param("indexed", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -534,7 +540,8 @@ public class CaseControllerTest {
 
         // import UCTE swiss file
         aCase = mvc.perform(multipart("/v1/cases")
-                .file(createMockMultipartFile("20200103_0915_135_CH2.UCT")))
+                .file(createMockMultipartFile("20200103_0915_135_CH2.UCT"))
+                        .param("indexed", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -656,7 +663,7 @@ public class CaseControllerTest {
         assertFalse(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
 
         // reindex all cases
-        mvc.perform(post("/v1/cases/reindex-all"))
+        mvc.perform(post("/v1/supervision/cases/reindex"))
             .andExpect(status().isOk());
 
         mvcResult = mvc.perform(get("/v1/cases/search")

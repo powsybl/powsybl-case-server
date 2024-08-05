@@ -262,6 +262,7 @@ public class CaseService {
                 .map(CaseMetadataEntity::getId)
                 .collect(Collectors.toSet());
     }
+
     public List<CaseInfos> getAllCases() {
         return getCases(getStorageRootDir());
     }
