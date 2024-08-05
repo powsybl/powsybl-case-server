@@ -111,6 +111,7 @@ public class CaseControllerTest {
         caseService.setFileSystem(fileSystem);
         caseService.setComputationManager(Mockito.mock(ComputationManager.class));
         cleanDB();
+        outputDestination.clear();
     }
 
     private void cleanDB() {
@@ -165,8 +166,7 @@ public class CaseControllerTest {
     }
 
     @Test
-    public void test() throws Exception {
-        // create the storage dir
+    public void testImportValidCase() throws Exception {
         createStorageDir();
 
         // import a case
@@ -218,20 +218,56 @@ public class CaseControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string("true"))
                 .andReturn();
+    }
+
+    @Test
+    public void testImportInvalidFile() throws Exception {
+        createStorageDir();
 
         // import a non valid case and expect a fail
         mvc.perform(multipart("/v1/cases")
-                .file(createMockMultipartFile(NOT_A_NETWORK)))
+                        .file(createMockMultipartFile(NOT_A_NETWORK)))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(content().string(startsWith("This file cannot be imported")))
                 .andReturn();
 
         // import a non valid case with a valid extension and expect a fail
         mvc.perform(multipart("/v1/cases")
-                .file(createMockMultipartFile(STILL_NOT_A_NETWORK)))
+                        .file(createMockMultipartFile(STILL_NOT_A_NETWORK)))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(content().string(startsWith("This file cannot be imported")))
                 .andReturn();
+    }
+
+    @Test
+    public void testDownloadNonExistingCase() throws Exception {
+        createStorageDir();
+
+        // download a non existing case
+        mvc.perform(get(GET_CASE_URL, UUID.randomUUID()))
+                .andExpect(status().isNoContent())
+                .andReturn();
+    }
+
+    @Test
+    public void testExportNonExistingCaseFromat() throws Exception {
+        createStorageDir();
+
+        // import a case
+        UUID firstCaseUuid = importCase(TEST_CASE, false);
+
+        // export a case in a non-existing format
+        mvc.perform(post(GET_CASE_URL, firstCaseUuid).param("format", "JPEG"))
+                .andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
+    public void test() throws Exception {
+        // create the storage dir
+        createStorageDir();
+
+        // import a case
+        UUID firstCaseUuid = importCase(TEST_CASE, false);
 
         // list the cases and expect the one imported before
         mvc.perform(get("/v1/cases"))
@@ -252,15 +288,10 @@ public class CaseControllerTest {
                 .andReturn();
         assertThat(mvcResult.getResponse().getHeader("content-disposition")).contains("attachment;");
 
-        // downlaod a case
+        // download a case
         mvc.perform(get(GET_CASE_URL, firstCaseUuid))
                 .andExpect(status().isOk())
                 .andExpect(content().xml(testCaseContent))
-                .andReturn();
-
-        // downlaod a non existing case
-        mvc.perform(get(GET_CASE_URL, UUID.randomUUID()))
-                .andExpect(status().isNoContent())
                 .andReturn();
 
         // export a case in CGMES format
@@ -269,15 +300,6 @@ public class CaseControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_OCTET_STREAM))
                 .andReturn();
         assertThat(mvcResult.getResponse().getHeader("content-disposition")).contains("attachment;");
-
-        // export a non-existing case
-        mvc.perform(post(GET_CASE_URL, UUID.randomUUID()).param("format", "XIIDM"))
-                .andExpect(status().isNoContent())
-                .andReturn();
-
-        // export a case in a non-existing format
-        mvc.perform(post(GET_CASE_URL, firstCaseUuid).param("format", "JPEG"))
-                        .andExpect(status().isUnprocessableEntity());
 
         // delete the case
         mvc.perform(delete(GET_CASE_URL, firstCaseUuid))
@@ -288,6 +310,7 @@ public class CaseControllerTest {
                 .andExpect(content().string(startsWith("The directory with the following uuid doesn't exist:")))
                 .andReturn();
 
+        outputDestination.clear();
         // import a case to delete it
         UUID secondCaseUuid = importCase(TEST_CASE, false);
 
@@ -300,7 +323,7 @@ public class CaseControllerTest {
         assertEquals("XIIDM", headersPrivateCase2.get(CaseInfos.FORMAT_HEADER_KEY));
 
         //check that the case doesn't have an expiration date
-        caseMetadataEntity = caseMetadataRepository.findById(secondCaseUuid).orElseThrow();
+        CaseMetadataEntity caseMetadataEntity = caseMetadataRepository.findById(secondCaseUuid).orElseThrow();
         assertEquals(secondCaseUuid, caseMetadataEntity.getId());
         assertNull(caseMetadataEntity.getExpirationDate());
 
@@ -314,9 +337,9 @@ public class CaseControllerTest {
         UUID caseUuid = importCase(TEST_CASE, false);
 
         // assert that the broker message has been sent
-        messageImport = outputDestination.receive(1000, "case.import.destination");
+        Message<byte[]> messageImport = outputDestination.receive(1000, "case.import.destination");
         assertEquals("", new String(messageImport.getPayload()));
-        headersCase = messageImport.getHeaders();
+        MessageHeaders headersCase = messageImport.getHeaders();
         assertEquals("testCase.xiidm", headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals(caseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
