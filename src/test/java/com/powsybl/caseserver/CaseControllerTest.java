@@ -141,6 +141,7 @@ public class CaseControllerTest {
         mvc.perform(delete("/v1/cases"))
                 .andExpect(status().isUnprocessableEntity());
     }
+
     @Test
     public void testDeleteCases() throws Exception {
         // create the storage dir
