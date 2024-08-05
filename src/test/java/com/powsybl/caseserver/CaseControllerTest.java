@@ -136,23 +136,37 @@ public class CaseControllerTest {
     }
 
     @Test
-    public void test() throws Exception {
+    public void testStorageNotCreated() throws Exception {
         // expect a fail since the storage dir. is not created
         mvc.perform(delete("/v1/cases"))
                 .andExpect(status().isUnprocessableEntity());
-
+    }
+    @Test
+    public void testDeleteCases() throws Exception {
         // create the storage dir
         createStorageDir();
 
         // now it must work
         mvc.perform(delete("/v1/cases"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    public void testCheckNonExistingCase() throws Exception {
+        // create the storage dir
+        createStorageDir();
 
         // check if the case exists (except a false)
         mvc.perform(get("/v1/cases/{caseUuid}/exists", RANDOM_UUID))
                 .andExpect(status().isOk())
                 .andExpect(content().string("false"))
                 .andReturn();
+    }
+
+    @Test
+    public void test() throws Exception {
+        // create the storage dir
+        createStorageDir();
 
         // import a case
         UUID firstCaseUuid = importCase(TEST_CASE, false);
