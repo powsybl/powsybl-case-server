@@ -33,4 +33,7 @@ public class CaseMetadataEntity {
 
     @Column(name = "expirationDate", columnDefinition = "timestamptz")
     private Instant expirationDate;
+
+    @Column(name = "indexed", columnDefinition = "boolean default false", nullable = false)
+    private boolean indexed = false;
 }

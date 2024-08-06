@@ -152,9 +152,10 @@ public class CaseController {
     @Operation(summary = "import a case")
     @SuppressWarnings("javasecurity:S5145")
     public ResponseEntity<UUID> importCase(@RequestParam("file") MultipartFile file,
-                                           @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration) {
+                                           @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration,
+                                           @RequestParam(value = "indexed", required = false, defaultValue = "false") boolean indexed) {
         LOGGER.debug("importCase request received with file = {}", file.getName());
-        UUID caseUuid = caseService.importCase(file, withExpiration);
+        UUID caseUuid = caseService.importCase(file, withExpiration, indexed);
         return ResponseEntity.ok().body(caseUuid);
     }
 
@@ -165,9 +166,10 @@ public class CaseController {
         @ApiResponse(responseCode = "500", description = "An error occurred during the case file duplication")})
     public ResponseEntity<UUID> duplicateCase(
             @RequestParam("duplicateFrom") UUID caseId,
-            @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration) {
+            @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration,
+            @RequestParam(value = "indexed", required = false, defaultValue = "false") boolean indexed) {
         LOGGER.debug("duplicateCase request received with parameter sourceCaseUuid = {}", caseId);
-        UUID newCaseUuid = caseService.duplicateCase(caseId, withExpiration);
+        UUID newCaseUuid = caseService.duplicateCase(caseId, withExpiration, indexed);
         return ResponseEntity.ok().body(newCaseUuid);
     }
 
@@ -179,6 +181,17 @@ public class CaseController {
     public ResponseEntity<Void> disableCaseExpiration(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("disableCaseExpiration request received for caseUuid = {}", caseUuid);
         caseService.disableCaseExpiration(caseUuid);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping(value = "/cases/{caseUuid}/indexation")
+    @Operation(summary = "enable automatic indexation of the case")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "The case index has been changed"),
+        @ApiResponse(responseCode = "404", description = "Source case not found")})
+    public ResponseEntity<Void> enableCaseIndexation(@PathVariable("caseUuid") UUID caseUuid, @RequestParam("indexed") boolean indexed) {
+        LOGGER.debug("enableIndexation request received for caseUuid = {}", caseUuid);
+        caseService.enableCaseIndexation(caseUuid, indexed);
         return ResponseEntity.ok().build();
     }
 
@@ -204,14 +217,6 @@ public class CaseController {
         LOGGER.debug("search cases request received");
         List<CaseInfos> cases = caseService.searchCases(query);
         return ResponseEntity.ok().body(cases);
-    }
-
-    @PostMapping(value = "/cases/reindex-all")
-    @Operation(summary = "reindex all cases")
-    public ResponseEntity<Void> reindexAllCases() {
-        LOGGER.debug("reindex all cases request received");
-        caseService.reindexAllCases();
-        return ResponseEntity.ok().build();
     }
 
     @GetMapping(value = "/cases/metadata")

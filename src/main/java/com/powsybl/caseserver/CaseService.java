@@ -8,6 +8,7 @@ package com.powsybl.caseserver;
 
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.dto.ExportCaseInfos;
+import com.powsybl.caseserver.elasticsearch.CaseInfosRepository;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.parsers.FileNameInfos;
 import com.powsybl.caseserver.parsers.FileNameParser;
@@ -46,14 +47,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -89,6 +83,8 @@ public class CaseService {
 
     @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
     private String rootDirectory;
+    @Autowired
+    private CaseInfosRepository caseInfosRepository;
 
     public CaseService(CaseMetadataRepository caseMetadataRepository) {
         this.caseMetadataRepository = caseMetadataRepository;
@@ -179,7 +175,7 @@ public class CaseService {
         return Files.exists(caseFile) && Files.isRegularFile(caseFile);
     }
 
-    UUID importCase(MultipartFile mpf, boolean withExpiration) {
+    UUID importCase(MultipartFile mpf, boolean withExpiration, boolean indexed) {
         checkStorageInitialization();
 
         UUID caseUuid = UUID.randomUUID();
@@ -214,14 +210,16 @@ public class CaseService {
             throw e;
         }
 
-        createCaseMetadataEntity(caseUuid, withExpiration);
+        createCaseMetadataEntity(caseUuid, withExpiration, indexed);
         CaseInfos caseInfos = createInfos(caseFile.getFileName().toString(), caseUuid, importer.getFormat());
-        caseInfosService.addCaseInfos(caseInfos);
+        if (indexed) {
+            caseInfosService.addCaseInfos(caseInfos);
+        }
         sendImportMessage(caseInfos.createMessage());
         return caseUuid;
     }
 
-    UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration) {
+    UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration, boolean indexed) {
         try {
             Path existingCaseFile = getCaseFile(sourceCaseUuid);
             if (existingCaseFile == null || existingCaseFile.getParent() == null) {
@@ -237,8 +235,10 @@ public class CaseService {
 
             CaseInfos existingCaseInfos = caseInfosService.getCaseInfosByUuid(sourceCaseUuid.toString()).orElseThrow();
             CaseInfos caseInfos = createInfos(existingCaseInfos.getName(), newCaseUuid, existingCaseInfos.getFormat());
-            caseInfosService.addCaseInfos(caseInfos);
-            createCaseMetadataEntity(newCaseUuid, withExpiration);
+            if (indexed) {
+                caseInfosService.addCaseInfos(caseInfos);
+            }
+            createCaseMetadataEntity(newCaseUuid, withExpiration, indexed);
 
             sendImportMessage(caseInfos.createMessage());
             return newCaseUuid;
@@ -248,12 +248,23 @@ public class CaseService {
         }
     }
 
-    private void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration) {
+    private void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, boolean indexed) {
         Instant expirationTime = null;
         if (withExpiration) {
             expirationTime = Instant.now().plus(1, ChronoUnit.HOURS);
         }
-        caseMetadataRepository.save(new CaseMetadataEntity(newCaseUuid, expirationTime));
+        caseMetadataRepository.save(new CaseMetadataEntity(newCaseUuid, expirationTime, indexed));
+    }
+
+    public Set<UUID> getCaseToReindex() {
+        return caseMetadataRepository.findAllByIndexedTrue()
+                .stream()
+                .map(CaseMetadataEntity::getId)
+                .collect(Collectors.toSet());
+    }
+
+    public List<CaseInfos> getAllCases() {
+        return getCases(getStorageRootDir());
     }
 
     CaseInfos createInfos(String fileBaseName, UUID caseUuid, String format) {
@@ -271,6 +282,12 @@ public class CaseService {
     public void disableCaseExpiration(UUID caseUuid) {
         CaseMetadataEntity caseMetadataEntity = caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
         caseMetadataEntity.setExpirationDate(null);
+    }
+
+    @Transactional
+    public void enableCaseIndexation(UUID caseUuid, boolean indexed) {
+        CaseMetadataEntity caseMetadataEntity = caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
+        caseMetadataEntity.setIndexed(indexed);
     }
 
     Optional<Network> loadNetwork(UUID caseUuid) {
@@ -371,10 +388,6 @@ public class CaseService {
     private void sendImportMessage(Message<String> message) {
         OUTPUT_MESSAGE_LOGGER.debug("Sending message : {}", message);
         caseInfosPublisher.send("publishCaseImport-out-0", message);
-    }
-
-    public void reindexAllCases() {
-        caseInfosService.recreateAllCaseInfos(getCases(getStorageRootDir()));
     }
 
     public List<CaseInfos> getMetadata(List<UUID> ids) {
