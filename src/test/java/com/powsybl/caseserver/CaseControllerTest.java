@@ -106,7 +106,7 @@ public class CaseControllerTest {
 
     private FileSystem fileSystem;
 
-    private final String caseUpdateDestination = "case.import.destination";
+    private final String caseImportDestination = "case.import.destination";
 
     @Before
     public void setUp() {
@@ -124,7 +124,7 @@ public class CaseControllerTest {
     @After
     public void tearDown() throws Exception {
         fileSystem.close();
-        List<String> destinations = List.of(caseUpdateDestination);
+        List<String> destinations = List.of(caseImportDestination);
         TestUtils.assertQueuesEmptyThenClear(destinations, outputDestination);
     }
 
@@ -153,7 +153,6 @@ public class CaseControllerTest {
         // create the storage dir
         createStorageDir();
 
-        // now it must work
         mvc.perform(delete("/v1/cases"))
                 .andExpect(status().isOk());
     }
@@ -178,7 +177,7 @@ public class CaseControllerTest {
         UUID firstCaseUuid = importCase(TEST_CASE, false);
 
         // assert that the broker message has been sent
-        Message<byte[]> messageImport = outputDestination.receive(1000, caseUpdateDestination);
+        Message<byte[]> messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         MessageHeaders headersCase = messageImport.getHeaders();
         assertEquals("testCase.xiidm", headersCase.get(CaseInfos.NAME_HEADER_KEY));
@@ -264,7 +263,7 @@ public class CaseControllerTest {
         // export a case in a non-existing format
         mvc.perform(post(GET_CASE_URL, firstCaseUuid).param("format", "JPEG"))
                 .andExpect(status().isUnprocessableEntity());
-        assertNotNull(outputDestination.receive(1000, caseUpdateDestination));
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
     }
 
     @Test
@@ -273,7 +272,7 @@ public class CaseControllerTest {
 
         // import a case
         UUID caseaseUuid = importCase(TEST_CASE, false);
-        assertNotNull(outputDestination.receive(1000, caseUpdateDestination));
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
         // delete the case
         mvc.perform(delete(GET_CASE_URL, caseaseUuid))
@@ -312,7 +311,7 @@ public class CaseControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_OCTET_STREAM))
                 .andReturn();
         assertThat(mvcResult.getResponse().getHeader("content-disposition")).contains("attachment;");
-        assertNotNull(outputDestination.receive(1000, caseUpdateDestination));
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
         // download a case
         mvc.perform(get(GET_CASE_URL, firstCaseUuid))
@@ -335,7 +334,7 @@ public class CaseControllerTest {
         UUID secondCaseUuid = importCase(TEST_CASE, false);
 
         // assert that the broker message has been sent
-        Message<byte[]> messageImportPrivate2 = outputDestination.receive(1000, caseUpdateDestination);
+        Message<byte[]> messageImportPrivate2 = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImportPrivate2.getPayload()));
         MessageHeaders headersPrivateCase2 = messageImportPrivate2.getHeaders();
         assertEquals("testCase.xiidm", headersPrivateCase2.get(CaseInfos.NAME_HEADER_KEY));
@@ -357,7 +356,7 @@ public class CaseControllerTest {
         UUID caseUuid = importCase(TEST_CASE, false);
 
         // assert that the broker message has been sent
-        Message<byte[]> messageImport = outputDestination.receive(1000, caseUpdateDestination);
+        Message<byte[]> messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         MessageHeaders headersCase = messageImport.getHeaders();
         assertEquals("testCase.xiidm", headersCase.get(CaseInfos.NAME_HEADER_KEY));
@@ -377,7 +376,7 @@ public class CaseControllerTest {
         String duplicateCaseUuid = duplicateResult.getResponse().getContentAsString().replace("\"", "");
 
         // assert that broker message has been sent after duplication
-        messageImport = outputDestination.receive(1000, caseUpdateDestination);
+        messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         headersCase = messageImport.getHeaders();
         assertEquals(UUID.fromString(duplicateCaseUuid), headersCase.get(CaseInfos.UUID_HEADER_KEY));
@@ -395,7 +394,7 @@ public class CaseControllerTest {
         Instant afterImportDate = Instant.now().plus(1, ChronoUnit.HOURS);
 
         // assert that the broker message has been sent
-        messageImport = outputDestination.receive(1000, caseUpdateDestination);
+        messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         headersCase = messageImport.getHeaders();
         assertEquals("testCase.xiidm", headersCase.get(CaseInfos.NAME_HEADER_KEY));
@@ -420,7 +419,7 @@ public class CaseControllerTest {
         assertNotEquals(caseUuid.toString(), duplicateCaseUuid2);
 
         // assert that broker message has been sent after duplication
-        messageImport = outputDestination.receive(1000, caseUpdateDestination);
+        messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         headersCase = messageImport.getHeaders();
         assertEquals(UUID.fromString(duplicateCaseUuid2), headersCase.get(CaseInfos.UUID_HEADER_KEY));
@@ -538,7 +537,7 @@ public class CaseControllerTest {
         UUID aCaseUuid = UUID.fromString(aCase.substring(1, aCase.length() - 1));
 
         // assert that broker message has been sent and properties are the right ones
-        Message<byte[]> messageImport = outputDestination.receive(1000, caseUpdateDestination);
+        Message<byte[]> messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         MessageHeaders headersCase = messageImport.getHeaders();
         assertEquals("testCase.xiidm", headersCase.get(CaseInfos.NAME_HEADER_KEY));
@@ -555,7 +554,7 @@ public class CaseControllerTest {
         aCaseUuid = UUID.fromString(aCase.substring(1, aCase.length() - 1));
 
         // assert that broker message has been sent and properties are the right ones
-        messageImport = outputDestination.receive(1000, caseUpdateDestination);
+        messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         headersCase = messageImport.getHeaders();
         assertEquals("20200424T1330Z_2D_RTEFRANCE_001.zip", headersCase.get(CaseInfos.NAME_HEADER_KEY));
@@ -572,7 +571,7 @@ public class CaseControllerTest {
         aCaseUuid = UUID.fromString(aCase.substring(1, aCase.length() - 1));
 
         // assert that broker message has been sent and properties are the right ones
-        messageImport = outputDestination.receive(1000, caseUpdateDestination);
+        messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         headersCase = messageImport.getHeaders();
         assertEquals("20200103_0915_FO5_FR0.UCT", headersCase.get(CaseInfos.NAME_HEADER_KEY));
@@ -589,7 +588,7 @@ public class CaseControllerTest {
         aCaseUuid = UUID.fromString(aCase.substring(1, aCase.length() - 1));
 
         // assert that broker message has been sent and properties are the right ones
-        messageImport = outputDestination.receive(1000, caseUpdateDestination);
+        messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         headersCase = messageImport.getHeaders();
         assertEquals("20200103_0915_SN5_D80.UCT", headersCase.get(CaseInfos.NAME_HEADER_KEY));
@@ -606,7 +605,7 @@ public class CaseControllerTest {
         aCaseUuid = UUID.fromString(aCase.substring(1, aCase.length() - 1));
 
         // assert that broker message has been sent and properties are the right ones
-        messageImport = outputDestination.receive(1000, caseUpdateDestination);
+        messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         headersCase = messageImport.getHeaders();
         assertEquals("20200103_0915_135_CH2.UCT", headersCase.get(CaseInfos.NAME_HEADER_KEY));
@@ -773,6 +772,6 @@ public class CaseControllerTest {
         Files.delete(filePath);
         mvc.perform(delete("/v1/cases"))
                 .andExpect(status().isOk());
-        assertNotNull(outputDestination.receive(1000, caseUpdateDestination));
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
     }
 }
