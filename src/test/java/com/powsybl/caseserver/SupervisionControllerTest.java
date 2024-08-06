@@ -81,16 +81,23 @@ public class SupervisionControllerTest {
         createStorageDir();
         importCase(true);
         importCase(true);
+        importCase(false);
 
         mockMvc.perform(delete("/v1/supervision/cases/indexation"))
                 .andExpect(status().isOk());
+
         Assert.assertEquals(0, supervisionService.getIndexedCaseElementsCount());
 
         //reindex
         mockMvc.perform(post("/v1/supervision/cases/reindex"))
                 .andExpect(status().isOk());
 
+        String countStr = mockMvc.perform(get("/v1/supervision/cases/indexation-count"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        Assert.assertEquals("2", countStr);
         Assert.assertEquals(2, supervisionService.getIndexedCaseElementsCount());
+
     }
 
     private void importCase(Boolean indexed) throws Exception {

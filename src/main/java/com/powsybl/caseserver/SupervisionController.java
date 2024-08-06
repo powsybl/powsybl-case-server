@@ -70,4 +70,11 @@ public class SupervisionController {
         return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Long.toString(supervisionService.deleteIndexedDirectoryElements()));
     }
 
+    @GetMapping(value = "/cases/indexation-count")
+    @Operation(summary = "get indexed cases count")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Indexed cases count")})
+    public ResponseEntity<String> getIndexedDirectoryElementsCount() {
+        return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Long.toString(supervisionService.getIndexedCaseElementsCount()));
+    }
+
 }

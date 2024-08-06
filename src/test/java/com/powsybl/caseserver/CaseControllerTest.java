@@ -474,6 +474,22 @@ public class CaseControllerTest {
         assertTrue(response.contains("\"format\":\"XIIDM\""));
     }
 
+    @Test
+    public void testChangeIndexation() throws Exception {
+        createStorageDir();
+
+        // import a case
+        UUID caseUuid = importCase(TEST_CASE, false);
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
+        assertTrue(caseMetadataRepository.findAllById(List.of(caseUuid)).get(0).isIndexed());
+
+        // disable indexation
+        mvc.perform(put("/v1/cases/{caseUuid}/indexation", caseUuid).param("indexed", "false"))
+                .andExpect(status().isOk());
+
+        assertFalse(caseMetadataRepository.findAllById(List.of(caseUuid)).get(0).isIndexed());
+    }
+
     private UUID importCase(String testCase, Boolean withExpiration) throws Exception {
         String importedCase;
         if (withExpiration) {

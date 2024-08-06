@@ -284,6 +284,12 @@ public class CaseService {
         caseMetadataEntity.setExpirationDate(null);
     }
 
+    @Transactional
+    public void enableCaseIndexation(UUID caseUuid, boolean indexed) {
+        CaseMetadataEntity caseMetadataEntity = caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
+        caseMetadataEntity.setIndexed(indexed);
+    }
+
     Optional<Network> loadNetwork(UUID caseUuid) {
         checkStorageInitialization();
 

@@ -184,6 +184,17 @@ public class CaseController {
         return ResponseEntity.ok().build();
     }
 
+    @PutMapping(value = "/cases/{caseUuid}/indexation")
+    @Operation(summary = "enable automatic indexation of the case")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "The case index has been changed"),
+        @ApiResponse(responseCode = "404", description = "Source case not found")})
+    public ResponseEntity<Void> enableCaseIndexation(@PathVariable("caseUuid") UUID caseUuid, @RequestParam("indexed") boolean indexed) {
+        LOGGER.debug("enableIndexation request received for caseUuid = {}", caseUuid);
+        caseService.enableCaseIndexation(caseUuid, indexed);
+        return ResponseEntity.ok().build();
+    }
+
     @DeleteMapping(value = "/cases/{caseUuid}")
     @Operation(summary = "delete a case")
     public ResponseEntity<Void> deleteCase(@PathVariable("caseUuid") UUID caseUuid) {
