@@ -17,9 +17,5 @@ import java.util.UUID;
  */
 @Repository
 public interface CaseMetadataRepository extends JpaRepository<CaseMetadataEntity, UUID> {
-
-    @Override
-    List<CaseMetadataEntity> findAllById(Iterable<UUID> uuids);
-
     List<CaseMetadataEntity> findAllByIndexedTrue();
 }

@@ -8,7 +8,6 @@ package com.powsybl.caseserver;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import com.powsybl.caseserver.elasticsearch.CaseInfosRepository;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.caseserver.services.SupervisionService;
 import com.powsybl.computation.ComputationManager;
@@ -24,6 +23,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -41,13 +41,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @RunWith(SpringRunner.class)
 @AutoConfigureMockMvc
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, properties = {"case-store-directory=/cases"})
-@ContextConfigurationWithTestChannel
+@SpringBootTest(properties = {"case-store-directory=/cases"})
+@ContextConfiguration(classes = {CaseApplication.class})
 public class SupervisionControllerTest {
     @Autowired
     SupervisionService supervisionService;
-    @Autowired
-    CaseInfosRepository caseInfosRepository;
     @Autowired
     CaseMetadataRepository caseMetadataRepository;
     @Autowired
@@ -63,7 +61,7 @@ public class SupervisionControllerTest {
     private FileSystem fileSystem;
 
     @Test
-    public void testGetElementInfosCount() throws Exception {
+    public void testGetCaseInfosCount() throws Exception {
         createStorageDir();
         importCase(true);
         importCase(true);
@@ -72,7 +70,7 @@ public class SupervisionControllerTest {
         mockMvc.perform(post("/v1/supervision/cases/reindex"))
                 .andExpect(status().isOk());
 
-        Assert.assertEquals(2, supervisionService.getIndexedCaseElementsCount());
+        Assert.assertEquals(2, supervisionService.getIndexedCasesCount());
 
     }
 
@@ -86,7 +84,7 @@ public class SupervisionControllerTest {
         mockMvc.perform(delete("/v1/supervision/cases/indexation"))
                 .andExpect(status().isOk());
 
-        Assert.assertEquals(0, supervisionService.getIndexedCaseElementsCount());
+        Assert.assertEquals(0, supervisionService.getIndexedCasesCount());
 
         //reindex
         mockMvc.perform(post("/v1/supervision/cases/reindex"))
@@ -96,14 +94,14 @@ public class SupervisionControllerTest {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         Assert.assertEquals("2", countStr);
-        Assert.assertEquals(2, supervisionService.getIndexedCaseElementsCount());
+        Assert.assertEquals(2, supervisionService.getIndexedCasesCount());
 
     }
 
     private void importCase(Boolean indexed) throws Exception {
         mockMvc.perform(multipart("/v1/cases")
                             .file(createMockMultipartFile())
-                            .param("indexed", indexed.toString()))
+                            .param("withIndexation", indexed.toString()))
                     .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
     }
@@ -119,12 +117,12 @@ public class SupervisionControllerTest {
         fileSystem = Jimfs.newFileSystem(Configuration.unix());
         caseService.setFileSystem(fileSystem);
         caseService.setComputationManager(Mockito.mock(ComputationManager.class));
-        cleanDB();
     }
 
     @After
     public void tearDown() throws Exception {
         fileSystem.close();
+        cleanDB();
     }
 
     private void cleanDB() {

@@ -29,11 +29,13 @@ public class SupervisionController {
     private static final Logger LOGGER = LoggerFactory.getLogger(SupervisionController.class);
 
     private final SupervisionService supervisionService;
+    private final CaseService caseService;
     private final ClientConfiguration elasticsearchClientConfiguration;
     private final CaseInfosService caseInfosService;
 
-    public SupervisionController(SupervisionService supervisionService, ClientConfiguration elasticsearchClientConfiguration, CaseInfosService caseInfosService) {
+    public SupervisionController(SupervisionService supervisionService, CaseService caseService, ClientConfiguration elasticsearchClientConfiguration, CaseInfosService caseInfosService) {
         this.supervisionService = supervisionService;
+        this.caseService = caseService;
         this.elasticsearchClientConfiguration = elasticsearchClientConfiguration;
         this.caseInfosService = caseInfosService;
     }
@@ -59,7 +61,7 @@ public class SupervisionController {
     @Operation(summary = "reindex all cases")
     public ResponseEntity<Void> reindexAllCases() {
         LOGGER.debug("reindex all cases request received");
-        supervisionService.reindexAllCases();
+        caseInfosService.recreateAllCaseInfos(caseService.getCasesToReindex());
         return ResponseEntity.ok().build();
     }
 
@@ -73,8 +75,8 @@ public class SupervisionController {
     @GetMapping(value = "/cases/indexation-count")
     @Operation(summary = "get indexed cases count")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Indexed cases count")})
-    public ResponseEntity<String> getIndexedDirectoryElementsCount() {
-        return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Long.toString(supervisionService.getIndexedCaseElementsCount()));
+    public ResponseEntity<String> getIndexedCasesCount() {
+        return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Long.toString(supervisionService.getIndexedCasesCount()));
     }
 
 }

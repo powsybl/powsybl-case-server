@@ -474,35 +474,19 @@ public class CaseControllerTest {
         assertTrue(response.contains("\"format\":\"XIIDM\""));
     }
 
-    @Test
-    public void testChangeIndexation() throws Exception {
-        createStorageDir();
-
-        // import a case
-        UUID caseUuid = importCase(TEST_CASE, false);
-        assertNotNull(outputDestination.receive(1000, caseImportDestination));
-        assertTrue(caseMetadataRepository.findAllById(List.of(caseUuid)).get(0).isIndexed());
-
-        // disable indexation
-        mvc.perform(put("/v1/cases/{caseUuid}/indexation", caseUuid).param("indexed", "false"))
-                .andExpect(status().isOk());
-
-        assertFalse(caseMetadataRepository.findAllById(List.of(caseUuid)).get(0).isIndexed());
-    }
-
     private UUID importCase(String testCase, Boolean withExpiration) throws Exception {
         String importedCase;
         if (withExpiration) {
             importedCase = mvc.perform(multipart("/v1/cases")
                     .file(createMockMultipartFile(testCase))
                     .param("withExpiration", withExpiration.toString())
-                    .param("indexed", "true"))
+                    .param("withIndexation", "true"))
                     .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
         } else {
             importedCase = mvc.perform(multipart("/v1/cases")
                     .file(createMockMultipartFile(testCase))
-                    .param("indexed", "true"))
+                    .param("withIndexation", "true"))
                     .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
         }
@@ -546,7 +530,7 @@ public class CaseControllerTest {
         // import IIDM test case
         String aCase = mvc.perform(multipart("/v1/cases")
                 .file(createMockMultipartFile("testCase.xiidm"))
-                        .param("indexed", "true"))
+                        .param("withIndexation", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -563,7 +547,7 @@ public class CaseControllerTest {
         // import CGMES french file
         aCase = mvc.perform(multipart("/v1/cases")
                 .file(createMockMultipartFile("20200424T1330Z_2D_RTEFRANCE_001.zip"))
-                        .param("indexed", "true"))
+                        .param("withIndexation", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -580,7 +564,7 @@ public class CaseControllerTest {
         // import UCTE french file
         aCase = mvc.perform(multipart("/v1/cases")
                 .file(createMockMultipartFile("20200103_0915_FO5_FR0.UCT"))
-                        .param("indexed", "true"))
+                        .param("withIndexation", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -597,7 +581,7 @@ public class CaseControllerTest {
         // import UCTE german file
         aCase = mvc.perform(multipart("/v1/cases")
                 .file(createMockMultipartFile("20200103_0915_SN5_D80.UCT"))
-                        .param("indexed", "true"))
+                        .param("withIndexation", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -614,7 +598,7 @@ public class CaseControllerTest {
         // import UCTE swiss file
         aCase = mvc.perform(multipart("/v1/cases")
                 .file(createMockMultipartFile("20200103_0915_135_CH2.UCT"))
-                        .param("indexed", "true"))
+                        .param("withIndexation", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 

@@ -175,7 +175,7 @@ public class CaseService {
         return Files.exists(caseFile) && Files.isRegularFile(caseFile);
     }
 
-    UUID importCase(MultipartFile mpf, boolean withExpiration, boolean indexed) {
+    UUID importCase(MultipartFile mpf, boolean withExpiration, boolean withIndexation) {
         checkStorageInitialization();
 
         UUID caseUuid = UUID.randomUUID();
@@ -210,16 +210,16 @@ public class CaseService {
             throw e;
         }
 
-        createCaseMetadataEntity(caseUuid, withExpiration, indexed);
+        createCaseMetadataEntity(caseUuid, withExpiration, withIndexation);
         CaseInfos caseInfos = createInfos(caseFile.getFileName().toString(), caseUuid, importer.getFormat());
-        if (indexed) {
+        if (withIndexation) {
             caseInfosService.addCaseInfos(caseInfos);
         }
         sendImportMessage(caseInfos.createMessage());
         return caseUuid;
     }
 
-    UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration, boolean indexed) {
+    UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration) {
         try {
             Path existingCaseFile = getCaseFile(sourceCaseUuid);
             if (existingCaseFile == null || existingCaseFile.getParent() == null) {
@@ -235,10 +235,11 @@ public class CaseService {
 
             CaseInfos existingCaseInfos = caseInfosService.getCaseInfosByUuid(sourceCaseUuid.toString()).orElseThrow();
             CaseInfos caseInfos = createInfos(existingCaseInfos.getName(), newCaseUuid, existingCaseInfos.getFormat());
-            if (indexed) {
-                caseInfosService.addCaseInfos(caseInfos);
-            }
-            createCaseMetadataEntity(newCaseUuid, withExpiration, indexed);
+            caseInfosService.addCaseInfos(caseInfos);
+
+            Optional<CaseMetadataEntity> existingCase = caseMetadataRepository.findById(sourceCaseUuid);
+            existingCase.ifPresentOrElse(caseMetadataEntity -> createCaseMetadataEntity(newCaseUuid, withExpiration, caseMetadataEntity.isIndexed()),
+                    () -> createCaseMetadataEntity(newCaseUuid, withExpiration, false));
 
             sendImportMessage(caseInfos.createMessage());
             return newCaseUuid;
@@ -248,23 +249,20 @@ public class CaseService {
         }
     }
 
-    private void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, boolean indexed) {
+    private void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, boolean withIndexation) {
         Instant expirationTime = null;
         if (withExpiration) {
             expirationTime = Instant.now().plus(1, ChronoUnit.HOURS);
         }
-        caseMetadataRepository.save(new CaseMetadataEntity(newCaseUuid, expirationTime, indexed));
+        caseMetadataRepository.save(new CaseMetadataEntity(newCaseUuid, expirationTime, withIndexation));
     }
 
-    public Set<UUID> getCaseToReindex() {
-        return caseMetadataRepository.findAllByIndexedTrue()
+    public List<CaseInfos> getCasesToReindex() {
+        Set<UUID> casesToReindex = caseMetadataRepository.findAllByIndexedTrue()
                 .stream()
                 .map(CaseMetadataEntity::getId)
                 .collect(Collectors.toSet());
-    }
-
-    public List<CaseInfos> getAllCases() {
-        return getCases(getStorageRootDir());
+        return getCases(getStorageRootDir()).stream().filter(c -> casesToReindex.contains(c.getUuid())).toList();
     }
 
     CaseInfos createInfos(String fileBaseName, UUID caseUuid, String format) {
@@ -282,12 +280,6 @@ public class CaseService {
     public void disableCaseExpiration(UUID caseUuid) {
         CaseMetadataEntity caseMetadataEntity = caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
         caseMetadataEntity.setExpirationDate(null);
-    }
-
-    @Transactional
-    public void enableCaseIndexation(UUID caseUuid, boolean indexed) {
-        CaseMetadataEntity caseMetadataEntity = caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
-        caseMetadataEntity.setIndexed(indexed);
     }
 
     Optional<Network> loadNetwork(UUID caseUuid) {
