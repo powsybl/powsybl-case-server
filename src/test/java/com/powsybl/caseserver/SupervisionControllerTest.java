@@ -75,7 +75,7 @@ public class SupervisionControllerTest {
     }
 
     @Test
-    public void testDeleteElementInfos() throws Exception {
+    public void testReindexAll() throws Exception {
         createStorageDir();
         importCase(true);
         importCase(true);
@@ -96,6 +96,14 @@ public class SupervisionControllerTest {
         Assert.assertEquals("2", countStr);
         Assert.assertEquals(2, supervisionService.getIndexedCasesCount());
 
+    }
+
+    @Test
+    public void testGetIndexName() throws Exception {
+        String result = mockMvc.perform(get("/v1/supervision/cases/index-name"))
+                        .andReturn().getResponse().getContentAsString();
+
+        Assert.assertEquals("cases", result);
     }
 
     private void importCase(Boolean indexed) throws Exception {
