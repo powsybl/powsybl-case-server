@@ -244,7 +244,7 @@ public class CaseService {
         }
     }
 
-    CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
+    private CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
         return caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
     }
 
