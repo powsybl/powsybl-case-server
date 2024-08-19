@@ -237,10 +237,8 @@ public class CaseService {
             CaseInfos caseInfos = createInfos(existingCaseInfos.getName(), newCaseUuid, existingCaseInfos.getFormat());
             caseInfosService.addCaseInfos(caseInfos);
 
-            Optional<CaseMetadataEntity> existingCase = caseMetadataRepository.findById(sourceCaseUuid);
-            existingCase.ifPresentOrElse(caseMetadataEntity -> createCaseMetadataEntity(newCaseUuid, withExpiration, caseMetadataEntity.isIndexed()),
-                    () -> createCaseMetadataEntity(newCaseUuid, withExpiration, false));
-
+            CaseMetadataEntity existingCase = caseMetadataRepository.findById(sourceCaseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + sourceCaseUuid + " not found"));
+            createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed());
             sendImportMessage(caseInfos.createMessage());
             return newCaseUuid;
 
