@@ -46,7 +46,7 @@ public class CaseInfosService {
 
     @Value(ESConfig.CASE_INFOS_INDEX_NAME)
     @Getter
-    private String directoryElementsIndexName;
+    private String directoryCasesIndexName;
 
     public CaseInfos addCaseInfos(@NonNull final CaseInfos ci) {
         caseInfosRepository.save(ci);

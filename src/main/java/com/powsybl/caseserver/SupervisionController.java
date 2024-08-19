@@ -51,10 +51,10 @@ public class SupervisionController {
     }
 
     @GetMapping(value = "/cases/index-name")
-    @Operation(summary = "get the indexed directory elements index name")
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Indexed directory elements index name")})
-    public ResponseEntity<String> getIndexedDirectoryElementsIndexName() {
-        return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(caseInfosService.getDirectoryElementsIndexName());
+    @Operation(summary = "get the indexed cases index name")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Indexed directory cases index name")})
+    public ResponseEntity<String> getIndexedCasesFIndexName() {
+        return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(caseInfosService.getDirectoryCasesIndexName());
     }
 
     @PostMapping(value = "/cases/reindex")
@@ -66,10 +66,10 @@ public class SupervisionController {
     }
 
     @DeleteMapping(value = "/cases/indexation")
-    @Operation(summary = "delete indexed elements")
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "all indexed elements have been deleted")})
-    public ResponseEntity<String> deleteIndexedDirectoryElements() {
-        return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Long.toString(supervisionService.deleteIndexedDirectoryElements()));
+    @Operation(summary = "delete indexed cases")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "all indexed cases have been deleted")})
+    public ResponseEntity<String> deleteIndexedCases() {
+        return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Long.toString(supervisionService.deleteIndexedCases()));
     }
 
     @GetMapping(value = "/cases/indexation-count")

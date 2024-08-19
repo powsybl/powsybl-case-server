@@ -27,13 +27,13 @@ public class SupervisionService {
         this.caseInfosRepository = caseInfosRepository;
     }
 
-    public long deleteIndexedDirectoryElements() {
+    public long deleteIndexedCases() {
         AtomicReference<Long> startTime = new AtomicReference<>();
         startTime.set(System.nanoTime());
 
         long nbIndexesToDelete = getIndexedCasesCount();
         caseInfosRepository.deleteAll();
-        LOGGER.trace("Indexed directory elements deletion : {} seconds", TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startTime.get()));
+        LOGGER.trace("Indexed cases deletion : {} seconds", TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startTime.get()));
         return nbIndexesToDelete;
     }
 
