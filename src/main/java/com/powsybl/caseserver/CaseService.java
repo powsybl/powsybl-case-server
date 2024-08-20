@@ -8,7 +8,6 @@ package com.powsybl.caseserver;
 
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.dto.ExportCaseInfos;
-import com.powsybl.caseserver.elasticsearch.CaseInfosRepository;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.parsers.FileNameInfos;
 import com.powsybl.caseserver.parsers.FileNameParser;
@@ -83,8 +82,6 @@ public class CaseService {
 
     @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
     private String rootDirectory;
-    @Autowired
-    private CaseInfosRepository caseInfosRepository;
 
     public CaseService(CaseMetadataRepository caseMetadataRepository) {
         this.caseMetadataRepository = caseMetadataRepository;
@@ -237,7 +234,7 @@ public class CaseService {
             CaseInfos caseInfos = createInfos(existingCaseInfos.getName(), newCaseUuid, existingCaseInfos.getFormat());
             caseInfosService.addCaseInfos(caseInfos);
 
-            CaseMetadataEntity existingCase = caseMetadataRepository.findById(sourceCaseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + sourceCaseUuid + " not found"));
+            CaseMetadataEntity existingCase = getCaseMetaDataEntity(sourceCaseUuid);
             createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed());
             sendImportMessage(caseInfos.createMessage());
             return newCaseUuid;
@@ -245,6 +242,10 @@ public class CaseService {
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred during case duplication");
         }
+    }
+
+    CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
+        return caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
     }
 
     private void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, boolean withIndexation) {
@@ -276,7 +277,7 @@ public class CaseService {
 
     @Transactional
     public void disableCaseExpiration(UUID caseUuid) {
-        CaseMetadataEntity caseMetadataEntity = caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
+        CaseMetadataEntity caseMetadataEntity = getCaseMetaDataEntity(caseUuid);
         caseMetadataEntity.setExpirationDate(null);
     }
 
