@@ -474,6 +474,30 @@ public class CaseControllerTest {
         assertTrue(response.contains("\"format\":\"XIIDM\""));
     }
 
+    @Test
+    public void testDuplicateNonIndexedCase() throws Exception {
+        // create the storage dir
+        createStorageDir();
+
+        // import IIDM test case
+        String caseUuid = mvc.perform(multipart("/v1/cases")
+                        .file(createMockMultipartFile(TEST_CASE))
+                        .param("withExpiration", "false")
+                        .param("withIndexation", "false"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
+        //duplicate an existing case
+        String duplicateCaseStr = mvc.perform(post("/v1/cases?duplicateFrom=" + caseUuid.substring(1, caseUuid.length() - 1)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        UUID duplicateCaseUuid = UUID.fromString(duplicateCaseStr.substring(1, duplicateCaseStr.length() - 1));
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
+
+        assertFalse(caseMetadataRepository.findById(duplicateCaseUuid).get().isIndexed());
+
+    }
+
     private UUID importCase(String testCase, Boolean withExpiration) throws Exception {
         String importedCase;
         if (withExpiration) {

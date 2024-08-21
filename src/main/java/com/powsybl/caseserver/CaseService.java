@@ -53,6 +53,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
+import static com.powsybl.caseserver.dto.CaseInfos.*;
 
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
@@ -230,12 +231,14 @@ public class CaseService {
             newCaseFile = newCaseUuidDirectory.resolve(existingCaseFile.getFileName());
             Files.copy(existingCaseFile, newCaseFile, StandardCopyOption.COPY_ATTRIBUTES);
 
-            CaseInfos existingCaseInfos = caseInfosService.getCaseInfosByUuid(sourceCaseUuid.toString()).orElseThrow();
-            CaseInfos caseInfos = createInfos(existingCaseInfos.getName(), newCaseUuid, existingCaseInfos.getFormat());
-            caseInfosService.addCaseInfos(caseInfos);
-
             CaseMetadataEntity existingCase = getCaseMetaDataEntity(sourceCaseUuid);
+            CaseInfos caseInfos = createInfos(newCaseFile.getFileName().toString(), newCaseUuid, getFormat(newCaseFile));
+            if (existingCase.isIndexed()) {
+                caseInfosService.addCaseInfos(caseInfos);
+            }
+
             createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed());
+
             sendImportMessage(caseInfos.createMessage());
             return newCaseUuid;
 
