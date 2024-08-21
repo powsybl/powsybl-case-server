@@ -152,9 +152,10 @@ public class CaseController {
     @Operation(summary = "import a case")
     @SuppressWarnings("javasecurity:S5145")
     public ResponseEntity<UUID> importCase(@RequestParam("file") MultipartFile file,
-                                           @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration) {
+                                           @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration,
+                                           @RequestParam(value = "withIndexation", required = false, defaultValue = "false") boolean withIndexation) {
         LOGGER.debug("importCase request received with file = {}", file.getName());
-        UUID caseUuid = caseService.importCase(file, withExpiration);
+        UUID caseUuid = caseService.importCase(file, withExpiration, withIndexation);
         return ResponseEntity.ok().body(caseUuid);
     }
 
@@ -204,14 +205,6 @@ public class CaseController {
         LOGGER.debug("search cases request received");
         List<CaseInfos> cases = caseService.searchCases(query);
         return ResponseEntity.ok().body(cases);
-    }
-
-    @PostMapping(value = "/cases/reindex-all")
-    @Operation(summary = "reindex all cases")
-    public ResponseEntity<Void> reindexAllCases() {
-        LOGGER.debug("reindex all cases request received");
-        caseService.reindexAllCases();
-        return ResponseEntity.ok().build();
     }
 
     @GetMapping(value = "/cases/metadata")

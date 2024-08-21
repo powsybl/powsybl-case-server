@@ -32,6 +32,8 @@ import java.util.Optional;
 @EnableElasticsearchRepositories
 public class ESConfig extends ElasticsearchConfiguration {
 
+    public static final String CASE_INFOS_INDEX_NAME = "#{@environment.getProperty('powsybl-ws.elasticsearch.index.prefix')}cases";
+
     @Value("#{'${spring.data.elasticsearch.embedded:false}' ? 'localhost' : '${spring.data.elasticsearch.host}'}")
     private String esHost;
 
