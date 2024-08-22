@@ -493,9 +493,7 @@ public class CaseControllerTest {
                 .andReturn().getResponse().getContentAsString();
         UUID duplicateCaseUuid = UUID.fromString(duplicateCaseStr.substring(1, duplicateCaseStr.length() - 1));
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
-
         assertFalse(caseMetadataRepository.findById(duplicateCaseUuid).get().isIndexed());
-
     }
 
     private UUID importCase(String testCase, Boolean withExpiration) throws Exception {

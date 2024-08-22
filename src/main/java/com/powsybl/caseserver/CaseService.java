@@ -115,7 +115,7 @@ public class CaseService {
 
     private CaseInfos getCaseInfos(Path file) {
         try {
-            return createInfos(file.getFileName().toString(), UUID.fromString(file.getParent().getFileName().toString()), getFormat(file));
+            return createInfos(file, UUID.fromString(file.getParent().getFileName().toString()));
         } catch (Exception e) {
             LOGGER.error("Error processing file {}: {}", file.getFileName(), e.getMessage(), e);
             return null;
@@ -232,7 +232,7 @@ public class CaseService {
             Files.copy(existingCaseFile, newCaseFile, StandardCopyOption.COPY_ATTRIBUTES);
 
             CaseMetadataEntity existingCase = getCaseMetaDataEntity(sourceCaseUuid);
-            CaseInfos caseInfos = createInfos(newCaseFile.getFileName().toString(), newCaseUuid, getFormat(newCaseFile));
+            CaseInfos caseInfos = createInfos(newCaseFile, newCaseUuid);
             if (existingCase.isIndexed()) {
                 caseInfosService.addCaseInfos(caseInfos);
             }
@@ -245,6 +245,10 @@ public class CaseService {
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred during case duplication");
         }
+    }
+
+    private CaseInfos createInfos(Path caseFile, UUID caseUuid) {
+        return createInfos(caseFile.getFileName().toString(), caseUuid, getFormat(caseFile));
     }
 
     private CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
