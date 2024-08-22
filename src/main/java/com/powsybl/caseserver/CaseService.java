@@ -53,6 +53,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
+import static com.powsybl.caseserver.dto.CaseInfos.*;
 
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
@@ -114,7 +115,7 @@ public class CaseService {
 
     private CaseInfos getCaseInfos(Path file) {
         try {
-            return createInfos(file.getFileName().toString(), UUID.fromString(file.getParent().getFileName().toString()), getFormat(file));
+            return createInfos(file, UUID.fromString(file.getParent().getFileName().toString()));
         } catch (Exception e) {
             LOGGER.error("Error processing file {}: {}", file.getFileName(), e.getMessage(), e);
             return null;
@@ -230,18 +231,24 @@ public class CaseService {
             newCaseFile = newCaseUuidDirectory.resolve(existingCaseFile.getFileName());
             Files.copy(existingCaseFile, newCaseFile, StandardCopyOption.COPY_ATTRIBUTES);
 
-            CaseInfos existingCaseInfos = caseInfosService.getCaseInfosByUuid(sourceCaseUuid.toString()).orElseThrow();
-            CaseInfos caseInfos = createInfos(existingCaseInfos.getName(), newCaseUuid, existingCaseInfos.getFormat());
-            caseInfosService.addCaseInfos(caseInfos);
-
             CaseMetadataEntity existingCase = getCaseMetaDataEntity(sourceCaseUuid);
+            CaseInfos caseInfos = createInfos(newCaseFile, newCaseUuid);
+            if (existingCase.isIndexed()) {
+                caseInfosService.addCaseInfos(caseInfos);
+            }
+
             createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed());
+
             sendImportMessage(caseInfos.createMessage());
             return newCaseUuid;
 
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred during case duplication");
         }
+    }
+
+    private CaseInfos createInfos(Path caseFile, UUID caseUuid) {
+        return createInfos(caseFile.getFileName().toString(), caseUuid, getFormat(caseFile));
     }
 
     private CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
