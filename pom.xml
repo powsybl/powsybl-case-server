@@ -13,7 +13,7 @@
     <parent>
         <groupId>com.powsybl</groupId>
         <artifactId>powsybl-parent-ws</artifactId>
-        <version>19</version>
+        <version>20</version>
         <relativePath/>
     </parent>
 
@@ -48,7 +48,7 @@
 
         <mockito-inline.version>3.11.1</mockito-inline.version>
         <log4j2-mock-version>0.0.2</log4j2-mock-version>
-        <powsybl-ws-dependencies.version>2.12.0</powsybl-ws-dependencies.version>
+        <powsybl-ws-dependencies.version>2.13.0</powsybl-ws-dependencies.version>
         <testcontainers.version>1.18.3</testcontainers.version>
     </properties>
 
