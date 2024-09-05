@@ -37,7 +37,7 @@ import java.util.*;
 public class S3CaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTest {
 
     @Autowired
-    protected S3CaseService caseService;
+    protected S3CaseService s3CaseService;
 
     @Autowired
     private S3Client s3Client;

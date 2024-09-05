@@ -7,8 +7,8 @@
 package com.powsybl.caseserver.repository;
 
 import com.powsybl.caseserver.server.CaseService;
-import com.powsybl.caseserver.server.FileSystemStorageService;
-import com.powsybl.caseserver.server.ObjectStorageService;
+import com.powsybl.caseserver.server.FsCaseService;
+import com.powsybl.caseserver.server.S3CaseService;
 import com.powsybl.caseserver.datasource.util.CaseDataSourceService;
 import com.powsybl.caseserver.datasource.util.FsCaseDataSourceService;
 import com.powsybl.caseserver.datasource.util.S3CaseDataSourceService;
@@ -35,9 +35,9 @@ public class StorageConfig {
     @Bean
     public CaseService storageService() {
         if ("file".equals(storageType)) {
-            return new FileSystemStorageService(caseMetadataRepository);
+            return new FsCaseService(caseMetadataRepository);
         } else if ("S3".equals(storageType)) {
-            return new ObjectStorageService(caseMetadataRepository);
+            return new S3CaseService(caseMetadataRepository);
         }
         return null;
     }

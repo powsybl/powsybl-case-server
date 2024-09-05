@@ -31,7 +31,7 @@ import java.util.UUID;
 public class FsCaseDataSourceService implements CaseDataSourceService {
 
     @Autowired
-    private FsCaseService caseService;
+    private FsCaseService fsCaseService;
 
     @Override
     public String getBaseName(UUID caseUuid) {
@@ -91,12 +91,12 @@ public class FsCaseDataSourceService implements CaseDataSourceService {
     }
 
     private DataSource initDatasource(UUID caseUuid) {
-        Path file = caseService.getCaseFile(caseUuid);
+        Path file = fsCaseService.getCaseFile(caseUuid);
         return DataSource.fromPath(file);
     }
 
     private DataSource getDatasource(UUID caseUuid) {
-        caseService.checkStorageInitialization();
+        fsCaseService.checkStorageInitialization();
         return initDatasource(caseUuid);
     }
 
