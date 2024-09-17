@@ -8,10 +8,6 @@ package com.powsybl.caseserver.server;
 
 import com.powsybl.caseserver.CaseConstants;
 import com.powsybl.caseserver.dto.CaseInfos;
-import java.io.IOException;
-import java.util.List;
-import java.util.UUID;
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -38,8 +34,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
 
@@ -134,8 +133,8 @@ public class CaseController {
             var headers = new HttpHeaders();
             headers.setContentDisposition(
                     ContentDisposition.builder("attachment")
-                            .filename(networkInfos.networkName())
-                            .build()
+                    .filename(networkInfos.networkName())
+                    .build()
             );
             return ResponseEntity.ok()
                     .headers(headers)
@@ -152,28 +151,14 @@ public class CaseController {
 
     }
 
-    @GetMapping(value = "/cases/metadata")
-    @Operation(summary = "Get cases Metadata")
-    public ResponseEntity<List<CaseInfos>> getMetadata(@RequestParam("ids") List<UUID> ids) {
-        LOGGER.debug("get Cases metadata");
-        return ResponseEntity.ok().body(caseService.getMetadata(ids));
-    }
-
-    @GetMapping(value = "/cases/search")
-    @Operation(summary = "Search cases by metadata")
-    public ResponseEntity<List<CaseInfos>> searchCases(@RequestParam(value = "q") String query) {
-        LOGGER.debug("search cases request received");
-        List<CaseInfos> cases = caseService.searchCases(query);
-        return ResponseEntity.ok().body(cases);
-    }
-
     @PostMapping(value = "/cases", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "import a case")
     @SuppressWarnings("javasecurity:S5145")
     public ResponseEntity<UUID> importCase(@RequestParam("file") MultipartFile file,
-                                           @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration) {
+                                           @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration,
+                                           @RequestParam(value = "withIndexation", required = false, defaultValue = "false") boolean withIndexation) {
         LOGGER.debug("importCase request received with file = {}", file.getName());
-        UUID caseUuid = caseService.importCase(file, withExpiration);
+        UUID caseUuid = caseService.importCase(file, withExpiration, withIndexation);
         return ResponseEntity.ok().body(caseUuid);
     }
 
@@ -188,14 +173,6 @@ public class CaseController {
         LOGGER.debug("duplicateCase request received with parameter sourceCaseUuid = {}", caseId);
         UUID newCaseUuid = caseService.duplicateCase(caseId, withExpiration);
         return ResponseEntity.ok().body(newCaseUuid);
-    }
-
-    @PostMapping(value = "/cases/reindex-all")
-    @Operation(summary = "reindex all cases")
-    public ResponseEntity<Void> reindexAllCases() {
-        LOGGER.debug("reindex all cases request received");
-        caseService.reindexAllCases();
-        return ResponseEntity.ok().build();
     }
 
     @PutMapping(value = "/cases/{caseUuid}/disableExpiration")
@@ -228,4 +205,18 @@ public class CaseController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping(value = "/cases/search")
+    @Operation(summary = "Search cases by metadata")
+    public ResponseEntity<List<CaseInfos>> searchCases(@RequestParam(value = "q") String query) {
+        LOGGER.debug("search cases request received");
+        List<CaseInfos> cases = caseService.searchCases(query);
+        return ResponseEntity.ok().body(cases);
+    }
+
+    @GetMapping(value = "/cases/metadata")
+    @Operation(summary = "Get cases Metadata")
+    public ResponseEntity<List<CaseInfos>> getMetadata(@RequestParam("ids") List<UUID> ids) {
+        LOGGER.debug("get Cases metadata");
+        return ResponseEntity.ok().body(caseService.getMetadata(ids));
+    }
 }

@@ -9,6 +9,9 @@ package com.powsybl.caseserver.server;
 import com.powsybl.caseserver.CaseException;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
+import com.powsybl.caseserver.parsers.FileNameInfos;
+import com.powsybl.caseserver.parsers.FileNameParser;
+import com.powsybl.caseserver.parsers.FileNameParsers;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.computation.ComputationManager;
@@ -28,7 +31,12 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.*;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -77,7 +85,7 @@ public class FsCaseService implements CaseService {
 
     private CaseInfos getCaseInfos(Path file) {
         try {
-            return createInfos(file.getFileName().toString(), UUID.fromString(file.getParent().getFileName().toString()), getFormat(file));
+            return createInfos(file, UUID.fromString(file.getParent().getFileName().toString()));
         } catch (Exception e) {
             LOGGER.error("Error processing file {}: {}", file.getFileName(), e.getMessage(), e);
             return null;
@@ -158,7 +166,8 @@ public class FsCaseService implements CaseService {
     }
 
     @Override
-    public UUID importCase(MultipartFile mpf, boolean withExpiration) {
+    public UUID importCase(MultipartFile mpf, boolean withExpiration, boolean withIndexation) {
+        //TODO merge withIndexation
         checkStorageInitialization();
 
         UUID caseUuid = UUID.randomUUID();
@@ -193,9 +202,11 @@ public class FsCaseService implements CaseService {
             throw e;
         }
 
-        createCaseMetadataEntity(caseUuid, withExpiration, caseMetadataRepository);
+        createCaseMetadataEntity(caseUuid, withExpiration, withIndexation, caseMetadataRepository);
         CaseInfos caseInfos = createInfos(caseFile.getFileName().toString(), caseUuid, importer.getFormat());
-        caseInfosService.addCaseInfos(caseInfos);
+        if (withIndexation) {
+            caseInfosService.addCaseInfos(caseInfos);
+        }
         notificationService.sendImportMessage(caseInfos.createMessage());
         return caseUuid;
     }
@@ -215,10 +226,12 @@ public class FsCaseService implements CaseService {
             newCaseFile = newCaseUuidDirectory.resolve(existingCaseFile.getFileName());
             Files.copy(existingCaseFile, newCaseFile, StandardCopyOption.COPY_ATTRIBUTES);
 
-            CaseInfos existingCaseInfos = caseInfosService.getCaseInfosByUuid(sourceCaseUuid.toString()).orElseThrow();
-            CaseInfos caseInfos = createInfos(existingCaseInfos.getName(), newCaseUuid, existingCaseInfos.getFormat());
-            caseInfosService.addCaseInfos(caseInfos);
-            createCaseMetadataEntity(newCaseUuid, withExpiration, caseMetadataRepository);
+            CaseMetadataEntity existingCase = getCaseMetaDataEntity(sourceCaseUuid);
+            CaseInfos caseInfos = createInfos(newCaseFile, newCaseUuid);
+            if (existingCase.isIndexed()) {
+                caseInfosService.addCaseInfos(caseInfos);
+            }
+            createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed(), caseMetadataRepository);
 
             notificationService.sendImportMessage(caseInfos.createMessage());
             return newCaseUuid;
@@ -228,10 +241,38 @@ public class FsCaseService implements CaseService {
         }
     }
 
+    private CaseInfos createInfos(Path caseFile, UUID caseUuid) {
+        return createInfos(caseFile.getFileName().toString(), caseUuid, getFormat(caseFile));
+    }
+
+    private CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
+        return caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
+    }
+
+    // TODO should not be duplicated with S3CaseService
+    public List<CaseInfos> getCasesToReindex() {
+        Set<UUID> casesToReindex = caseMetadataRepository.findAllByIndexedTrue()
+                .stream()
+                .map(CaseMetadataEntity::getId)
+                .collect(Collectors.toSet());
+        return getCases(getStorageRootDir()).stream().filter(c -> casesToReindex.contains(c.getUuid())).toList();
+    }
+
+    public CaseInfos createInfos(String fileBaseName, UUID caseUuid, String format) {
+        FileNameParser parser = FileNameParsers.findParser(fileBaseName);
+        if (parser != null) {
+            Optional<? extends FileNameInfos> fileNameInfos = parser.parse(fileBaseName);
+            if (fileNameInfos.isPresent()) {
+                return CaseInfos.create(fileBaseName, caseUuid, format, fileNameInfos.get());
+            }
+        }
+        return CaseInfos.builder().name(fileBaseName).uuid(caseUuid).format(format).build();
+    }
+
     @Transactional
     @Override
     public void disableCaseExpiration(UUID caseUuid) {
-        CaseMetadataEntity caseMetadataEntity = caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
+        CaseMetadataEntity caseMetadataEntity = getCaseMetaDataEntity(caseUuid);
         caseMetadataEntity.setExpirationDate(null);
     }
 
@@ -345,12 +386,6 @@ public class FsCaseService implements CaseService {
         }
     }
 
-    @Override
-    public void reindexAllCases() {
-        caseInfosService.recreateAllCaseInfos(getCases(getStorageRootDir()));
-    }
-
-    @Override
     public List<CaseInfos> getMetadata(List<UUID> ids) {
         List<CaseInfos> cases = new ArrayList<>();
         ids.forEach(caseUuid -> {
@@ -362,4 +397,5 @@ public class FsCaseService implements CaseService {
         });
         return cases;
     }
+
 }

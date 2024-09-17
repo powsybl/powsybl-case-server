@@ -9,7 +9,9 @@ package com.powsybl.caseserver.elasticsearch;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryStringQuery;
 import com.google.common.collect.Lists;
 import com.powsybl.caseserver.dto.CaseInfos;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -41,6 +43,10 @@ public class CaseInfosService {
 
     @Autowired
     private ElasticsearchOperations operations;
+
+    @Value(ESConfig.CASE_INFOS_INDEX_NAME)
+    @Getter
+    private String directoryCasesIndexName;
 
     public CaseInfos addCaseInfos(@NonNull final CaseInfos ci) {
         caseInfosRepository.save(ci);

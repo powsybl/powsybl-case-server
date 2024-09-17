@@ -41,6 +41,7 @@ import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -273,7 +274,7 @@ public class S3CaseService implements CaseService {
     }
 
     @Override
-    public UUID importCase(MultipartFile mpf, boolean withExpiration) {
+    public UUID importCase(MultipartFile mpf, boolean withExpiration, boolean withIndexation) {
         UUID caseUuid = UUID.randomUUID();
 
         String caseName = mpf.getOriginalFilename();
@@ -299,7 +300,7 @@ public class S3CaseService implements CaseService {
             throw CaseException.createFileNotImportable(caseName);
         }
 
-        createCaseMetadataEntity(caseUuid, withExpiration, caseMetadataRepository);
+        createCaseMetadataEntity(caseUuid, withExpiration, withIndexation, caseMetadataRepository);
         CaseInfos caseInfos = createInfos(caseName, caseUuid, format);
         caseInfosService.addCaseInfos(caseInfos);
         notificationService.sendImportMessage(caseInfos.createMessage());
@@ -374,11 +375,22 @@ public class S3CaseService implements CaseService {
             }
 
         }
+        CaseMetadataEntity existingCase = getCaseMetaDataEntity(sourceCaseUuid);
+
         CaseInfos caseInfos = createInfos(existingCaseInfos.getName(), newCaseUuid, existingCaseInfos.getFormat());
         caseInfosService.addCaseInfos(caseInfos);
-        createCaseMetadataEntity(newCaseUuid, withExpiration, caseMetadataRepository);
+        createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed(), caseMetadataRepository);
         notificationService.sendImportMessage(caseInfos.createMessage());
         return newCaseUuid;
+    }
+
+    // TODO should not be duplicated with FSCaseService
+    public List<CaseInfos> getCasesToReindex() {
+        Set<UUID> casesToReindex = caseMetadataRepository.findAllByIndexedTrue()
+                .stream()
+                .map(CaseMetadataEntity::getId)
+                .collect(Collectors.toSet());
+        return getCases().stream().filter(c -> casesToReindex.contains(c.getUuid())).toList();
     }
 
     @Transactional
@@ -460,11 +472,6 @@ public class S3CaseService implements CaseService {
     }
 
     @Override
-    public void reindexAllCases() {
-        caseInfosService.recreateAllCaseInfos(getCases());
-    }
-
-    @Override
     public List<CaseInfos> getMetadata(List<UUID> ids) {
         List<CaseInfos> cases = new ArrayList<>();
         ids.forEach(caseUuid -> {
@@ -474,5 +481,9 @@ public class S3CaseService implements CaseService {
             }
         });
         return cases;
+    }
+
+    private CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
+        return caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
     }
 }

@@ -51,12 +51,12 @@ public interface CaseService {
         return CaseInfos.builder().name(fileBaseName).uuid(caseUuid).format(format).build();
     }
 
-    default void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, CaseMetadataRepository caseMetadataRepository) {
+    default void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, boolean withIndexation, CaseMetadataRepository caseMetadataRepository) {
         Instant expirationTime = null;
         if (withExpiration) {
             expirationTime = Instant.now().plus(1, ChronoUnit.HOURS);
         }
-        caseMetadataRepository.save(new CaseMetadataEntity(newCaseUuid, expirationTime));
+        caseMetadataRepository.save(new CaseMetadataEntity(newCaseUuid, expirationTime, withIndexation));
     }
 
     default Importer getImporterOrThrowsException(Path caseFile, ComputationManager computationManager) {
@@ -114,6 +114,8 @@ public interface CaseService {
         }
     }
 
+    List<CaseInfos> getCasesToReindex();
+
     List<CaseInfos> getCases();
 
     boolean caseExists(UUID caseUuid);
@@ -128,7 +130,7 @@ public interface CaseService {
 
     Optional<byte[]> getCaseBytes(UUID caseUuid);
 
-    UUID importCase(MultipartFile file, boolean withExpiration);
+    UUID importCase(MultipartFile file, boolean withExpiration, boolean withIndexation);
 
     UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration);
 
@@ -139,8 +141,6 @@ public interface CaseService {
     void deleteAllCases();
 
     List<CaseInfos> searchCases(String query);
-
-    void reindexAllCases();
 
     List<CaseInfos> getMetadata(List<UUID> ids);
 

@@ -7,6 +7,11 @@
 package com.powsybl.caseserver.server;
 
 import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -22,4 +27,11 @@ import org.springframework.test.context.junit4.SpringRunner;
 @TestPropertySource(properties = {"storage.type=file"})
 @ContextConfigurationWithTestChannel
 public class FsCaseControllerTest extends AbstractCaseControllerTest {
+
+    @Test
+    public void testStorageNotCreated() throws Exception {
+        // expect a fail since the storage dir. is not created
+        mvc.perform(delete("/v1/cases")).andExpect(status().isUnprocessableEntity());
+    }
+
 }
