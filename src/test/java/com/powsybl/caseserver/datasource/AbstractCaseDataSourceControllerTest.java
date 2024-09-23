@@ -7,7 +7,7 @@
 package com.powsybl.caseserver.datasource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.powsybl.caseserver.server.AbstractContainerConfig;
+import com.powsybl.caseserver.service.AbstractContainerConfig;
 import com.powsybl.caseserver.elasticsearch.CaseInfosRepository;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.commons.datasource.DataSource;

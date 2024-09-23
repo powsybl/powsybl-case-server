@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.powsybl.caseserver.server;
+package com.powsybl.caseserver.service;
 
 import com.powsybl.caseserver.CaseException;
 import com.powsybl.caseserver.dto.CaseInfos;
@@ -13,7 +13,6 @@ import com.powsybl.caseserver.dto.entsoe.EntsoeCaseInfos;
 import com.powsybl.caseserver.elasticsearch.DisableElasticsearch;
 import com.powsybl.caseserver.parsers.cgmes.CgmesFileNameParser;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
-import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.entsoe.util.EntsoeGeographicalCode;
 import com.powsybl.iidm.network.Country;
 import org.junit.jupiter.api.Test;

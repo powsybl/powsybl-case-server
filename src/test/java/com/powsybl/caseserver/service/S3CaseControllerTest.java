@@ -4,14 +4,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.powsybl.caseserver.server;
+package com.powsybl.caseserver.service;
 
 import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,15 +18,8 @@ import org.springframework.test.context.junit4.SpringRunner;
  */
 @RunWith(SpringRunner.class)
 @AutoConfigureMockMvc
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
-@TestPropertySource(properties = {"storage.type=file"})
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, properties = {"case-store-directory=/cases"})
+@TestPropertySource(properties = {"storage.type=S3"})
 @ContextConfigurationWithTestChannel
-public class FsCaseControllerTest extends AbstractCaseControllerTest {
-
-    @Test
-    public void testStorageNotCreated() throws Exception {
-        // expect a fail since the storage dir. is not created
-        mvc.perform(delete("/v1/cases")).andExpect(status().isUnprocessableEntity());
-    }
-
+public class S3CaseControllerTest extends AbstractCaseControllerTest {
 }

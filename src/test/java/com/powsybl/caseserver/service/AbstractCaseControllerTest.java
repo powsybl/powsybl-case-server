@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.powsybl.caseserver.server;
+package com.powsybl.caseserver.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,7 +15,6 @@ import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
-import com.powsybl.caseserver.service.FsCaseService;
 import com.powsybl.caseserver.utils.TestUtils;
 import com.powsybl.computation.ComputationManager;
 import org.junit.After;
