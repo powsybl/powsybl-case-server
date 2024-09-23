@@ -4,10 +4,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.powsybl.caseserver.datasource.util;
+package com.powsybl.caseserver.datasource;
 
 import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
-import com.powsybl.caseserver.server.S3CaseService;
+import com.powsybl.caseserver.service.S3CaseService;
 import com.powsybl.commons.datasource.DataSource;
 import org.junit.Before;
 import org.junit.runner.RunWith;

@@ -6,7 +6,7 @@
  */
 package com.powsybl.caseserver;
 
-import com.powsybl.caseserver.server.CaseService;
+import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.caseserver.elasticsearch.CaseInfosRepository;
 import com.powsybl.caseserver.elasticsearch.DisableElasticsearch;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;

@@ -15,6 +15,7 @@ import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
+import com.powsybl.caseserver.service.FsCaseService;
 import com.powsybl.caseserver.utils.TestUtils;
 import com.powsybl.computation.ComputationManager;
 import org.junit.After;

@@ -4,7 +4,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.powsybl.caseserver.server;
+package com.powsybl.caseserver.service;
 
 import com.powsybl.caseserver.CaseException;
 import com.powsybl.caseserver.dto.CaseInfos;
@@ -172,16 +172,12 @@ public class S3CaseService implements CaseService {
     }
 
     private List<S3Object> getCasesSummaries(String prefix) {
-
         List<S3Object> s3Objects = new ArrayList<>();
-
         ListObjectsV2Iterable listObjectsV2Iterable = s3Client.listObjectsV2Paginator(getListObjectsV2Request(prefix));
         listObjectsV2Iterable.iterator().forEachRemaining(listObjectsChunk ->
             s3Objects.addAll(listObjectsChunk.contents())
         );
-
         return s3Objects;
-
     }
 
     private ListObjectsV2Request getListObjectsV2Request(String prefix) {
@@ -271,6 +267,28 @@ public class S3CaseService implements CaseService {
     @Override
     public boolean caseExists(UUID uuid) {
         return !getCasesSummaries(uuidToPrefixKey(uuid)).isEmpty();
+    }
+
+    public Boolean datasourceExists(UUID caseUuid, String fileName) {
+//        if (fileName.equals(getCaseName(caseUuid))) {
+//            return Boolean.FALSE;
+//        }
+        HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
+                .bucket(bucketName)
+                .key(uuidToPrefixKey(caseUuid) + fileName)
+                .build();
+        try {
+            s3Client.headObject(headObjectRequest);
+            return Boolean.TRUE;
+        } catch (NoSuchKeyException e) {
+            return Boolean.FALSE;
+        }
+    }
+
+    public Set<String> listName(UUID caseUuid, String regex) {
+        List<S3Object> s3Objects = getCaseFileSummaries(caseUuid);
+        List<String> names = s3Objects.stream().map(obj -> Paths.get(obj.key()).getFileName().toString()).filter(name -> !name.equals(getCaseName(caseUuid))).toList();
+        return names.stream().filter(name -> name.matches(regex)).collect(Collectors.toSet());
     }
 
     @Override
@@ -486,4 +504,5 @@ public class S3CaseService implements CaseService {
     private CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
         return caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
     }
+
 }

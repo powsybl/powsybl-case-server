@@ -1,4 +1,4 @@
-package com.powsybl.caseserver.server;
+package com.powsybl.caseserver.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

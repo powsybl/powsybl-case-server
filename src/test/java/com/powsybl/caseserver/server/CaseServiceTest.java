@@ -13,6 +13,7 @@ import com.powsybl.caseserver.dto.entsoe.EntsoeCaseInfos;
 import com.powsybl.caseserver.elasticsearch.DisableElasticsearch;
 import com.powsybl.caseserver.parsers.cgmes.CgmesFileNameParser;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
+import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.entsoe.util.EntsoeGeographicalCode;
 import com.powsybl.iidm.network.Country;
 import org.junit.jupiter.api.Test;

@@ -6,12 +6,12 @@
  */
 package com.powsybl.caseserver.repository;
 
-import com.powsybl.caseserver.server.CaseService;
-import com.powsybl.caseserver.server.FsCaseService;
-import com.powsybl.caseserver.server.S3CaseService;
-import com.powsybl.caseserver.datasource.util.CaseDataSourceService;
-import com.powsybl.caseserver.datasource.util.FsCaseDataSourceService;
-import com.powsybl.caseserver.datasource.util.S3CaseDataSourceService;
+import com.powsybl.caseserver.service.CaseService;
+import com.powsybl.caseserver.service.FsCaseService;
+import com.powsybl.caseserver.service.S3CaseService;
+import com.powsybl.caseserver.datasource.CaseDataSourceService;
+import com.powsybl.caseserver.datasource.FsCaseDataSourceService;
+import com.powsybl.caseserver.datasource.S3CaseDataSourceService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Value;

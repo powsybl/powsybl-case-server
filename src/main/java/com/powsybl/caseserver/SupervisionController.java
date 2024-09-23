@@ -7,8 +7,8 @@
 package com.powsybl.caseserver;
 
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
-import com.powsybl.caseserver.server.CaseService;
-import com.powsybl.caseserver.services.SupervisionService;
+import com.powsybl.caseserver.service.CaseService;
+import com.powsybl.caseserver.service.SupervisionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
