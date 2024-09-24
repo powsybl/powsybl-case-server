@@ -231,8 +231,15 @@ public class S3CaseService implements CaseService {
 
     @Override
     public String getCaseName(UUID caseUuid) {
-        CaseInfos caseInfos = getCaseInfos(caseUuid);
-        return caseInfos.getName();
+//        CaseInfos caseInfos = getCaseInfos(caseUuid);
+//        return caseInfos.getName();
+        List<S3Object> files = getCasesSummaries(uuidToPrefixKey(caseUuid));
+        if (files.size() > 1) {
+            TODO
+            return Paths.get(files.get(0).key()).getFileName().toString();
+        } else {
+            return Paths.get(files.get(0).key()).getFileName().toString();
+        }
     }
 
     @Override
@@ -270,9 +277,9 @@ public class S3CaseService implements CaseService {
     }
 
     public Boolean datasourceExists(UUID caseUuid, String fileName) {
-//        if (fileName.equals(getCaseName(caseUuid))) {
-//            return Boolean.FALSE;
-//        }
+        if (fileName.equals(getCaseName(caseUuid))) {
+            return Boolean.FALSE;
+        }
         HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
                 .bucket(bucketName)
                 .key(uuidToPrefixKey(caseUuid) + fileName)
@@ -320,7 +327,9 @@ public class S3CaseService implements CaseService {
 
         createCaseMetadataEntity(caseUuid, withExpiration, withIndexation, caseMetadataRepository);
         CaseInfos caseInfos = createInfos(caseName, caseUuid, format);
-        caseInfosService.addCaseInfos(caseInfos);
+        if (withIndexation) {
+            caseInfosService.addCaseInfos(caseInfos);
+        }
         notificationService.sendImportMessage(caseInfos.createMessage());
 
         return caseUuid;
@@ -396,7 +405,9 @@ public class S3CaseService implements CaseService {
         CaseMetadataEntity existingCase = getCaseMetaDataEntity(sourceCaseUuid);
 
         CaseInfos caseInfos = createInfos(existingCaseInfos.getName(), newCaseUuid, existingCaseInfos.getFormat());
-        caseInfosService.addCaseInfos(caseInfos);
+        if (existingCase.isIndexed()) {
+            caseInfosService.addCaseInfos(caseInfos);
+        }
         createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed(), caseMetadataRepository);
         notificationService.sendImportMessage(caseInfos.createMessage());
         return newCaseUuid;
