@@ -41,6 +41,7 @@ import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -231,12 +232,16 @@ public class S3CaseService implements CaseService {
 
     @Override
     public String getCaseName(UUID caseUuid) {
-//        CaseInfos caseInfos = getCaseInfos(caseUuid);
-//        return caseInfos.getName();
         List<S3Object> files = getCasesSummaries(uuidToPrefixKey(caseUuid));
+        AtomicReference<String> fileName = null;
         if (files.size() > 1) {
-            TODO
-            return Paths.get(files.get(0).key()).getFileName().toString();
+            for (S3Object file : files) {
+                fileName.set(Paths.get(file.key()).getFileName().toString());
+                if (fileName.get().matches(".*\\.zip")) {
+                    return fileName.get();
+                }
+            }
+            throw CaseException.createDirectoryNotFound(caseUuid);
         } else {
             return Paths.get(files.get(0).key()).getFileName().toString();
         }
