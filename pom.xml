@@ -46,7 +46,6 @@
     <properties>
         <liquibase-hibernate-package>com.powsybl.caseserver.repository</liquibase-hibernate-package>
 
-        <mockito-inline.version>3.11.1</mockito-inline.version>
         <powsybl-ws-dependencies.version>2.14.0</powsybl-ws-dependencies.version>
     </properties>
 
