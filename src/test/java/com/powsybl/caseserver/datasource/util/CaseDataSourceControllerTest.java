@@ -14,9 +14,8 @@ import com.powsybl.caseserver.elasticsearch.CaseInfosRepository;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.commons.datasource.DataSource;
 import jakarta.persistence.EntityManager;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -26,7 +25,6 @@ import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.ContextHierarchy;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
@@ -41,27 +39,26 @@ import java.nio.file.*;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  */
-@RunWith(SpringRunner.class)
 @EnableWebMvc
 @WebMvcTest(CaseDataSourceController.class)
 @TestPropertySource(properties = {"case-store-directory=test"})
 @ContextHierarchy({@ContextConfiguration(classes = {CaseApplication.class, TestChannelBinderConfiguration.class})})
-public class CaseDataSourceControllerTest {
+class CaseDataSourceControllerTest {
 
     private FileSystem fileSystem = Jimfs.newFileSystem();
 
     @MockBean
-    StreamBridge streamBridge;
+    private StreamBridge streamBridge;
 
     @MockBean
-    EntityManager entityManager;
+    private EntityManager entityManager;
 
     @Autowired
     private MockMvc mvc;
@@ -70,7 +67,7 @@ public class CaseDataSourceControllerTest {
     private CaseMetadataRepository caseMetadataRepository;
 
     @MockBean
-    CaseInfosRepository caseInfosRepository;
+    private CaseInfosRepository caseInfosRepository;
 
     @Autowired
     private CaseService caseService;
@@ -88,8 +85,8 @@ public class CaseDataSourceControllerTest {
     @Autowired
     private ObjectMapper mapper;
 
-    @Before
-    public void setUp() throws URISyntaxException, IOException {
+    @BeforeEach
+    void setUp() throws URISyntaxException, IOException {
         Path path = fileSystem.getPath(rootDirectory);
         if (!Files.exists(path)) {
             Files.createDirectories(path);
@@ -109,7 +106,7 @@ public class CaseDataSourceControllerTest {
     }
 
     @Test
-    public void testBaseName() throws Exception {
+    void testBaseName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/baseName", CASE_UUID))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -118,7 +115,7 @@ public class CaseDataSourceControllerTest {
     }
 
     @Test
-    public void testListName() throws Exception {
+    void testListName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/list", CASE_UUID)
                 .param("regex", ".*"))
                 .andExpect(status().isOk())
@@ -129,7 +126,7 @@ public class CaseDataSourceControllerTest {
     }
 
     @Test
-    public void testInputStreamWithFileName() throws Exception {
+    void testInputStreamWithFileName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", CASE_UUID)
                 .param("fileName", fileName))
                 .andExpect(status().isOk())
@@ -147,7 +144,7 @@ public class CaseDataSourceControllerTest {
     }
 
     @Test
-    public void testInputStreamWithSuffixExt() throws Exception {
+    void testInputStreamWithSuffixExt() throws Exception {
         String suffix = "/MicroGridTestConfiguration_BC_BE_DL_V2";
         String ext = "xml";
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", CASE_UUID)
@@ -168,7 +165,7 @@ public class CaseDataSourceControllerTest {
     }
 
     @Test
-    public void testExistsWithFileName() throws Exception {
+    void testExistsWithFileName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", CASE_UUID)
                 .param("fileName", fileName))
                 .andExpect(status().isOk())
@@ -187,7 +184,7 @@ public class CaseDataSourceControllerTest {
     }
 
     @Test
-    public void testExistsWithSuffixExt() throws Exception {
+    void testExistsWithSuffixExt() throws Exception {
         String suffix = "random";
         String ext = "uct";
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", CASE_UUID)
@@ -199,5 +196,4 @@ public class CaseDataSourceControllerTest {
         Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
         assertEquals(dataSource.exists(suffix, ext), res);
     }
-
 }

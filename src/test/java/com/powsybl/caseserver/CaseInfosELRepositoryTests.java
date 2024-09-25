@@ -6,31 +6,27 @@
  */
 package com.powsybl.caseserver;
 
-import com.google.common.testing.EqualsTester;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.dto.cgmes.CgmesCaseInfos;
 import com.powsybl.caseserver.dto.entsoe.EntsoeCaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Slimane Amar <slimane.amar at rte-france.com>
  */
-@RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
-public class CaseInfosELRepositoryTests {
-
+class CaseInfosELRepositoryTests {
     private static final String SN_UCTE_CASE_FILE_NAME = "20200103_0915_SN5_D80.UCT";
     private static final String ID1_UCTE_CASE_FILE_NAME = "20200103_0915_135_CH2.UCT";
     private static final String ID2_UCTE_CASE_FILE_NAME = "20200424_1330_135_CH2.UCT";
@@ -46,18 +42,18 @@ public class CaseInfosELRepositoryTests {
     private CaseInfosService caseInfosService;
 
     @Test
-    public void testAddDeleteCaseInfos() {
+    void testAddDeleteCaseInfos() {
         EntsoeCaseInfos caseInfos1 = (EntsoeCaseInfos) caseInfosService.addCaseInfos(createInfos(SN_UCTE_CASE_FILE_NAME));
         Optional<CaseInfos> caseInfosAfter1 = caseInfosService.getCaseInfosByUuid(caseInfos1.getUuid().toString());
         assertFalse(caseInfosAfter1.isEmpty());
         assertEquals(caseInfos1, caseInfosAfter1.get());
-        testEquals(caseInfos1, caseInfosAfter1.get());
+        assertThat(caseInfosAfter1.get()).usingRecursiveAssertion().isEqualTo(caseInfos1);
 
         EntsoeCaseInfos caseInfos2 = (EntsoeCaseInfos) caseInfosService.addCaseInfos(createInfos(ID2_UCTE_CASE_FILE_NAME));
         Optional<CaseInfos> caseInfosAfter2 = caseInfosService.getCaseInfosByUuid(caseInfos2.getUuid().toString());
         assertFalse(caseInfosAfter2.isEmpty());
         assertEquals(caseInfos2, caseInfosAfter2.get());
-        testEquals(caseInfos2, caseInfosAfter2.get());
+        assertThat(caseInfosAfter2.get()).usingRecursiveAssertion().isEqualTo(caseInfos2);
 
         caseInfosService.deleteCaseInfosByUuid(caseInfos1.getUuid().toString());
         caseInfosAfter1 = caseInfosService.getCaseInfosByUuid(caseInfos1.getUuid().toString());
@@ -85,7 +81,7 @@ public class CaseInfosELRepositoryTests {
     }
 
     @Test
-    public void searchCaseInfos() {
+    void searchCaseInfos() {
         caseInfosService.deleteAllCaseInfos();
         List<CaseInfos> all = caseInfosService.getAllCaseInfos();
         assertTrue(all.isEmpty());
@@ -165,12 +161,6 @@ public class CaseInfosELRepositoryTests {
 
         list = caseInfosService.searchCaseInfos(CaseInfosService.getDateSearchTerm(ucte1.getDate()) + " AND geographicalCode:D8 AND forecastDistance:0");
         assertTrue(list.size() == 1 && list.contains(ucte1));
-    }
-
-    private void testEquals(CaseInfos c1, CaseInfos c2) {
-        new EqualsTester()
-                .addEqualityGroup(c1, c2)
-                .testEquals();
     }
 
     private CaseInfos createInfos(String fileName) {
