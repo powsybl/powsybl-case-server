@@ -9,18 +9,13 @@ package com.powsybl.caseserver.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteStreams;
-import com.google.common.jimfs.Configuration;
-import com.google.common.jimfs.Jimfs;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.caseserver.utils.TestUtils;
-import com.powsybl.computation.ComputationManager;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.stream.binder.test.OutputDestination;
@@ -71,37 +66,23 @@ public abstract class AbstractCaseControllerTest extends AbstractContainerConfig
     @Autowired
     protected MockMvc mvc;
 
-    @Autowired
-    private FsCaseService caseService;
+    CaseService caseService;
 
     @Autowired
-    private CaseMetadataRepository caseMetadataRepository;
+    CaseMetadataRepository caseMetadataRepository;
 
     @Autowired
-    private OutputDestination outputDestination;
+    OutputDestination outputDestination;
 
     @Autowired
     private ObjectMapper mapper;
 
     @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
-    private String rootDirectory;
+    String rootDirectory;
 
-    private FileSystem fileSystem;
+    FileSystem fileSystem;
 
     private final String caseImportDestination = "case.import.destination";
-
-    @Before
-    public void setUp() {
-        fileSystem = Jimfs.newFileSystem(Configuration.unix());
-        caseService.setFileSystem(fileSystem);
-        caseService.setComputationManager(Mockito.mock(ComputationManager.class));
-        cleanDB();
-        outputDestination.clear();
-    }
-
-    private void cleanDB() {
-        caseMetadataRepository.deleteAll();
-    }
 
     @After
     public void tearDown() throws Exception {

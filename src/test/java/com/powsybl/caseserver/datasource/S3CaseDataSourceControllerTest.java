@@ -14,17 +14,13 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
-import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.*;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
-import java.util.*;
 
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
@@ -39,30 +35,14 @@ public class S3CaseDataSourceControllerTest extends AbstractCaseDataSourceContro
     @Autowired
     protected S3CaseService s3CaseService;
 
-    @Autowired
-    private S3Client s3Client;
-
-    private static final String CASES_PREFIX = "gsi-cases/";
-
     @Before
     public void setUp() throws URISyntaxException, IOException {
-
         // TODO : mock S3CaseDataSourceService methods
 
-        final var key = CASES_PREFIX + CASE_UUID + "/" + cgmesName;
-
+        prefix = directoryPath;
         //insert a cgmes file in the S3
         try (InputStream cgmesURL = getClass().getResourceAsStream("/" + cgmesName)) {
-
-            Map<String, String> userMetadata = new HashMap<>();
-            userMetadata.put("format", "CGMES");
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(BUCKET_NAME)
-                    .key(key)
-                    .contentType("application/octet-stream")
-                    .metadata(userMetadata)
-                    .build();
-            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(cgmesURL.readAllBytes()));
+            CASE_UUID = s3CaseService.importCase(new MockMultipartFile(cgmesName, cgmesName, "application/zip", cgmesURL.readAllBytes()), false, false);
         }
 
         dataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + cgmesName).toURI()));

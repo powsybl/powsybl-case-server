@@ -40,7 +40,7 @@ public class CaseDataSourceController {
         return ResponseEntity.ok().body(baseName);
     }
 
-    @GetMapping(value = "/cases/{caseUuid}/datasource/exists2", params = {"suffix", "ext"})
+    @GetMapping(value = "/cases/{caseUuid}/datasource/exists", params = {"suffix", "ext"})
     @Operation(summary = "check if the file exists in the datasource")
     public ResponseEntity<Boolean> datasourceExists(@PathVariable("caseUuid") UUID caseUuid,
                                                     @RequestParam String suffix,

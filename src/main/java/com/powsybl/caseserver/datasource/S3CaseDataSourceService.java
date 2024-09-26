@@ -49,7 +49,6 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
 
     @Override
     public byte[] getInputStream(UUID caseUuid, String fileName) {
-        System.out.println("WE DOWNLOAD by fileName");
         final String parsedFileName = fileName.substring(fileName.indexOf('/') + 1);
         final var caseFileKey = uuidToPrefixKey(caseUuid) + parsedFileName;
         return withS3DownloadedDataSource(caseUuid, caseFileKey,
@@ -62,7 +61,6 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
 
     @Override
     public byte[] getInputStream(UUID caseUuid, String suffix, String ext) {
-        System.out.println("WE DOWNLOAD by suffix & ext");
         return withS3DownloadedDataSource(caseUuid,
             datasource -> IOUtils.toByteArray(datasource.newInputStream(suffix, ext)));
     }

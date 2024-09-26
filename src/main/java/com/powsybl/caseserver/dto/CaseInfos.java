@@ -15,6 +15,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -30,6 +31,7 @@ import org.springframework.messaging.Message;
  */
 @SuperBuilder
 @NoArgsConstructor
+@AllArgsConstructor
 @Getter
 @Schema(description = "Case infos")
 @Document(indexName = "#{@environment.getProperty('powsybl-ws.elasticsearch.index.prefix')}cases")

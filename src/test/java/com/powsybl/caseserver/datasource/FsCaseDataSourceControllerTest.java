@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.file.*;
+import java.util.UUID;
 
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
@@ -39,6 +40,8 @@ public class FsCaseDataSourceControllerTest extends AbstractCaseDataSourceContro
 
     @Before
     public void setUp() throws URISyntaxException, IOException {
+        CASE_UUID = UUID.randomUUID();
+        fileName = directoryPath + fileName;
         Path path = fileSystem.getPath(rootDirectory);
         if (!Files.exists(path)) {
             Files.createDirectories(path);

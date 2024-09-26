@@ -25,6 +25,7 @@ public final class CaseException extends RuntimeException {
         DIRECTORY_ALREADY_EXISTS,
         DIRECTORY_EMPTY,
         DIRECTORY_NOT_FOUND,
+        ORIGINAL_FILE_NOT_FOUND,
         TEMP_FILE_INIT,
         TEMP_FILE_PROCESS, TEMP_DIRECTORY_CREATION,
         UNSUPPORTED_FORMAT
@@ -59,6 +60,11 @@ public final class CaseException extends RuntimeException {
     public static CaseException createDirectoryNotFound(UUID uuid) {
         Objects.requireNonNull(uuid);
         return new CaseException(Type.DIRECTORY_NOT_FOUND, "The directory with the following uuid doesn't exist: " + uuid);
+    }
+
+    public static CaseException createOriginalFileNotFound(UUID uuid) {
+        Objects.requireNonNull(uuid);
+        return new CaseException(Type.ORIGINAL_FILE_NOT_FOUND, "The original file were not retrieved in the directory with the following uuid: " + uuid);
     }
 
     public static CaseException createFileNotImportable(Path file) {

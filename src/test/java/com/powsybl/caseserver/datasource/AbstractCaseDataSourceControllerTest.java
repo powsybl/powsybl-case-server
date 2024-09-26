@@ -24,6 +24,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -52,9 +53,13 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
 
     String cgmesName = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2.zip";
 
-    String fileName = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2/MicroGridTestConfiguration_BC_BE_DL_V2.xml";
+    String fileName = "MicroGridTestConfiguration_BC_BE_DL_V2.xml";
 
-    static final UUID CASE_UUID = UUID.randomUUID();
+    String directoryPath = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2/";
+
+    String prefix = "";
+
+    static UUID CASE_UUID;
 
     protected DataSource dataSource;
 
@@ -76,7 +81,8 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
                 .andExpect(status().isOk())
                 .andReturn();
 
-        Set nameList = mapper.readValue(mvcResult.getResponse().getContentAsString(), Set.class);
+        Set<String> nameList = mapper.readValue(mvcResult.getResponse().getContentAsString(), Set.class);
+        nameList = nameList.stream().map(n -> prefix + n).collect(Collectors.toSet());
         assertEquals(dataSource.listNames(".*"), nameList);
     }
 
@@ -87,7 +93,7 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
                 .andExpect(status().isOk())
                 .andReturn();
 
-        try (InputStreamReader isReader = new InputStreamReader(dataSource.newInputStream(fileName), StandardCharsets.UTF_8)) {
+        try (InputStreamReader isReader = new InputStreamReader(dataSource.newInputStream(prefix + fileName), StandardCharsets.UTF_8)) {
             BufferedReader reader = new BufferedReader(isReader);
             StringBuilder datasourceResponse = new StringBuilder();
             String str;
@@ -127,7 +133,7 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
                 .andReturn();
 
         Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertEquals(dataSource.exists(fileName), res);
+        assertEquals(dataSource.exists(prefix + fileName), res);
 
         mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", CASE_UUID)
                         .param("fileName", "random"))

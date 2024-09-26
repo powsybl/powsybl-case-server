@@ -26,6 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
 import org.springframework.web.server.ResponseStatusException;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -41,10 +42,12 @@ import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
+import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
+import static com.powsybl.caseserver.dto.CaseInfos.FORMAT_HEADER_KEY;
 
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
@@ -147,8 +150,18 @@ public class S3CaseService implements CaseService {
 
     @Override
     public String getFormat(UUID caseUuid) {
-        final var caseInfos = caseInfosService.getCaseInfosByUuid(caseUuid.toString());
-        return caseInfos.map(CaseInfos::getFormat).orElse(null);
+        String caseFileKey = getCaseFileObjectKey(caseUuid);
+        HeadObjectResponse headObjectResponse = s3Client.headObject(HeadObjectRequest.builder()
+                .bucket(bucketName)
+                .key(caseFileKey)
+                .build());
+
+        String format = headObjectResponse.metadata().get(FORMAT_HEADER_KEY);
+        if (format == null) {
+            return withS3DownloadedTempPath(caseUuid, this::getFormat);
+
+        }
+        return format;
     }
 
     // key format is "gsi-cases/UUID/filename"
@@ -205,8 +218,7 @@ public class S3CaseService implements CaseService {
 
     private CaseInfos infosFromDownloadCaseFileSummary(S3Object objectSummary) {
         UUID uuid = parseUuidFromKey(objectSummary.key());
-        Optional<CaseInfos> caseInfos = caseInfosService.getCaseInfosByUuid(uuid.toString());
-        return caseInfos.orElse(null);
+        return getCaseInfos(uuid);
     }
 
     private List<CaseInfos> infosFromDownloadCaseFileSummaries(List<S3Object> objectSummaries) {
@@ -222,26 +234,24 @@ public class S3CaseService implements CaseService {
 
     @Override
     public CaseInfos getCaseInfos(UUID caseUuid) {
-        var caseFileSummaries = getCaseFileSummaries(caseUuid);
-        if (caseFileSummaries.isEmpty()) {
-            return null;
-        } else {
-            return infosFromDownloadCaseFileSummary(caseFileSummaries.get(0));
-        }
+        return new CaseInfos(caseUuid, getCaseName(caseUuid), getFormat(caseUuid));
     }
 
     @Override
     public String getCaseName(UUID caseUuid) {
         List<S3Object> files = getCasesSummaries(uuidToPrefixKey(caseUuid));
-        AtomicReference<String> fileName = null;
+        if (files.isEmpty()) {
+            throw createDirectoryNotFound(caseUuid);
+        }
         if (files.size() > 1) {
+            String fileName;
             for (S3Object file : files) {
-                fileName.set(Paths.get(file.key()).getFileName().toString());
-                if (fileName.get().matches(".*\\.zip")) {
-                    return fileName.get();
+                fileName = Paths.get(file.key()).getFileName().toString();
+                if (fileName.matches(".*\\.zip")) {
+                    return fileName;
                 }
             }
-            throw CaseException.createDirectoryNotFound(caseUuid);
+            throw CaseException.createOriginalFileNotFound(caseUuid);
         } else {
             return Paths.get(files.get(0).key()).getFileName().toString();
         }
@@ -314,10 +324,13 @@ public class S3CaseService implements CaseService {
 
         try (InputStream inputStream = mpf.getInputStream()) {
             String key = uuidAndFilenameToKey(caseUuid, caseName);
+            Map<String, String> caseMetadata = new HashMap<>();
+            caseMetadata.put(FORMAT_HEADER_KEY, format);
 
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(key)
+                    .metadata(caseMetadata)
                     .contentType(mpf.getContentType())
                     .build();
 
@@ -381,10 +394,12 @@ public class S3CaseService implements CaseService {
 
     @Override
     public UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration) {
+        if (!caseExists(sourceCaseUuid)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Source case " + sourceCaseUuid + " not found");
+        }
 
         String sourceKey = getCaseFileObjectKey(sourceCaseUuid);
-        CaseInfos existingCaseInfos = caseInfosService.getCaseInfosByUuid(sourceCaseUuid.toString())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Source case " + sourceCaseUuid + NOT_FOUND));
+        CaseInfos existingCaseInfos = getCaseInfos(sourceCaseUuid);
         UUID newCaseUuid = UUID.randomUUID();
         String targetKey = uuidAndFilenameToKey(newCaseUuid, parseFilenameFromKey(sourceKey));
         CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
