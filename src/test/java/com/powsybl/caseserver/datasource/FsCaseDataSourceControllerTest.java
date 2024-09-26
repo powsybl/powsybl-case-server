@@ -41,7 +41,6 @@ public class FsCaseDataSourceControllerTest extends AbstractCaseDataSourceContro
     @Before
     public void setUp() throws URISyntaxException, IOException {
         CASE_UUID = UUID.randomUUID();
-        fileName = directoryPath + fileName;
         Path path = fileSystem.getPath(rootDirectory);
         if (!Files.exists(path)) {
             Files.createDirectories(path);

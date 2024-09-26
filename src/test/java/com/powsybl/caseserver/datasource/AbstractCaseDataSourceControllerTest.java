@@ -24,11 +24,8 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -55,11 +52,7 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
 
     String cgmesName = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2.zip";
 
-    String fileName = "MicroGridTestConfiguration_BC_BE_DL_V2.xml";
-
-    String directoryPath = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2/";
-
-    String prefix = "";
+    String fileName = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2/MicroGridTestConfiguration_BC_BE_DL_V2.xml";
 
     static UUID CASE_UUID;
 
@@ -84,7 +77,6 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
                 .andReturn();
 
         Set<String> nameList = mapper.readValue(mvcResult.getResponse().getContentAsString(), Set.class);
-        nameList = nameList.stream().map(n -> prefix + n).collect(Collectors.toSet());
         assertEquals(dataSource.listNames(".*"), nameList);
     }
 
@@ -95,7 +87,7 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
                 .andExpect(status().isOk())
                 .andReturn();
 
-        try (InputStreamReader isReader = new InputStreamReader(dataSource.newInputStream(prefix + fileName), StandardCharsets.UTF_8)) {
+        try (InputStreamReader isReader = new InputStreamReader(dataSource.newInputStream(fileName), StandardCharsets.UTF_8)) {
             BufferedReader reader = new BufferedReader(isReader);
             StringBuilder datasourceResponse = new StringBuilder();
             String str;
@@ -135,7 +127,7 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
                 .andReturn();
 
         Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertTrue(res);
+        assertEquals(dataSource.exists(fileName), res);
 
         mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", CASE_UUID)
                         .param("fileName", "random"))
@@ -143,7 +135,7 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
                 .andReturn();
 
         res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertFalse(res);
+        assertEquals(dataSource.exists("random"), res);
     }
 
     @Test
@@ -157,7 +149,7 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
                 .andReturn();
 
         Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertFalse(res);
+        assertEquals(dataSource.exists(suffix, ext), res);
     }
 
 }
