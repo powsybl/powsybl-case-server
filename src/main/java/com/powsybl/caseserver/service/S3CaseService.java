@@ -97,6 +97,9 @@ public class S3CaseService implements CaseService {
         try {
             FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
             tempdirPath = Files.createTempDirectory(caseUuid.toString(), attr);
+            if (Paths.get(filename).getParent() != null) {
+                Files.createDirectory(Paths.get(tempdirPath.toString(), (Paths.get(filename).getParent().toString())), attr);
+            }
             // after this line, need to cleanup the dir
         } catch (IOException e) {
             throw CaseException.createTempDirectory(caseUuid, e);
@@ -309,7 +312,7 @@ public class S3CaseService implements CaseService {
 
     public Set<String> listName(UUID caseUuid, String regex) {
         List<S3Object> s3Objects = getCaseFileSummaries(caseUuid);
-        List<String> names = s3Objects.stream().map(obj -> Paths.get(obj.key()).getFileName().toString()).collect(Collectors.toList());
+        List<String> names = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(CASES_PREFIX + caseUuid.toString() + "/", "")).collect(Collectors.toList());
         if (names.size() > 1) {
             names = names.stream().filter(name -> !name.equals(getCaseName(caseUuid))).collect(Collectors.toList());
         }
@@ -370,7 +373,7 @@ public class S3CaseService implements CaseService {
     }
 
     private void processEntry(UUID caseUuid, ZipInputStream zipInputStream, ZipEntry entry) throws IOException {
-        String fileName = findFileName(entry.getName());
+        String fileName = entry.getName();
         String extractedKey = uuidAndFilenameToKey(caseUuid, fileName);
 
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
