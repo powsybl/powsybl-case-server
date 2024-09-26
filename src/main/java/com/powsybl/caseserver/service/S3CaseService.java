@@ -292,7 +292,7 @@ public class S3CaseService implements CaseService {
     }
 
     public Boolean datasourceExists(UUID caseUuid, String fileName) {
-        if (fileName.equals(getCaseName(caseUuid))) {
+        if (getCaseFileSummaries(caseUuid).size() > 1 && fileName.equals(getCaseName(caseUuid))) {
             return Boolean.FALSE;
         }
         HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
@@ -309,7 +309,10 @@ public class S3CaseService implements CaseService {
 
     public Set<String> listName(UUID caseUuid, String regex) {
         List<S3Object> s3Objects = getCaseFileSummaries(caseUuid);
-        List<String> names = s3Objects.stream().map(obj -> Paths.get(obj.key()).getFileName().toString()).filter(name -> !name.equals(getCaseName(caseUuid))).toList();
+        List<String> names = s3Objects.stream().map(obj -> Paths.get(obj.key()).getFileName().toString()).collect(Collectors.toList());
+        if (names.size() > 1) {
+            names = names.stream().filter(name -> !name.equals(getCaseName(caseUuid))).collect(Collectors.toList());
+        }
         return names.stream().filter(name -> name.matches(regex)).collect(Collectors.toSet());
     }
 

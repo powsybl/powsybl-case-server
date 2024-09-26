@@ -46,6 +46,5 @@ public class S3CaseDataSourceControllerTest extends AbstractCaseDataSourceContro
         }
 
         dataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + cgmesName).toURI()));
-
     }
 }

@@ -27,6 +27,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -133,7 +135,7 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
                 .andReturn();
 
         Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertEquals(dataSource.exists(prefix + fileName), res);
+        assertTrue(res);
 
         mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", CASE_UUID)
                         .param("fileName", "random"))
@@ -141,7 +143,7 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
                 .andReturn();
 
         res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertEquals(dataSource.exists("random"), res);
+        assertFalse(res);
     }
 
     @Test
@@ -155,7 +157,7 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
                 .andReturn();
 
         Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertEquals(dataSource.exists(suffix, ext), res);
+        assertFalse(res);
     }
 
 }
