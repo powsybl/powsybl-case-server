@@ -17,6 +17,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Set;
 import java.util.UUID;
 
@@ -51,16 +52,8 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
     public byte[] getInputStream(UUID caseUuid, String fileName) {
         final var caseFileKey = uuidToPrefixKey(caseUuid) + fileName;
         return withS3DownloadedDataSource(caseUuid, caseFileKey,
-            datasource -> IOUtils.toByteArray(datasource.newInputStream(fileName)));
+            datasource -> IOUtils.toByteArray(datasource.newInputStream(Paths.get(fileName).getFileName().toString())));
     }
-
-//    @Override
-//    public byte[] getInputStream(UUID caseUuid, String fileName) {
-//        final String parsedFileName = fileName.substring(fileName.indexOf('/') + 1);
-//        final var caseFileKey = uuidToPrefixKey(caseUuid) + parsedFileName;
-//        return withS3DownloadedDataSource(caseUuid, caseFileKey,
-//                datasource -> IOUtils.toByteArray(datasource.newInputStream(parsedFileName)));
-//    }
 
     private String uuidToPrefixKey(UUID uuid) {
         return CASES_PREFIX + uuid.toString() + "/";

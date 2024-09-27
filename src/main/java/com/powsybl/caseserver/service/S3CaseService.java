@@ -15,6 +15,7 @@ import com.powsybl.computation.ComputationManager;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.function.FailableConsumer;
 import org.apache.commons.lang3.function.FailableFunction;
 import org.slf4j.Logger;
@@ -98,7 +99,7 @@ public class S3CaseService implements CaseService {
             FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
             tempdirPath = Files.createTempDirectory(caseUuid.toString(), attr);
             if (Paths.get(filename).getParent() != null) {
-                Files.createDirectory(Paths.get(tempdirPath.toString(), (Paths.get(filename).getParent().toString())), attr);
+                Files.createDirectory(Paths.get(tempdirPath.toString(), Paths.get(filename).getParent().toString()), attr);
             }
             // after this line, need to cleanup the dir
         } catch (IOException e) {
@@ -131,7 +132,7 @@ public class S3CaseService implements CaseService {
             }
         } finally {
             try {
-                Files.delete(tempdirPath);
+                FileUtils.deleteDirectory(tempdirPath.toFile());
             } catch (IOException e) {
                 LOGGER.error("Error cleaning up temporary case dir", e);
             }
