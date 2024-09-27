@@ -362,14 +362,14 @@ public class S3CaseService implements CaseService {
     }
 
     private void importZipContent(InputStream inputStream, UUID caseUuid) throws IOException {
-        try (ZipInputStream zipInputStream = new SecuredZipInputStream(inputStream, 1000, 100000000)) {
+        try (SecuredZipInputStream securedZipInputStream = new SecuredZipInputStream(inputStream, 1000, 500000000)) {
             ZipEntry entry;
 
-            while ((entry = zipInputStream.getNextEntry()) != null) {
+            while ((entry = securedZipInputStream.getNextEntry()) != null) {
                 if (!entry.isDirectory()) {
-                    processEntry(caseUuid, zipInputStream, entry);
+                    processEntry(caseUuid, securedZipInputStream, entry);
                 }
-                zipInputStream.closeEntry();
+                securedZipInputStream.closeEntry();
             }
         }
     }
