@@ -258,6 +258,7 @@ public class FsCaseService implements CaseService {
         return getCases(getStorageRootDir()).stream().filter(c -> casesToReindex.contains(c.getUuid())).toList();
     }
 
+    @Override
     public CaseInfos createInfos(String fileBaseName, UUID caseUuid, String format) {
         FileNameParser parser = FileNameParsers.findParser(fileBaseName);
         if (parser != null) {

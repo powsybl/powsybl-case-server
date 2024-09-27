@@ -43,7 +43,6 @@ class CaseServiceTest {
     private static final String D1_UCTE_CASE_FILE_NAME = "20200110_0430_FO5_FR0.uct";
     private static final String D2_UCTE_CASE_FILE_NAME = "20200430_1530_2D4_D41.uct";
     private static final String TEST_CGMES_CASE_FILE_NAME = "20200424T1330Z_2D_RTEFRANCE_001.zip";
-    private static final String CASE_FILE_NAME_INCORRECT = "20200103_0915_SN5.UCT";
     private static final String TEST_OTHER_CASE_FILE_NAME = "testCase.xiidm";
 
     @Test

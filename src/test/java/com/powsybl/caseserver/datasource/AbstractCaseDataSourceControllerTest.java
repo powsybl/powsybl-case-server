@@ -54,7 +54,7 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
 
     String fileName = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2/MicroGridTestConfiguration_BC_BE_DL_V2.xml";
 
-    static UUID CASE_UUID;
+    UUID caseUuid;
 
     protected DataSource dataSource;
 
@@ -62,7 +62,7 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
 
     @Test
     public void testBaseName() throws Exception {
-        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/baseName", CASE_UUID))
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/baseName", caseUuid))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -71,7 +71,7 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
 
     @Test
     public void testListName() throws Exception {
-        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/list", CASE_UUID)
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/list", caseUuid)
                         .param("regex", ".*"))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -82,7 +82,7 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
 
     @Test
     public void testInputStreamWithFileName() throws Exception {
-        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", CASE_UUID)
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", caseUuid)
                         .param("fileName", fileName))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -102,7 +102,7 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
     public void testInputStreamWithSuffixExt() throws Exception {
         String suffix = "/MicroGridTestConfiguration_BC_BE_DL_V2";
         String ext = "xml";
-        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", CASE_UUID)
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", caseUuid)
                         .param("suffix", suffix)
                         .param("ext", ext))
                 .andExpect(status().isOk())
@@ -121,7 +121,7 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
 
     @Test
     public void testExistsWithFileName() throws Exception {
-        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", CASE_UUID)
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", caseUuid)
                         .param("fileName", fileName))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -129,7 +129,7 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
         Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
         assertEquals(dataSource.exists(fileName), res);
 
-        mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", CASE_UUID)
+        mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", caseUuid)
                         .param("fileName", "random"))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -142,7 +142,7 @@ public abstract class AbstractCaseDataSourceControllerTest extends AbstractConta
     public void testExistsWithSuffixExt() throws Exception {
         String suffix = "random";
         String ext = "uct";
-        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", CASE_UUID)
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", caseUuid)
                         .param("suffix", suffix)
                         .param("ext", ext))
                 .andExpect(status().isOk())

@@ -594,7 +594,6 @@ public abstract class AbstractCaseControllerTest extends AbstractContainerConfig
         assertTrue(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT\""));
         assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
 
-        String t = getDateSearchTerm("20200103_0915");
         mvcResult = mvc.perform(get("/v1/cases/search")
                 .param("q", getDateSearchTerm("20200103_0915")))
                 .andExpect(status().isOk())

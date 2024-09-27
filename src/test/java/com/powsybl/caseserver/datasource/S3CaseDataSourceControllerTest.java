@@ -41,7 +41,7 @@ public class S3CaseDataSourceControllerTest extends AbstractCaseDataSourceContro
 
         //insert a cgmes file in the S3
         try (InputStream cgmesURL = getClass().getResourceAsStream("/" + cgmesName)) {
-            CASE_UUID = s3CaseService.importCase(new MockMultipartFile(cgmesName, cgmesName, "application/zip", cgmesURL.readAllBytes()), false, false);
+            caseUuid = s3CaseService.importCase(new MockMultipartFile(cgmesName, cgmesName, "application/zip", cgmesURL.readAllBytes()), false, false);
         }
 
         dataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + cgmesName).toURI()));

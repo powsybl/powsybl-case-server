@@ -40,12 +40,12 @@ public class FsCaseDataSourceControllerTest extends AbstractCaseDataSourceContro
 
     @Before
     public void setUp() throws URISyntaxException, IOException {
-        CASE_UUID = UUID.randomUUID();
+        caseUuid = UUID.randomUUID();
         Path path = fileSystem.getPath(rootDirectory);
         if (!Files.exists(path)) {
             Files.createDirectories(path);
         }
-        Path caseDirectory = fileSystem.getPath(rootDirectory).resolve(CASE_UUID.toString());
+        Path caseDirectory = fileSystem.getPath(rootDirectory).resolve(caseUuid.toString());
         if (!Files.exists(caseDirectory)) {
             Files.createDirectories(caseDirectory);
         }

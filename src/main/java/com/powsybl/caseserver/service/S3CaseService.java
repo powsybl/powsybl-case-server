@@ -15,6 +15,7 @@ import com.powsybl.computation.ComputationManager;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
+import com.powsybl.ws.commons.SecuredZipInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.function.FailableConsumer;
 import org.apache.commons.lang3.function.FailableFunction;
@@ -361,7 +362,7 @@ public class S3CaseService implements CaseService {
     }
 
     private void importZipContent(InputStream inputStream, UUID caseUuid) throws IOException {
-        try (ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
+        try (ZipInputStream zipInputStream = new SecuredZipInputStream(inputStream, 1000, 100000000)) {
             ZipEntry entry;
 
             while ((entry = zipInputStream.getNextEntry()) != null) {
@@ -394,15 +395,10 @@ public class S3CaseService implements CaseService {
         s3Client.putObject(extractedFileRequest, RequestBody.fromBytes(fileBytes));
     }
 
-    private String findFileName(String path) {
-        String[] parts = path.split("/");
-        return parts[parts.length - 1];
-    }
-
     @Override
     public UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration) {
         if (!caseExists(sourceCaseUuid)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Source case " + sourceCaseUuid + " not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Source case " + sourceCaseUuid + NOT_FOUND);
         }
 
         String sourceKey = getCaseFileObjectKey(sourceCaseUuid);
