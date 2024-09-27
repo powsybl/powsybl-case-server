@@ -25,7 +25,7 @@ public abstract class AbstractContainerConfig {
     private static GenericContainer minioContainer;
     private static final int MINIO_PORT = 9000;
 
-    // can't use a bean because we need it before spring aws autoconfiguration
+    // can't use a bean because we need it before spring aws autoconfiguration TODO
     static {
         minioContainer = new GenericContainer(
                 String.format("%s:%s", MINIO_DOCKER_IMAGE_NAME, MINIO_DOCKER_IMAGE_VERSION))
