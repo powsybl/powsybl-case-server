@@ -99,8 +99,11 @@ public class S3CaseService implements CaseService {
         try {
             FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
             tempdirPath = Files.createTempDirectory(caseUuid.toString(), attr);
-            if (Paths.get(filename).getParent() != null) {
-                Files.createDirectory(Paths.get(tempdirPath.toString(), Paths.get(filename).getParent().toString()), attr);
+
+            // Create parent directory if necessary
+            Path parentPath = Paths.get(filename).getParent();
+            if (parentPath != null) {
+                Files.createDirectory(tempdirPath.resolve(parentPath), attr);
             }
             // after this line, need to cleanup the dir
         } catch (IOException e) {
@@ -133,9 +136,11 @@ public class S3CaseService implements CaseService {
             }
         } finally {
             try {
-                FileUtils.deleteDirectory(tempdirPath.toFile());
+                if (Files.exists(tempdirPath)) {
+                    FileUtils.deleteDirectory(tempdirPath.toFile());
+                }
             } catch (IOException e) {
-                LOGGER.error("Error cleaning up temporary case dir", e);
+                LOGGER.error("Error cleaning up temporary case directory: " + tempdirPath, e);
             }
         }
     }
@@ -314,9 +319,9 @@ public class S3CaseService implements CaseService {
 
     public Set<String> listName(UUID caseUuid, String regex) {
         List<S3Object> s3Objects = getCaseFileSummaries(caseUuid);
-        List<String> names = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(CASES_PREFIX + caseUuid.toString() + "/", "")).collect(Collectors.toList());
+        List<String> names = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(CASES_PREFIX + caseUuid.toString() + "/", "")).toList();
         if (names.size() > 1) {
-            names = names.stream().filter(name -> !name.equals(getCaseName(caseUuid))).collect(Collectors.toList());
+            names = names.stream().filter(name -> !name.equals(getCaseName(caseUuid))).toList();
         }
         return names.stream().filter(name -> name.matches(regex)).collect(Collectors.toSet());
     }
@@ -344,7 +349,7 @@ public class S3CaseService implements CaseService {
 
             // Use putObject to upload the file
             s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, mpf.getSize()));
-            if (mpf.getContentType().equals("application/zip")) {
+            if (mpf.getContentType() != null && Objects.equals(mpf.getContentType(), "application/zip")) {
                 importZipContent(mpf.getInputStream(), caseUuid);
             }
         } catch (IOException e) {
@@ -536,7 +541,7 @@ public class S3CaseService implements CaseService {
     }
 
     private CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
-        return caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
+        return caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + NOT_FOUND));
     }
 
 }

@@ -17,7 +17,7 @@ import java.time.Duration;
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
  */
-public interface ContainerConfigInterface {
+public interface MinioContainerConfig {
     String MINIO_DOCKER_IMAGE_NAME = "minio/minio";
     String BUCKET_NAME = "bucket-gridsuite";
     // Just a fixed version, latest at the time of writing this

@@ -7,7 +7,7 @@
 package com.powsybl.caseserver.datasource;
 
 import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
-import com.powsybl.caseserver.service.ContainerConfigInterface;
+import com.powsybl.caseserver.service.MinioContainerConfig;
 import com.powsybl.caseserver.service.S3CaseService;
 import com.powsybl.commons.datasource.DataSource;
 import org.junit.Before;
@@ -31,7 +31,7 @@ import java.nio.file.Paths;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @TestPropertySource(properties = {"storage.type=S3"})
 @ContextConfigurationWithTestChannel
-public class S3CaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTest implements ContainerConfigInterface {
+public class S3CaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTest implements MinioContainerConfig {
 
     @Autowired
     protected S3CaseService s3CaseService;
