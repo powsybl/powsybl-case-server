@@ -17,26 +17,29 @@ import java.time.Duration;
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
  */
-public abstract class AbstractContainerConfig {
-    private static final String MINIO_DOCKER_IMAGE_NAME = "minio/minio";
-    protected static final String BUCKET_NAME = "bucket-gridsuite";
+public interface ContainerConfigInterface {
+    String MINIO_DOCKER_IMAGE_NAME = "minio/minio";
+    String BUCKET_NAME = "bucket-gridsuite";
     // Just a fixed version, latest at the time of writing this
-    private static final String MINIO_DOCKER_IMAGE_VERSION = "RELEASE.2023-09-27T15-22-50Z";
-    private static GenericContainer minioContainer;
-    private static final int MINIO_PORT = 9000;
-
-    // can't use a bean because we need it before spring aws autoconfiguration TODO
-    static {
-        minioContainer = new GenericContainer(
-                String.format("%s:%s", MINIO_DOCKER_IMAGE_NAME, MINIO_DOCKER_IMAGE_VERSION))
-                // .withClasspathResourceMapping("/", "/data/", BindMode.READ_WRITE)
-                .withCommand("server /data").withExposedPorts(MINIO_PORT).waitingFor(new HttpWaitStrategy()
-                        .forPath("/minio/health/ready").forPort(MINIO_PORT).withStartupTimeout(Duration.ofSeconds(10)));
-        minioContainer.start();
+    String MINIO_DOCKER_IMAGE_VERSION = "RELEASE.2023-09-27T15-22-50Z";
+    int MINIO_PORT = 9000;
+    GenericContainer<?> MINIO_CONTAINER = createMinioContainer();
+    static GenericContainer<?> createMinioContainer() {
         try {
+            GenericContainer<?> minioContainer = new GenericContainer(
+                    String.format("%s:%s", MINIO_DOCKER_IMAGE_NAME, MINIO_DOCKER_IMAGE_VERSION))
+                    // .withClasspathResourceMapping("/", "/data/", BindMode.READ_WRITE)
+                    .withCommand("server /data")
+                    .withExposedPorts(MINIO_PORT)
+                    .waitingFor(new HttpWaitStrategy()
+                            .forPath("/minio/health/ready")
+                            .forPort(MINIO_PORT)
+                            .withStartupTimeout(Duration.ofSeconds(10)));
+            minioContainer.start();
             minioContainer.execInContainer("mkdir", "/data/" + BUCKET_NAME);
+            return minioContainer;
         } catch (Exception e) {
-            System.out.println("Error");
+            throw new RuntimeException("Failed to start minioContainer", e);
         }
 
         // can't use System.setProperty because spring cloud aws gets the url early
@@ -45,7 +48,7 @@ public abstract class AbstractContainerConfig {
 
     @DynamicPropertySource
     static void registerAwsProperties(DynamicPropertyRegistry registry) {
-        Integer mappedPort = minioContainer.getFirstMappedPort();
+        Integer mappedPort = MINIO_CONTAINER.getFirstMappedPort();
         Testcontainers.exposeHostPorts(mappedPort);
         String minioContainerUrl = String.format("http://172.17.0.1:%s", mappedPort);
 

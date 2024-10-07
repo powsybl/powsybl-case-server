@@ -27,7 +27,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, properties = {"case-store-directory=/cases"})
 @TestPropertySource(properties = {"storage.type=S3"})
 @ContextConfigurationWithTestChannel
-public class S3CaseControllerTest extends AbstractCaseControllerTest {
+public class S3CaseControllerTest extends AbstractCaseControllerTest implements ContainerConfigInterface {
 
     @Autowired
     private S3CaseService s3CaseService;
