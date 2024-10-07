@@ -1,6 +1,10 @@
 spring:
   application:
     name: case-server
+  logging:
+    level:
+      root: DEBUG
+      com.powsybl.caseserver: DEBUG # Set the package you want to log at DEBUG level
 
   cloud:
     stream:
@@ -8,6 +12,18 @@ spring:
         publishCaseImport-out-0:
           destination: ${powsybl-ws.rabbitmq.destination.prefix:}case.import
       output-bindings: publishCaseImport-out-0
+    aws:
+      s3:
+        path-style-access-enabled: true
+      endpoint: http://172.17.0.1:19000
+      region:
+        profile:
+          name: default
+        static: test
+      bucket: bucket-gridsuite
+      credentials:
+        access-key: minioadmin
+        secret-key: minioadmin
 
 powsybl-ws:
   database:
@@ -15,3 +31,5 @@ powsybl-ws:
 
 cleaning-cases-cron: 0 * 2 * * ?
 
+storage:
+  type: S3  # file or S3

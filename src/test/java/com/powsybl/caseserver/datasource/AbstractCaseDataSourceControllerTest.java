@@ -1,43 +1,26 @@
 /**
- * Copyright (c) 2020, RTE (http://www.rte-france.com)
+ * Copyright (c) 2023, RTE (http://www.rte-france.com)
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.powsybl.caseserver.datasource.util;
+package com.powsybl.caseserver.datasource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.jimfs.Jimfs;
-import com.powsybl.caseserver.CaseApplication;
-import com.powsybl.caseserver.CaseService;
 import com.powsybl.caseserver.elasticsearch.CaseInfosRepository;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.commons.datasource.DataSource;
-import jakarta.persistence.EntityManager;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.cloud.stream.binder.test.TestChannelBinderConfiguration;
 import org.springframework.cloud.stream.function.StreamBridge;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.ContextHierarchy;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
 import java.util.Set;
 import java.util.UUID;
 
@@ -48,69 +31,37 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  */
-@RunWith(SpringRunner.class)
-@EnableWebMvc
-@WebMvcTest(CaseDataSourceController.class)
-@TestPropertySource(properties = {"case-store-directory=test"})
-@ContextHierarchy({@ContextConfiguration(classes = {CaseApplication.class, TestChannelBinderConfiguration.class})})
-public class CaseDataSourceControllerTest {
 
-    private FileSystem fileSystem = Jimfs.newFileSystem();
+public abstract class AbstractCaseDataSourceControllerTest {
 
     @MockBean
     StreamBridge streamBridge;
-
-    @MockBean
-    EntityManager entityManager;
 
     @Autowired
     private MockMvc mvc;
 
     @MockBean
-    private CaseMetadataRepository caseMetadataRepository;
+    CaseMetadataRepository caseMetadataRepository;
 
     @MockBean
     CaseInfosRepository caseInfosRepository;
 
-    @Autowired
-    private CaseService caseService;
-
     @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
-    private String rootDirectory;
+    protected String rootDirectory;
 
-    private String cgmesName = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2.zip";
-    private String fileName = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2/MicroGridTestConfiguration_BC_BE_DL_V2.xml";
+    String cgmesName = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2.zip";
 
-    private static final UUID CASE_UUID = UUID.randomUUID();
+    String fileName = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2/MicroGridTestConfiguration_BC_BE_DL_V2.xml";
 
-    private DataSource dataSource;
+    UUID caseUuid;
 
-    @Autowired
-    private ObjectMapper mapper;
+    protected DataSource dataSource;
 
-    @Before
-    public void setUp() throws URISyntaxException, IOException {
-        Path path = fileSystem.getPath(rootDirectory);
-        if (!Files.exists(path)) {
-            Files.createDirectories(path);
-        }
-        Path caseDirectory = fileSystem.getPath(rootDirectory).resolve(CASE_UUID.toString());
-        if (!Files.exists(caseDirectory)) {
-            Files.createDirectories(caseDirectory);
-        }
-
-        caseService.setFileSystem(fileSystem);
-        //insert a cgmes in the FS
-        try (InputStream cgmesURL = getClass().getResourceAsStream("/" + cgmesName)) {
-            Path cgmes = caseDirectory.resolve(cgmesName);
-            Files.copy(cgmesURL, cgmes, StandardCopyOption.REPLACE_EXISTING);
-        }
-        dataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + cgmesName).toURI()));
-    }
+    private ObjectMapper mapper = new ObjectMapper();
 
     @Test
     public void testBaseName() throws Exception {
-        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/baseName", CASE_UUID))
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/baseName", caseUuid))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -119,19 +70,19 @@ public class CaseDataSourceControllerTest {
 
     @Test
     public void testListName() throws Exception {
-        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/list", CASE_UUID)
-                .param("regex", ".*"))
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/list", caseUuid)
+                        .param("regex", ".*"))
                 .andExpect(status().isOk())
                 .andReturn();
 
-        Set nameList = mapper.readValue(mvcResult.getResponse().getContentAsString(), Set.class);
+        Set<String> nameList = mapper.readValue(mvcResult.getResponse().getContentAsString(), Set.class);
         assertEquals(dataSource.listNames(".*"), nameList);
     }
 
     @Test
     public void testInputStreamWithFileName() throws Exception {
-        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", CASE_UUID)
-                .param("fileName", fileName))
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", caseUuid)
+                        .param("fileName", fileName))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -150,9 +101,9 @@ public class CaseDataSourceControllerTest {
     public void testInputStreamWithSuffixExt() throws Exception {
         String suffix = "/MicroGridTestConfiguration_BC_BE_DL_V2";
         String ext = "xml";
-        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", CASE_UUID)
-                .param("suffix", suffix)
-                .param("ext", ext))
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", caseUuid)
+                        .param("suffix", suffix)
+                        .param("ext", ext))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -169,16 +120,16 @@ public class CaseDataSourceControllerTest {
 
     @Test
     public void testExistsWithFileName() throws Exception {
-        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", CASE_UUID)
-                .param("fileName", fileName))
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", caseUuid)
+                        .param("fileName", fileName))
                 .andExpect(status().isOk())
                 .andReturn();
 
         Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
         assertEquals(dataSource.exists(fileName), res);
 
-        mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", CASE_UUID)
-                .param("fileName", "random"))
+        mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", caseUuid)
+                        .param("fileName", "random"))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -190,9 +141,9 @@ public class CaseDataSourceControllerTest {
     public void testExistsWithSuffixExt() throws Exception {
         String suffix = "random";
         String ext = "uct";
-        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", CASE_UUID)
-                .param("suffix", suffix)
-                .param("ext", ext))
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", caseUuid)
+                        .param("suffix", suffix)
+                        .param("ext", ext))
                 .andExpect(status().isOk())
                 .andReturn();
 

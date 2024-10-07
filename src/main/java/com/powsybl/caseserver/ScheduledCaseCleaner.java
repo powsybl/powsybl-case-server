@@ -6,6 +6,7 @@
  */
 package com.powsybl.caseserver;
 
+import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

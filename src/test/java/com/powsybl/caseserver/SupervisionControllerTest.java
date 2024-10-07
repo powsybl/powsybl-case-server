@@ -9,7 +9,8 @@ package com.powsybl.caseserver;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
-import com.powsybl.caseserver.services.SupervisionService;
+import com.powsybl.caseserver.service.FsCaseService;
+import com.powsybl.caseserver.service.SupervisionService;
 import com.powsybl.computation.ComputationManager;
 import org.junit.After;
 import org.junit.Assert;
@@ -41,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @RunWith(SpringRunner.class)
 @AutoConfigureMockMvc
-@SpringBootTest(properties = {"case-store-directory=/cases"})
+@SpringBootTest(properties = {"case-store-directory=/cases", "storage.type=file"}) // TODO test with both impls or mock ?
 @ContextConfiguration(classes = {CaseApplication.class})
 public class SupervisionControllerTest {
     @Autowired
@@ -49,7 +50,7 @@ public class SupervisionControllerTest {
     @Autowired
     CaseMetadataRepository caseMetadataRepository;
     @Autowired
-    CaseService caseService;
+    FsCaseService caseService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -115,7 +116,7 @@ public class SupervisionControllerTest {
     }
 
     private static MockMultipartFile createMockMultipartFile() throws IOException {
-        try (InputStream inputStream = CaseControllerTest.class.getResourceAsStream("/" + SupervisionControllerTest.TEST_CASE)) {
+        try (InputStream inputStream = SupervisionControllerTest.class.getResourceAsStream("/" + SupervisionControllerTest.TEST_CASE)) {
             return new MockMultipartFile("file", SupervisionControllerTest.TEST_CASE, MediaType.TEXT_PLAIN_VALUE, inputStream);
         }
     }
