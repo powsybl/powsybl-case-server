@@ -349,7 +349,7 @@ public class S3CaseService implements CaseService {
 
             // Use putObject to upload the file
             s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, mpf.getSize()));
-            if (mpf.getContentType() != null && Objects.equals(mpf.getContentType(), "application/zip")) {
+            if (Objects.equals(mpf.getContentType(), "application/zip")) {
                 importZipContent(mpf.getInputStream(), caseUuid);
             }
         } catch (IOException e) {

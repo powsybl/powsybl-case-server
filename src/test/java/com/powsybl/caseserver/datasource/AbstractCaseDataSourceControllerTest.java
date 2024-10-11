@@ -7,8 +7,7 @@
 package com.powsybl.caseserver.datasource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.powsybl.caseserver.elasticsearch.CaseInfosRepository;
-import com.powsybl.caseserver.repository.CaseMetadataRepository;
+import com.powsybl.caseserver.elasticsearch.DisableElasticsearch;
 import com.powsybl.commons.datasource.DataSource;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  */
 
+@DisableElasticsearch
 public abstract class AbstractCaseDataSourceControllerTest {
 
     @MockBean
@@ -39,12 +39,6 @@ public abstract class AbstractCaseDataSourceControllerTest {
 
     @Autowired
     private MockMvc mvc;
-
-    @MockBean
-    CaseMetadataRepository caseMetadataRepository;
-
-    @MockBean
-    CaseInfosRepository caseInfosRepository;
 
     @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
     protected String rootDirectory;
