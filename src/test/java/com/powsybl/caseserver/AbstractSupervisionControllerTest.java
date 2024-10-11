@@ -6,26 +6,16 @@
  */
 package com.powsybl.caseserver;
 
-import com.google.common.jimfs.Configuration;
-import com.google.common.jimfs.Jimfs;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
-import com.powsybl.caseserver.service.FsCaseService;
+import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.caseserver.service.SupervisionService;
-import com.powsybl.computation.ComputationManager;
 import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.io.IOException;
@@ -40,26 +30,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * @author Jamal KHEYYAD <jamal.kheyyad at rte-international.com>
  */
-@RunWith(SpringRunner.class)
-@AutoConfigureMockMvc
-@SpringBootTest(properties = {"case-store-directory=/cases", "storage.type=file"}) // TODO test with both impls or mock ?
-@ContextConfiguration(classes = {CaseApplication.class})
-public class SupervisionControllerTest {
+
+public abstract class AbstractSupervisionControllerTest {
     @Autowired
     SupervisionService supervisionService;
     @Autowired
     CaseMetadataRepository caseMetadataRepository;
-    @Autowired
-    FsCaseService caseService;
+    CaseService caseService;
 
     @Autowired
-    private MockMvc mockMvc;
+    protected MockMvc mockMvc;
 
-    @Value("${case-store-directory}")
-    private String rootDirectory;
+    @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
+    String rootDirectory;
 
     private static final String TEST_CASE = "testCase.xiidm";
-    private FileSystem fileSystem;
+    FileSystem fileSystem;
 
     @Test
     public void testGetCaseInfosCount() throws Exception {
@@ -116,16 +102,9 @@ public class SupervisionControllerTest {
     }
 
     private static MockMultipartFile createMockMultipartFile() throws IOException {
-        try (InputStream inputStream = SupervisionControllerTest.class.getResourceAsStream("/" + SupervisionControllerTest.TEST_CASE)) {
-            return new MockMultipartFile("file", SupervisionControllerTest.TEST_CASE, MediaType.TEXT_PLAIN_VALUE, inputStream);
+        try (InputStream inputStream = AbstractSupervisionControllerTest.class.getResourceAsStream("/" + AbstractSupervisionControllerTest.TEST_CASE)) {
+            return new MockMultipartFile("file", AbstractSupervisionControllerTest.TEST_CASE, MediaType.TEXT_PLAIN_VALUE, inputStream);
         }
-    }
-
-    @Before
-    public void setUp() {
-        fileSystem = Jimfs.newFileSystem(Configuration.unix());
-        caseService.setFileSystem(fileSystem);
-        caseService.setComputationManager(Mockito.mock(ComputationManager.class));
     }
 
     @After

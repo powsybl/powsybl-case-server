@@ -8,6 +8,7 @@ package com.powsybl.caseserver.datasource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.caseserver.elasticsearch.CaseInfosRepository;
+import com.powsybl.caseserver.elasticsearch.DisableElasticsearch;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.commons.datasource.DataSource;
 import org.junit.Test;
@@ -32,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  */
 
+@DisableElasticsearch
 public abstract class AbstractCaseDataSourceControllerTest {
 
     @MockBean

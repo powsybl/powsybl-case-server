@@ -20,6 +20,7 @@ public final class CaseException extends RuntimeException {
 
     public enum Type {
         FILE_NOT_IMPORTABLE,
+        FILE_NOT_FOUND,
         STORAGE_DIR_NOT_CREATED,
         ILLEGAL_FILE_NAME,
         DIRECTORY_ALREADY_EXISTS,
@@ -27,7 +28,9 @@ public final class CaseException extends RuntimeException {
         DIRECTORY_NOT_FOUND,
         ORIGINAL_FILE_NOT_FOUND,
         TEMP_FILE_INIT,
-        TEMP_FILE_PROCESS, TEMP_DIRECTORY_CREATION,
+        TEMP_FILE_PROCESS,
+        TEMP_DIRECTORY_CREATION,
+        ZIP_FILE_PROCESS,
         UNSUPPORTED_FORMAT
     }
 
@@ -39,6 +42,11 @@ public final class CaseException extends RuntimeException {
     }
 
     public CaseException(Type type, String message, Exception e) {
+        super(message, e);
+        this.type = type;
+    }
+
+    public CaseException(Type type, String message, Throwable e) {
         super(message, e);
         this.type = type;
     }
@@ -72,9 +80,14 @@ public final class CaseException extends RuntimeException {
         return new CaseException(Type.FILE_NOT_IMPORTABLE, "This file cannot be imported: " + file);
     }
 
-    public static CaseException createFileNotImportable(String file) {
+    public static CaseException createFileNotImportable(String file, Exception e) {
         Objects.requireNonNull(file);
-        return new CaseException(Type.FILE_NOT_IMPORTABLE, "This file cannot be imported: " + file);
+        return new CaseException(Type.FILE_NOT_IMPORTABLE, "This file cannot be imported: " + file, e);
+    }
+
+    public static CaseException getFileNameNotFound(UUID uuid) {
+        Objects.requireNonNull(uuid);
+        return new CaseException(Type.FILE_NOT_FOUND, "The file name with the following uuid doesn't exist: " + uuid);
     }
 
     public static CaseException createStorageNotInitialized(Path storageRootDir) {
@@ -97,6 +110,11 @@ public final class CaseException extends RuntimeException {
         return new CaseException(Type.TEMP_FILE_INIT, "Error initializing temporary case file: " + uuid, e);
     }
 
+    public static CaseException initTempFile(UUID uuid, Throwable e) {
+        Objects.requireNonNull(uuid);
+        return new CaseException(Type.TEMP_FILE_INIT, "Error initializing temporary case file: " + uuid, e);
+    }
+
     public static CaseException initTempFile(UUID uuid) {
         return CaseException.initTempFile(uuid, null);
     }
@@ -106,8 +124,17 @@ public final class CaseException extends RuntimeException {
         return new CaseException(Type.TEMP_FILE_PROCESS, "Error processing temporary case file: " + uuid, e);
     }
 
+    public static CaseException processTempFile(UUID uuid, Throwable e) {
+        Objects.requireNonNull(uuid);
+        return new CaseException(Type.TEMP_FILE_PROCESS, "Error processing temporary case file: " + uuid, e);
+    }
+
     public static CaseException processTempFile(UUID uuid) {
         return CaseException.processTempFile(uuid, null);
+    }
+
+    public static CaseException importZipContent(UUID uuid, Exception e) {
+        return new CaseException(Type.ZIP_FILE_PROCESS, "Error processing zip content file: " + uuid, e);
     }
 
     public static CaseException createUnsupportedFormat(String format) {
