@@ -373,9 +373,6 @@ public class S3CaseService implements CaseService {
 
             while ((entry = zipInputStream.getNextEntry()) != null) {
                 if (!entry.isDirectory()) {
-                    if (entry.getSize() > MAX_SIZE) {
-                        throw new IOException("File is too large: " + entry.getName());
-                    }
                     processEntry(caseUuid, zipInputStream, entry);
                 }
                 zipInputStream.closeEntry();
