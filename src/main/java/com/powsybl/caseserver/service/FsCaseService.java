@@ -9,9 +9,6 @@ package com.powsybl.caseserver.service;
 import com.powsybl.caseserver.CaseException;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
-import com.powsybl.caseserver.parsers.FileNameInfos;
-import com.powsybl.caseserver.parsers.FileNameParser;
-import com.powsybl.caseserver.parsers.FileNameParsers;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.computation.ComputationManager;
@@ -31,14 +28,11 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.nio.file.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
@@ -99,6 +93,9 @@ public class FsCaseService implements CaseService {
             throw createDirectoryNotFound(caseUuid);
         }
         CaseInfos caseInfos = getCaseInfos(file);
+        if (caseInfos == null) {
+            throw CaseException.getFileNameNotFound(caseUuid);
+        }
         return caseInfos.getName();
     }
 
@@ -249,25 +246,8 @@ public class FsCaseService implements CaseService {
         return caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
     }
 
-    // TODO should not be duplicated with S3CaseService
     public List<CaseInfos> getCasesToReindex() {
-        Set<UUID> casesToReindex = caseMetadataRepository.findAllByIndexedTrue()
-                .stream()
-                .map(CaseMetadataEntity::getId)
-                .collect(Collectors.toSet());
-        return getCases(getStorageRootDir()).stream().filter(c -> casesToReindex.contains(c.getUuid())).toList();
-    }
-
-    @Override
-    public CaseInfos createInfos(String fileBaseName, UUID caseUuid, String format) {
-        FileNameParser parser = FileNameParsers.findParser(fileBaseName);
-        if (parser != null) {
-            Optional<? extends FileNameInfos> fileNameInfos = parser.parse(fileBaseName);
-            if (fileNameInfos.isPresent()) {
-                return CaseInfos.create(fileBaseName, caseUuid, format, fileNameInfos.get());
-            }
-        }
-        return CaseInfos.builder().name(fileBaseName).uuid(caseUuid).format(format).build();
+        return getCasesToReindex(caseMetadataRepository);
     }
 
     @Transactional
@@ -364,7 +344,7 @@ public class FsCaseService implements CaseService {
             return walk.filter(Files::isRegularFile)
                     .map(this::getCaseInfos)
                     .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -375,28 +355,6 @@ public class FsCaseService implements CaseService {
         checkStorageInitialization();
 
         return caseInfosService.searchCaseInfos(query);
-    }
-
-    public List<CaseInfos> getCases(Path directory) {
-        try (Stream<Path> walk = Files.walk(directory)) {
-            return walk.filter(Files::isRegularFile)
-                    .map(file -> createInfos(file.getFileName().toString(), UUID.fromString(file.getParent().getFileName().toString()), getFormat(file)))
-                    .collect(Collectors.toList());
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    public List<CaseInfos> getMetadata(List<UUID> ids) {
-        List<CaseInfos> cases = new ArrayList<>();
-        ids.forEach(caseUuid -> {
-            Path file = getCaseFile(caseUuid);
-            if (file != null) {
-                CaseInfos caseInfos = getCaseInfos(file);
-                cases.add(caseInfos);
-            }
-        });
-        return cases;
     }
 
 }

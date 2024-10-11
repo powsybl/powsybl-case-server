@@ -60,6 +60,7 @@ import static com.powsybl.caseserver.dto.CaseInfos.FORMAT_HEADER_KEY;
 public class S3CaseService implements CaseService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(S3CaseService.class);
+    public static final int MAX_SIZE = 500000000;
 
     private ComputationManager computationManager = LocalComputationManager.getDefault();
 
@@ -116,7 +117,7 @@ public class S3CaseService implements CaseService {
             } catch (CaseException e) {
                 throw CaseException.initTempFile(caseUuid, e);
             } catch (Throwable ex) {
-                throw CaseException.initTempFile(caseUuid);
+                throw CaseException.initTempFile(caseUuid, ex);
             }
             // after this line, need to cleanup the file
             try {
@@ -125,7 +126,7 @@ public class S3CaseService implements CaseService {
                 } catch (CaseException e) {
                     throw CaseException.createFileNotImportable(tempdirPath);
                 } catch (Throwable t) {
-                    throw CaseException.processTempFile(caseUuid);
+                    throw CaseException.processTempFile(caseUuid, t);
                 }
             } finally {
                 try {
@@ -353,7 +354,7 @@ public class S3CaseService implements CaseService {
                 importZipContent(mpf.getInputStream(), caseUuid);
             }
         } catch (IOException e) {
-            throw CaseException.createFileNotImportable(caseName);
+            throw CaseException.createFileNotImportable(caseName, e);
         }
 
         createCaseMetadataEntity(caseUuid, withExpiration, withIndexation, caseMetadataRepository);
@@ -367,7 +368,7 @@ public class S3CaseService implements CaseService {
     }
 
     private void importZipContent(InputStream inputStream, UUID caseUuid) throws IOException {
-        try (ZipInputStream zipInputStream = new SecuredZipInputStream(inputStream, 1000, 500000000)) {
+        try (ZipInputStream zipInputStream = new SecuredZipInputStream(inputStream, 1000, MAX_SIZE)) {
             ZipEntry entry;
 
             while ((entry = zipInputStream.getNextEntry()) != null) {
@@ -425,8 +426,8 @@ public class S3CaseService implements CaseService {
         if (caseBytes.isPresent()) {
             try {
                 importZipContent(new ByteArrayInputStream(caseBytes.get()), newCaseUuid);
-            } catch (IOException ioException) {
-                throw new UncheckedIOException(ioException);
+            } catch (Exception e) {
+                throw CaseException.importZipContent(sourceCaseUuid, e);
             }
 
         }
@@ -441,13 +442,8 @@ public class S3CaseService implements CaseService {
         return newCaseUuid;
     }
 
-    // TODO should not be duplicated with FSCaseService
     public List<CaseInfos> getCasesToReindex() {
-        Set<UUID> casesToReindex = caseMetadataRepository.findAllByIndexedTrue()
-                .stream()
-                .map(CaseMetadataEntity::getId)
-                .collect(Collectors.toSet());
-        return getCases().stream().filter(c -> casesToReindex.contains(c.getUuid())).toList();
+        return getCasesToReindex(caseMetadataRepository);
     }
 
     @Transactional
@@ -526,18 +522,6 @@ public class S3CaseService implements CaseService {
 
     public List<CaseInfos> searchCases(String query) {
         return caseInfosService.searchCaseInfos(query);
-    }
-
-    @Override
-    public List<CaseInfos> getMetadata(List<UUID> ids) {
-        List<CaseInfos> cases = new ArrayList<>();
-        ids.forEach(caseUuid -> {
-            CaseInfos caseInfos = getCaseInfos(caseUuid);
-            if (Objects.nonNull(caseInfos)) {
-                cases.add(caseInfos);
-            }
-        });
-        return cases;
     }
 
     private CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {

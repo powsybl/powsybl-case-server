@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -57,6 +58,17 @@ public interface CaseService {
             expirationTime = Instant.now().plus(1, ChronoUnit.HOURS);
         }
         caseMetadataRepository.save(new CaseMetadataEntity(newCaseUuid, expirationTime, withIndexation));
+    }
+
+    default List<CaseInfos> getMetadata(List<UUID> ids) {
+        List<CaseInfos> cases = new ArrayList<>();
+        ids.forEach(caseUuid -> {
+            CaseInfos caseInfos = getCaseInfos(caseUuid);
+            if (Objects.nonNull(caseInfos)) {
+                cases.add(caseInfos);
+            }
+        });
+        return cases;
     }
 
     default Importer getImporterOrThrowsException(Path caseFile, ComputationManager computationManager) {
@@ -114,6 +126,14 @@ public interface CaseService {
         }
     }
 
+    default List<CaseInfos> getCasesToReindex(CaseMetadataRepository caseMetadataRepository) {
+        Set<UUID> casesToReindex = caseMetadataRepository.findAllByIndexedTrue()
+                .stream()
+                .map(CaseMetadataEntity::getId)
+                .collect(Collectors.toSet());
+        return getCases().stream().filter(c -> casesToReindex.contains(c.getUuid())).toList();
+    }
+
     List<CaseInfos> getCasesToReindex();
 
     List<CaseInfos> getCases();
@@ -141,8 +161,6 @@ public interface CaseService {
     void deleteAllCases();
 
     List<CaseInfos> searchCases(String query);
-
-    List<CaseInfos> getMetadata(List<UUID> ids);
 
     void setComputationManager(ComputationManager mock);
 }
