@@ -4,12 +4,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.powsybl.caseserver.datasource.util;
+package com.powsybl.caseserver.datasource;
 
 import com.powsybl.caseserver.CaseConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -29,12 +30,13 @@ import java.util.UUID;
 public class CaseDataSourceController {
 
     @Autowired
+    @Qualifier("caseSourceService")
     private CaseDataSourceService caseDataSourceService;
 
     @GetMapping(value = "/cases/{caseUuid}/datasource/baseName")
     @Operation(summary = "Get datasource baseName")
     public ResponseEntity<String> getBaseName(@PathVariable("caseUuid") UUID caseUuid) {
-        String baseName = caseDataSourceService.getBaseName(caseUuid);
+        final String baseName = caseDataSourceService.getBaseName(caseUuid);
         return ResponseEntity.ok().body(baseName);
     }
 
@@ -43,7 +45,7 @@ public class CaseDataSourceController {
     public ResponseEntity<Boolean> datasourceExists(@PathVariable("caseUuid") UUID caseUuid,
                                                     @RequestParam String suffix,
                                                     @RequestParam String ext) {
-        Boolean exists = caseDataSourceService.datasourceExists(caseUuid, suffix, ext);
+        final Boolean exists = caseDataSourceService.datasourceExists(caseUuid, suffix, ext);
         return ResponseEntity.ok().body(exists);
     }
 
