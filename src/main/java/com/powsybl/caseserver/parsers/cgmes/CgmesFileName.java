@@ -27,6 +27,7 @@ public class CgmesFileName implements FileNameInfos {
     @NonNull private String tso;
     @NonNull private Integer version;
 
+    @Override
     public Type getType() {
         return Type.CGMES;
     }

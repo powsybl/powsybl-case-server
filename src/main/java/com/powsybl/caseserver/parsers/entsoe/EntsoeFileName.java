@@ -28,6 +28,7 @@ public class EntsoeFileName implements FileNameInfos {
     @NonNull private EntsoeGeographicalCode geographicalCode;
     @NonNull private Integer version;
 
+    @Override
     public Type getType() {
         return Type.ENTSOE;
     }
