@@ -50,7 +50,9 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
 
     @Override
     public byte[] getInputStream(UUID caseUuid, String fileName) {
-        final var caseFileKey = uuidToPrefixKey(caseUuid) + fileName;
+        final var caseFileKey = caseService.getFormat(caseUuid).equals("CGMES")
+                ? uuidToPrefixKey(caseUuid) + fileName
+                : uuidToPrefixKey(caseUuid) + caseService.getCaseName(caseUuid);
         return withS3DownloadedDataSource(caseUuid, caseFileKey,
             datasource -> IOUtils.toByteArray(datasource.newInputStream(Paths.get(fileName).getFileName().toString())));
     }

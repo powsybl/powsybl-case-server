@@ -11,6 +11,7 @@ import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
+import com.powsybl.commons.datasource.DataSource;
 import com.powsybl.computation.ComputationManager;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
@@ -49,7 +50,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
-import static com.powsybl.caseserver.dto.CaseInfos.FORMAT_HEADER_KEY;
+import static com.powsybl.caseserver.dto.CaseInfos.*;
 
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
@@ -61,6 +62,8 @@ public class S3CaseService implements CaseService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(S3CaseService.class);
     public static final int MAX_SIZE = 500000000;
+    //FIXME: get it from powsybl-core ?
+    public static final List<String> COMPRESSION_FORMATS = List.of("bz2", "gz", "gz", "xz", "zip", "zst");
 
     private ComputationManager computationManager = LocalComputationManager.getDefault();
 
@@ -161,18 +164,21 @@ public class S3CaseService implements CaseService {
 
     @Override
     public String getFormat(UUID caseUuid) {
+        String format = getCaseMetadata(caseUuid).get(FORMAT_HEADER_KEY);
+        if (format == null) {
+            return withS3DownloadedTempPath(caseUuid, this::getFormat);
+        }
+        return format;
+    }
+
+    public Map<String, String> getCaseMetadata(UUID caseUuid) {
         String caseFileKey = getCaseFileObjectKey(caseUuid);
         HeadObjectResponse headObjectResponse = s3Client.headObject(HeadObjectRequest.builder()
                 .bucket(bucketName)
                 .key(caseFileKey)
                 .build());
 
-        String format = headObjectResponse.metadata().get(FORMAT_HEADER_KEY);
-        if (format == null) {
-            return withS3DownloadedTempPath(caseUuid, this::getFormat);
-
-        }
-        return format;
+        return headObjectResponse.metadata();
     }
 
     // key format is "gsi-cases/UUID/filename"
@@ -254,7 +260,7 @@ public class S3CaseService implements CaseService {
         if (files.isEmpty()) {
             throw createDirectoryNotFound(caseUuid);
         }
-        if (files.size() > 1) {
+        if (getFormat(caseUuid).equals("CGMES")) {
             String fileName;
             for (S3Object file : files) {
                 fileName = Paths.get(file.key()).getFileName().toString();
@@ -306,6 +312,11 @@ public class S3CaseService implements CaseService {
         if (getCaseFileSummaries(caseUuid).size() > 1 && fileName.equals(getCaseName(caseUuid))) {
             return Boolean.FALSE;
         }
+
+        if (!getFormat(caseUuid).equals("CGMES") && isCompressedCaseFile(getCaseName(caseUuid))) {
+            return getCaseMetadata(caseUuid).get(CASE_NAME_HEADER_KEY).equals(fileName);
+        }
+
         HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
                 .bucket(bucketName)
                 .key(uuidToPrefixKey(caseUuid) + fileName)
@@ -318,13 +329,19 @@ public class S3CaseService implements CaseService {
         }
     }
 
+    static boolean isCompressedCaseFile(String caseName) {
+        return COMPRESSION_FORMATS.stream().anyMatch(cf -> caseName.endsWith("." + cf));
+    }
+
     public Set<String> listName(UUID caseUuid, String regex) {
         List<S3Object> s3Objects = getCaseFileSummaries(caseUuid);
-        List<String> names = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(CASES_PREFIX + caseUuid.toString() + "/", "")).toList();
-        if (names.size() > 1) {
-            names = names.stream().filter(name -> !name.equals(getCaseName(caseUuid))).toList();
+        List<String> fileNames = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(CASES_PREFIX + caseUuid.toString() + "/", "")).toList();
+        if (getFormat(caseUuid).equals("CGMES")) {
+            fileNames = fileNames.stream().filter(name -> !name.endsWith(".zip")).toList();
+        } else if (isCompressedCaseFile(fileNames.get(0))) {
+            fileNames = List.of(getCaseMetadata(caseUuid).get(CASE_NAME_HEADER_KEY));
         }
-        return names.stream().filter(name -> name.matches(regex)).collect(Collectors.toSet());
+        return fileNames.stream().filter(n -> n.matches(regex)).collect(Collectors.toSet());
     }
 
     @Override
@@ -338,8 +355,20 @@ public class S3CaseService implements CaseService {
 
         try (InputStream inputStream = mpf.getInputStream()) {
             String key = uuidAndFilenameToKey(caseUuid, caseName);
+
             Map<String, String> caseMetadata = new HashMap<>();
             caseMetadata.put(FORMAT_HEADER_KEY, format);
+
+            if (format.equals("CGMES")) {
+                importZipContent(mpf.getInputStream(), caseUuid);
+            } else if (isCompressedCaseFile(caseName)) {
+                FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
+                Path tempdirPath = Files.createTempDirectory(caseUuid.toString(), attr);
+                Path tempCasePath = tempdirPath.resolve(caseName);
+                mpf.transferTo(tempCasePath);
+                DataSource dataSource = DataSource.fromPath(Paths.get(tempCasePath.toString()));
+                caseMetadata.put(CASE_NAME_HEADER_KEY, dataSource.listNames(".*").stream().findFirst().get());
+            }
 
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
@@ -350,9 +379,7 @@ public class S3CaseService implements CaseService {
 
             // Use putObject to upload the file
             s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, mpf.getSize()));
-            if (Objects.equals(mpf.getContentType(), "application/zip")) {
-                importZipContent(mpf.getInputStream(), caseUuid);
-            }
+
         } catch (IOException e) {
             throw CaseException.createFileNotImportable(caseName, e);
         }
@@ -423,13 +450,12 @@ public class S3CaseService implements CaseService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "source case " + sourceCaseUuid + NOT_FOUND);
         }
         Optional<byte[]> caseBytes = getCaseBytes(newCaseUuid);
-        if (caseBytes.isPresent()) {
+        if (caseBytes.isPresent() && getFormat(sourceCaseUuid).equals("CGMES")) {
             try {
                 importZipContent(new ByteArrayInputStream(caseBytes.get()), newCaseUuid);
             } catch (Exception e) {
                 throw CaseException.importZipContent(sourceCaseUuid, e);
             }
-
         }
         CaseMetadataEntity existingCase = getCaseMetaDataEntity(sourceCaseUuid);
 

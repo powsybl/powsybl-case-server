@@ -41,6 +41,7 @@ public class CaseInfos {
     public static final String NAME_HEADER_KEY = "name";
     public static final String UUID_HEADER_KEY = "uuid";
     public static final String FORMAT_HEADER_KEY = "format";
+    public static final String CASE_NAME_HEADER_KEY = "casename";
 
     @Id
     @NonNull protected UUID uuid;
