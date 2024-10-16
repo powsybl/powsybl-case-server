@@ -43,44 +43,70 @@ public abstract class AbstractCaseDataSourceControllerTest {
     @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
     protected String rootDirectory;
 
-    String cgmesName = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2.zip";
+    static String CGMES_ZIP_NAME = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2.zip";
 
-    String fileName = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2/MicroGridTestConfiguration_BC_BE_DL_V2.xml";
+    static String CGMES_FILE_NAME = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2/MicroGridTestConfiguration_BC_BE_DL_V2.xml";
 
-    UUID caseUuid;
+    static String XIIDM_ZIP_NAME = "LF.zip";
 
-    protected DataSource dataSource;
+    static String XIIDM_FILE_NAME = "LF.xml";
+
+    UUID cgmesCaseUuid;
+
+    UUID xiidmCaseUuid;
+
+    protected DataSource cgmesDataSource;
+
+    protected DataSource xiidmDataSource;
 
     private ObjectMapper mapper = new ObjectMapper();
 
     @Test
     public void testBaseName() throws Exception {
-        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/baseName", caseUuid))
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/baseName", cgmesCaseUuid))
                 .andExpect(status().isOk())
                 .andReturn();
 
-        assertEquals(dataSource.getBaseName(), mvcResult.getResponse().getContentAsString());
+        assertEquals(cgmesDataSource.getBaseName(), mvcResult.getResponse().getContentAsString());
     }
 
     @Test
     public void testListName() throws Exception {
-        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/list", caseUuid)
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/list", cgmesCaseUuid)
                         .param("regex", ".*"))
                 .andExpect(status().isOk())
                 .andReturn();
 
         Set<String> nameList = mapper.readValue(mvcResult.getResponse().getContentAsString(), Set.class);
-        assertEquals(dataSource.listNames(".*"), nameList);
+        assertEquals(cgmesDataSource.listNames(".*"), nameList);
     }
 
     @Test
     public void testInputStreamWithFileName() throws Exception {
-        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", caseUuid)
-                        .param("fileName", fileName))
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", cgmesCaseUuid)
+                        .param("fileName", CGMES_FILE_NAME))
                 .andExpect(status().isOk())
                 .andReturn();
 
-        try (InputStreamReader isReader = new InputStreamReader(dataSource.newInputStream(fileName), StandardCharsets.UTF_8)) {
+        try (InputStreamReader isReader = new InputStreamReader(cgmesDataSource.newInputStream(CGMES_FILE_NAME), StandardCharsets.UTF_8)) {
+            BufferedReader reader = new BufferedReader(isReader);
+            StringBuilder datasourceResponse = new StringBuilder();
+            String str;
+            while ((str = reader.readLine()) != null) {
+                datasourceResponse.append(str).append("\n");
+            }
+            assertEquals(datasourceResponse.toString(), mvcResult.getResponse().getContentAsString());
+        }
+    }
+
+    @Test
+    public void testInputStreamWithZipFile() throws Exception {
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", xiidmCaseUuid)
+                        .param("fileName", XIIDM_FILE_NAME))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        try (InputStreamReader isReader = new InputStreamReader(xiidmDataSource.newInputStream(XIIDM_FILE_NAME), StandardCharsets.UTF_8)) {
             BufferedReader reader = new BufferedReader(isReader);
             StringBuilder datasourceResponse = new StringBuilder();
             String str;
@@ -95,13 +121,13 @@ public abstract class AbstractCaseDataSourceControllerTest {
     public void testInputStreamWithSuffixExt() throws Exception {
         String suffix = "/MicroGridTestConfiguration_BC_BE_DL_V2";
         String ext = "xml";
-        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", caseUuid)
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", cgmesCaseUuid)
                         .param("suffix", suffix)
                         .param("ext", ext))
                 .andExpect(status().isOk())
                 .andReturn();
 
-        try (InputStreamReader isReader = new InputStreamReader(dataSource.newInputStream(suffix, ext), StandardCharsets.UTF_8)) {
+        try (InputStreamReader isReader = new InputStreamReader(cgmesDataSource.newInputStream(suffix, ext), StandardCharsets.UTF_8)) {
             BufferedReader reader = new BufferedReader(isReader);
             StringBuilder datasourceResponse = new StringBuilder();
             String str;
@@ -114,35 +140,35 @@ public abstract class AbstractCaseDataSourceControllerTest {
 
     @Test
     public void testExistsWithFileName() throws Exception {
-        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", caseUuid)
-                        .param("fileName", fileName))
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", cgmesCaseUuid)
+                        .param("fileName", CGMES_FILE_NAME))
                 .andExpect(status().isOk())
                 .andReturn();
 
         Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertEquals(dataSource.exists(fileName), res);
+        assertEquals(cgmesDataSource.exists(CGMES_FILE_NAME), res);
 
-        mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", caseUuid)
+        mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", cgmesCaseUuid)
                         .param("fileName", "random"))
                 .andExpect(status().isOk())
                 .andReturn();
 
         res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertEquals(dataSource.exists("random"), res);
+        assertEquals(cgmesDataSource.exists("random"), res);
     }
 
     @Test
     public void testExistsWithSuffixExt() throws Exception {
         String suffix = "random";
         String ext = "uct";
-        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", caseUuid)
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", cgmesCaseUuid)
                         .param("suffix", suffix)
                         .param("ext", ext))
                 .andExpect(status().isOk())
                 .andReturn();
 
         Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertEquals(dataSource.exists(suffix, ext), res);
+        assertEquals(cgmesDataSource.exists(suffix, ext), res);
     }
 
 }

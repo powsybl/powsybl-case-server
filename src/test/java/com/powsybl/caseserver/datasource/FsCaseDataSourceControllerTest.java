@@ -40,22 +40,28 @@ public class FsCaseDataSourceControllerTest extends AbstractCaseDataSourceContro
 
     @Before
     public void setUp() throws URISyntaxException, IOException {
-        caseUuid = UUID.randomUUID();
+        cgmesCaseUuid = UUID.randomUUID();
+        xiidmCaseUuid = UUID.randomUUID();
         Path path = fileSystem.getPath(rootDirectory);
         if (!Files.exists(path)) {
             Files.createDirectories(path);
         }
-        Path caseDirectory = fileSystem.getPath(rootDirectory).resolve(caseUuid.toString());
-        if (!Files.exists(caseDirectory)) {
-            Files.createDirectories(caseDirectory);
+        Path cgmesCaseDirectory = fileSystem.getPath(rootDirectory).resolve(cgmesCaseUuid.toString());
+        Path xiidmCaseDirectory = fileSystem.getPath(rootDirectory).resolve(xiidmCaseUuid.toString());
+        if (!Files.exists(cgmesCaseDirectory)) {
+            Files.createDirectories(cgmesCaseDirectory);
+            Files.createDirectories(xiidmCaseDirectory);
         }
 
         caseService.setFileSystem(fileSystem);
         //insert a cgmes in the FS
-        try (InputStream cgmesURL = getClass().getResourceAsStream("/" + cgmesName)) {
-            Path cgmes = caseDirectory.resolve(cgmesName);
-            Files.copy(cgmesURL, cgmes, StandardCopyOption.REPLACE_EXISTING);
+        try (InputStream cgmesURL = getClass().getResourceAsStream("/" + CGMES_ZIP_NAME);
+             InputStream xiidmURL = getClass().getResourceAsStream("/" + XIIDM_ZIP_NAME)
+        ) {
+            Files.copy(cgmesURL, cgmesCaseDirectory.resolve(CGMES_ZIP_NAME), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(xiidmURL, xiidmCaseDirectory.resolve(XIIDM_ZIP_NAME), StandardCopyOption.REPLACE_EXISTING);
         }
-        dataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + cgmesName).toURI()));
+        cgmesDataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + CGMES_ZIP_NAME).toURI()));
+        xiidmDataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + XIIDM_ZIP_NAME).toURI()));
     }
 }
