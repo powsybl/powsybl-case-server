@@ -16,26 +16,22 @@ import com.powsybl.caseserver.parsers.cgmes.CgmesFileNameParser;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
 import com.powsybl.entsoe.util.EntsoeGeographicalCode;
 import com.powsybl.iidm.network.Country;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author Slimane Amar <slimane.amar at rte-france.com>
  */
-@RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @DisableElasticsearch
-public class CaseFileNameParserTests {
-
+class CaseFileNameParserTests {
     private static final String SN_UCTE_CASE_FILE_NAME = "20200103_0915_SN5_D80.UCT";
     private static final String ID_UCTE_CASE_FILE_NAME = "20200424_1330_135_CH2.UCT";
     private static final String D1_UCTE_CASE_FILE_NAME = "20200110_0430_FO5_FR0.uct";
@@ -48,7 +44,7 @@ public class CaseFileNameParserTests {
     private CaseService caseService;
 
     @Test
-    public void testValidNameUcteSN() {
+    void testValidNameUcteSN() {
         EntsoeCaseInfos caseInfos = (EntsoeCaseInfos) createInfos(SN_UCTE_CASE_FILE_NAME);
         assertEquals(SN_UCTE_CASE_FILE_NAME, caseInfos.getName());
         assertEquals("UCTE", caseInfos.getFormat());
@@ -60,7 +56,7 @@ public class CaseFileNameParserTests {
     }
 
     @Test
-    public void testValidNameUcteID() {
+    void testValidNameUcteID() {
         EntsoeCaseInfos caseInfos = (EntsoeCaseInfos) createInfos(ID_UCTE_CASE_FILE_NAME);
         assertEquals(ID_UCTE_CASE_FILE_NAME, caseInfos.getName());
         assertEquals("UCTE", caseInfos.getFormat());
@@ -72,7 +68,7 @@ public class CaseFileNameParserTests {
     }
 
     @Test
-    public void testValidNameUcte1D() {
+    void testValidNameUcte1D() {
         EntsoeCaseInfos caseInfos = (EntsoeCaseInfos) createInfos(D1_UCTE_CASE_FILE_NAME);
         assertEquals(D1_UCTE_CASE_FILE_NAME, caseInfos.getName());
         assertEquals("UCTE", caseInfos.getFormat());
@@ -84,7 +80,7 @@ public class CaseFileNameParserTests {
     }
 
     @Test
-    public void testValidNameUcte2D() {
+    void testValidNameUcte2D() {
         EntsoeCaseInfos caseInfos = (EntsoeCaseInfos) createInfos(D2_UCTE_CASE_FILE_NAME);
         assertEquals(D2_UCTE_CASE_FILE_NAME, caseInfos.getName());
         assertEquals("UCTE", caseInfos.getFormat());
@@ -96,7 +92,7 @@ public class CaseFileNameParserTests {
     }
 
     @Test
-    public void testValidNameCgmes() {
+    void testValidNameCgmes() {
         CgmesCaseInfos caseInfos = (CgmesCaseInfos) createInfos(TEST_CGMES_CASE_FILE_NAME);
         assertEquals(TEST_CGMES_CASE_FILE_NAME, caseInfos.getName());
         assertEquals("CGMES", caseInfos.getFormat());
@@ -106,7 +102,8 @@ public class CaseFileNameParserTests {
         assertEquals(Integer.valueOf(1), caseInfos.getVersion());
     }
 
-    public void testNonValidNameEntsoe() {
+    @Test
+    void testNonValidNameEntsoe() {
         CaseInfos caseInfos = createInfos(TEST_OTHER_CASE_FILE_NAME);
         assertEquals(TEST_OTHER_CASE_FILE_NAME, caseInfos.getName());
         assertEquals("XIIDM", caseInfos.getFormat());
@@ -120,13 +117,13 @@ public class CaseFileNameParserTests {
     }
 
     @Test
-    public void testCreateDefaultCaseInfo() {
+    void testCreateDefaultCaseInfo() {
         CaseInfos infos = caseService.createInfos(TEST_OTHER_CASE_FILE_NAME, UUID.randomUUID(), "UNKNOW");
-        assertEquals(infos.getClass(), CaseInfos.class);
+        assertEquals(CaseInfos.class, infos.getClass());
     }
 
     @Test
-    public void testFileNameIncorrect() {
+    void testFileNameIncorrect() {
         Path casePath = Path.of(this.getClass().getResource("/" + CASE_FILE_NAME_INCORRECT).getPath());
         String fileBaseName = casePath.getFileName().toString();
         FileNameParser parser = new EntsoeFileNameParser();
@@ -134,9 +131,9 @@ public class CaseFileNameParserTests {
         assertTrue(fileNameInfos.isEmpty());
     }
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void testFileNameParserIncorrect() {
-        FileNameParser parserIncorrect = fileBaseName -> false;
-        parserIncorrect.parse(TEST_OTHER_CASE_FILE_NAME);
+    @Test
+    void testFileNameParserIncorrect() {
+        final FileNameParser parserIncorrect = fileBaseName -> false;
+        assertThrows(UnsupportedOperationException.class, () -> parserIncorrect.parse(TEST_OTHER_CASE_FILE_NAME));
     }
 }
