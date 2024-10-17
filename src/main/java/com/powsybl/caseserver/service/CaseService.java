@@ -52,12 +52,16 @@ public interface CaseService {
         return CaseInfos.builder().name(fileBaseName).uuid(caseUuid).format(format).build();
     }
 
-    default void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, boolean withIndexation, CaseMetadataRepository caseMetadataRepository) {
+    default void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, boolean withIndexation, String originalFilename, String compressionFormat, CaseMetadataRepository caseMetadataRepository) {
         Instant expirationTime = null;
         if (withExpiration) {
             expirationTime = Instant.now().plus(1, ChronoUnit.HOURS);
         }
-        caseMetadataRepository.save(new CaseMetadataEntity(newCaseUuid, expirationTime, withIndexation));
+        caseMetadataRepository.save(new CaseMetadataEntity(newCaseUuid, expirationTime, withIndexation, originalFilename, compressionFormat));
+    }
+
+    default void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, boolean withIndexation, CaseMetadataRepository caseMetadataRepository) {
+        createCaseMetadataEntity(newCaseUuid, withExpiration, withIndexation, null, null, caseMetadataRepository);
     }
 
     default List<CaseInfos> getMetadata(List<UUID> ids) {
