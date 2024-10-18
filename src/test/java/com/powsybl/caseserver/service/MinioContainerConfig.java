@@ -28,7 +28,6 @@ public interface MinioContainerConfig {
         try {
             GenericContainer<?> minioContainer = new GenericContainer(
                     String.format("%s:%s", MINIO_DOCKER_IMAGE_NAME, MINIO_DOCKER_IMAGE_VERSION))
-                    // .withClasspathResourceMapping("/", "/data/", BindMode.READ_WRITE)
                     .withCommand("server /data")
                     .withExposedPorts(MINIO_PORT)
                     .waitingFor(new HttpWaitStrategy()

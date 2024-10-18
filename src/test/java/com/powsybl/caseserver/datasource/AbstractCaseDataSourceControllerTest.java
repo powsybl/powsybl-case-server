@@ -50,9 +50,9 @@ public abstract class AbstractCaseDataSourceControllerTest {
     @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
     protected String rootDirectory;
 
-    static String CGMES_ZIP_NAME = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2.zip";
+    static final String CGMES_ZIP_NAME = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2.zip";
 
-    static String CGMES_FILE_NAME = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2/MicroGridTestConfiguration_BC_BE_DL_V2.xml";
+    static final String CGMES_FILE_NAME = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2/MicroGridTestConfiguration_BC_BE_DL_V2.xml";
 
     UUID cgmesCaseUuid;
 

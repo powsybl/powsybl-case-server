@@ -63,6 +63,7 @@ public class S3CaseService implements CaseService {
     public static final int MAX_SIZE = 500000000;
     public static final List<String> COMPRESSION_FORMATS = List.of("bz2", "gz", "xz", "zst");
     public static final List<String> ARCHIVE_FORMATS = List.of("zip");
+    public static final String DELIMITER = "/";
 
     private ComputationManager computationManager = LocalComputationManager.getDefault();
 
@@ -99,7 +100,6 @@ public class S3CaseService implements CaseService {
                                                                                          FailableConsumer<Path, T1> contentInitializer, FailableFunction<Path, R, T2> f) {
         Path tempdirPath;
         Path tempCasePath;
-        String compressionFormat;
         try {
             FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
             tempdirPath = Files.createTempDirectory(caseUuid.toString(), attr);
@@ -191,19 +191,19 @@ public class S3CaseService implements CaseService {
 
     // key format is "gsi-cases/UUID/filename"
     private UUID parseUuidFromKey(String key) {
-        int firstSlash = key.indexOf('/');
-        int secondSlash = key.indexOf('/', firstSlash + 1);
+        int firstSlash = key.indexOf(DELIMITER);
+        int secondSlash = key.indexOf(DELIMITER, firstSlash + 1);
         return UUID.fromString(key.substring(firstSlash + 1, secondSlash));
     }
 
     private String parseFilenameFromKey(String key) {
-        int firstSlash = key.indexOf('/');
-        int secondSlash = key.indexOf('/', firstSlash + 1);
+        int firstSlash = key.indexOf(DELIMITER);
+        int secondSlash = key.indexOf(DELIMITER, firstSlash + 1);
         return key.substring(secondSlash + 1);
     }
 
     private String uuidToPrefixKey(UUID uuid) {
-        return CASES_PREFIX + uuid.toString() + "/";
+        return CASES_PREFIX + uuid.toString() + DELIMITER;
     }
 
     private String uuidAndFilenameToKey(UUID uuid, String filename) {
@@ -339,7 +339,7 @@ public class S3CaseService implements CaseService {
 
     public Set<String> listName(UUID caseUuid, String regex) {
         List<S3Object> s3Objects = getCaseFileSummaries(caseUuid);
-        List<String> fileNames = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(CASES_PREFIX + caseUuid.toString() + "/", "")).toList();
+        List<String> fileNames = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(CASES_PREFIX + caseUuid.toString() + DELIMITER, "")).toList();
         if (Objects.nonNull(getCompressionFormat(caseUuid)) && getCompressionFormat(caseUuid).equals("zip")) {
             fileNames = fileNames.stream().filter(name -> !name.equals(getOriginalFilename(caseUuid))).toList();
         } else if (isCompressedCaseFile(fileNames.get(0))) {
