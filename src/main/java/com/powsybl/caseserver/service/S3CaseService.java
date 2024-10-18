@@ -366,9 +366,9 @@ public class S3CaseService implements CaseService {
 
             if (isArchivedCaseFile(caseName)) {
                 importZipContent(mpf.getInputStream(), caseUuid);
-                compressionFormat = FileNameUtils.getExtension(caseName);
+                compressionFormat = FileNameUtils.getExtension(Paths.get(caseName));
             } else if (isCompressedCaseFile(caseName)) {
-                compressionFormat = FileNameUtils.getExtension(caseName);
+                compressionFormat = FileNameUtils.getExtension(Paths.get(caseName));
             }
 
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
