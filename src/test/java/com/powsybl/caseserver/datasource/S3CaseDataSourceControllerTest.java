@@ -38,12 +38,11 @@ public class S3CaseDataSourceControllerTest extends AbstractCaseDataSourceContro
 
     @Before
     public void setUp() throws URISyntaxException, IOException {
-        System.out.println("TOTO");
         //insert a cgmes file in the S3
-        try (InputStream cgmesURL = getClass().getResourceAsStream("/" + CGMES_ZIP_NAME);
-             InputStream xiidmURL = getClass().getResourceAsStream("/" + XIIDM_ZIP_NAME)) {
-            cgmesCaseUuid = s3CaseService.importCase(new MockMultipartFile(CGMES_ZIP_NAME, CGMES_ZIP_NAME, "application/zip", cgmesURL.readAllBytes()), false, false);
-            xiidmCaseUuid = s3CaseService.importCase(new MockMultipartFile(XIIDM_ZIP_NAME, XIIDM_ZIP_NAME, "application/zip", xiidmURL.readAllBytes()), false, false);
+        try (InputStream cgmesIS = getClass().getResourceAsStream("/" + CGMES_ZIP_NAME);
+             InputStream xiidmIS = getClass().getResourceAsStream("/" + XIIDM_ZIP_NAME)) {
+            cgmesCaseUuid = s3CaseService.importCase(new MockMultipartFile(CGMES_ZIP_NAME, CGMES_ZIP_NAME, "application/zip", cgmesIS.readAllBytes()), false, false);
+            xiidmCaseUuid = s3CaseService.importCase(new MockMultipartFile(XIIDM_ZIP_NAME, XIIDM_ZIP_NAME, "application/zip", xiidmIS.readAllBytes()), false, false);
         }
         cgmesDataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + CGMES_ZIP_NAME).toURI()));
         xiidmDataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + XIIDM_ZIP_NAME).toURI()));
