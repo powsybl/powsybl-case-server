@@ -40,9 +40,6 @@ public interface MinioContainerConfig {
         } catch (Exception e) {
             throw new RuntimeException("Failed to start minioContainer", e);
         }
-
-        // can't use System.setProperty because spring cloud aws gets the url early
-        // System.setProperty("spring.cloud.aws.s3.endpoint", minioContainerUrl);
     }
 
     @DynamicPropertySource
