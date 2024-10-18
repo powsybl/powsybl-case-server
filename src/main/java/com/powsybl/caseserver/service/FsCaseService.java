@@ -164,7 +164,6 @@ public class FsCaseService implements CaseService {
 
     @Override
     public UUID importCase(MultipartFile mpf, boolean withExpiration, boolean withIndexation) {
-        //TODO merge withIndexation
         checkStorageInitialization();
 
         UUID caseUuid = UUID.randomUUID();
