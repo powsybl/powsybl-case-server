@@ -49,7 +49,6 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
 import static com.powsybl.caseserver.dto.CaseInfos.*;
 
 /**
@@ -62,7 +61,6 @@ public class S3CaseService implements CaseService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(S3CaseService.class);
     public static final int MAX_SIZE = 500000000;
-    //FIXME: get it from powsybl-core ?
     public static final List<String> COMPRESSION_FORMATS = List.of("bz2", "gz", "xz", "zst");
     public static final List<String> ARCHIVE_FORMATS = List.of("zip");
 
@@ -119,7 +117,6 @@ public class S3CaseService implements CaseService {
             tempCasePath = tempdirPath.resolve(filename);
             try {
                 contentInitializer.accept(tempCasePath);
-//                DataSource dataSource = DataSource.fromPath(Paths.get(tempCasePath.toString()));
             } catch (CaseException e) {
                 throw CaseException.initTempFile(caseUuid, e);
             } catch (Throwable ex) {
@@ -175,7 +172,11 @@ public class S3CaseService implements CaseService {
     }
 
     public String getCompressionFormat(UUID caseUuid) {
-        return caseMetadataRepository.findById(caseUuid).orElse(() -> return "").getCompressionFormat();
+        return caseMetadataRepository.findById(caseUuid).orElseThrow().getCompressionFormat();
+    }
+
+    public String getOriginalFilename(UUID caseUuid) {
+        return caseMetadataRepository.findById(caseUuid).orElseThrow().getOriginalFilename();
     }
 
     public Map<String, String> getCaseMetadata(UUID caseUuid) {
@@ -263,22 +264,11 @@ public class S3CaseService implements CaseService {
 
     @Override
     public String getCaseName(UUID caseUuid) {
-        List<S3Object> files = getCasesSummaries(uuidToPrefixKey(caseUuid));
-        if (files.isEmpty()) {
-            throw createDirectoryNotFound(caseUuid);
-        }
-        if (getCompressionFormat(caseUuid).equals("zip")) {
-            String fileName;
-            for (S3Object file : files) {
-                fileName = Paths.get(file.key()).getFileName().toString();
-                if (fileName.matches(".*\\.zip")) {
-                    return fileName;
-                }
-            }
+        String originalFilename = getOriginalFilename(caseUuid);
+        if (originalFilename == null) {
             throw CaseException.createOriginalFileNotFound(caseUuid);
-        } else {
-            return Paths.get(files.get(0).key()).getFileName().toString();
         }
+        return originalFilename;
     }
 
     @Override
@@ -343,11 +333,15 @@ public class S3CaseService implements CaseService {
         return COMPRESSION_FORMATS.stream().anyMatch(cf -> caseName.endsWith("." + cf));
     }
 
+    static boolean isArchivedCaseFile(String caseName) {
+        return ARCHIVE_FORMATS.stream().anyMatch(cf -> caseName.endsWith("." + cf));
+    }
+
     public Set<String> listName(UUID caseUuid, String regex) {
         List<S3Object> s3Objects = getCaseFileSummaries(caseUuid);
         List<String> fileNames = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(CASES_PREFIX + caseUuid.toString() + "/", "")).toList();
-        if (getCompressionFormat(caseUuid).equals("zip")) {
-            fileNames = fileNames.stream().filter(name -> !name.endsWith(".zip")).toList();
+        if (Objects.nonNull(getCompressionFormat(caseUuid)) && getCompressionFormat(caseUuid).equals("zip")) {
+            fileNames = fileNames.stream().filter(name -> !name.equals(getOriginalFilename(caseUuid))).toList();
         } else if (isCompressedCaseFile(fileNames.get(0))) {
             fileNames = List.of(fileNames.get(0).replace("." + getCompressionFormat(caseUuid), ""));
         }
@@ -370,17 +364,11 @@ public class S3CaseService implements CaseService {
             Map<String, String> caseMetadata = new HashMap<>();
             caseMetadata.put(FORMAT_HEADER_KEY, format);
 
-            if (Objects.equals(mpf.getContentType(), "application/zip")) {
+            if (isArchivedCaseFile(caseName)) {
                 importZipContent(mpf.getInputStream(), caseUuid);
+                compressionFormat = FileNameUtils.getExtension(caseName);
             } else if (isCompressedCaseFile(caseName)) {
-//                FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
-//                Path tempdirPath = Files.createTempDirectory(caseUuid.toString(), attr);
-//                Path tempCasePath = tempdirPath.resolve(caseName);
-//                mpf.transferTo(tempCasePath);
-//                DataSource dataSource = DataSource.fromPath(Paths.get(tempCasePath.toString()));
-//                caseMetadata.put(CASE_NAME_HEADER_KEY, copyInfos.getRight());
-                String fileExtension = FileNameUtils.getExtension(caseName);
-                compressionFormat = COMPRESSION_FORMATS.contains(fileExtension) ? fileExtension : null;
+                compressionFormat = FileNameUtils.getExtension(caseName);
             }
 
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
@@ -463,7 +451,7 @@ public class S3CaseService implements CaseService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "source case " + sourceCaseUuid + NOT_FOUND);
         }
         Optional<byte[]> caseBytes = getCaseBytes(newCaseUuid);
-        if (caseBytes.isPresent() && getCompressionFormat(sourceCaseUuid).equals("zip")) {
+        if (caseBytes.isPresent() && Objects.nonNull(getCompressionFormat(sourceCaseUuid)) && getCompressionFormat(sourceCaseUuid).equals("zip")) {
             try {
                 importZipContent(new ByteArrayInputStream(caseBytes.get()), newCaseUuid);
             } catch (Exception e) {

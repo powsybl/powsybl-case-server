@@ -38,8 +38,7 @@ public class S3CaseDataSourceControllerTest extends AbstractCaseDataSourceContro
 
     @Before
     public void setUp() throws URISyntaxException, IOException {
-        // TODO : mock S3CaseDataSourceService methods
-
+        System.out.println("TOTO");
         //insert a cgmes file in the S3
         try (InputStream cgmesURL = getClass().getResourceAsStream("/" + CGMES_ZIP_NAME);
              InputStream xiidmURL = getClass().getResourceAsStream("/" + XIIDM_ZIP_NAME)) {

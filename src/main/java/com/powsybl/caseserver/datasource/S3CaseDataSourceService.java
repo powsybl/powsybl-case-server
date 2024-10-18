@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -50,7 +51,7 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
 
     @Override
     public byte[] getInputStream(UUID caseUuid, String fileName) {
-        final var caseFileKey = caseService.getFormat(caseUuid).equals("CGMES")
+        final var caseFileKey = Objects.nonNull(caseService.getCompressionFormat(caseUuid)) && caseService.getCompressionFormat(caseUuid).equals("zip")
                 ? uuidToPrefixKey(caseUuid) + fileName
                 : uuidToPrefixKey(caseUuid) + caseService.getCaseName(caseUuid);
         return withS3DownloadedDataSource(caseUuid, caseFileKey,

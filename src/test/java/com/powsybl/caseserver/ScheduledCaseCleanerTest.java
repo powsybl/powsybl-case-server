@@ -61,9 +61,9 @@ public class ScheduledCaseCleanerTest {
     public void test() {
         Instant now = Instant.now();
         Instant yesterday = now.minus(1, ChronoUnit.DAYS);
-        CaseMetadataEntity shouldNotExpireEntity = new CaseMetadataEntity(UUID.randomUUID(), now.plus(1, ChronoUnit.HOURS), false);
-        CaseMetadataEntity shouldExpireEntity = new CaseMetadataEntity(UUID.randomUUID(), yesterday.plus(1, ChronoUnit.HOURS), false);
-        CaseMetadataEntity noExpireDateEntity = new CaseMetadataEntity(UUID.randomUUID(), null, false);
+        CaseMetadataEntity shouldNotExpireEntity = new CaseMetadataEntity(UUID.randomUUID(), now.plus(1, ChronoUnit.HOURS), false, "originalName", "compressionFormat");
+        CaseMetadataEntity shouldExpireEntity = new CaseMetadataEntity(UUID.randomUUID(), yesterday.plus(1, ChronoUnit.HOURS), false, "originalName", "compressionFormat");
+        CaseMetadataEntity noExpireDateEntity = new CaseMetadataEntity(UUID.randomUUID(), null, false, "originalName", "compressionFormat");
         caseMetadataRepository.save(shouldExpireEntity);
         caseMetadataRepository.save(shouldNotExpireEntity);
         caseMetadataRepository.save(noExpireDateEntity);
