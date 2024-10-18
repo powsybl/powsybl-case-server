@@ -34,34 +34,29 @@ import java.util.UUID;
 public class FsCaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTest {
 
     @Autowired
-    protected FsCaseService caseService;
+    protected FsCaseService fsCaseService;
 
     FileSystem fileSystem = FileSystems.getDefault();
 
     @Before
     public void setUp() throws URISyntaxException, IOException {
+        caseService = fsCaseService;
         cgmesCaseUuid = UUID.randomUUID();
-        xiidmCaseUuid = UUID.randomUUID();
         Path path = fileSystem.getPath(rootDirectory);
         if (!Files.exists(path)) {
             Files.createDirectories(path);
         }
         Path cgmesCaseDirectory = fileSystem.getPath(rootDirectory).resolve(cgmesCaseUuid.toString());
-        Path xiidmCaseDirectory = fileSystem.getPath(rootDirectory).resolve(xiidmCaseUuid.toString());
         if (!Files.exists(cgmesCaseDirectory)) {
             Files.createDirectories(cgmesCaseDirectory);
-            Files.createDirectories(xiidmCaseDirectory);
         }
 
-        caseService.setFileSystem(fileSystem);
+        fsCaseService.setFileSystem(fileSystem);
         //insert a cgmes in the FS
         try (InputStream cgmesURL = getClass().getResourceAsStream("/" + CGMES_ZIP_NAME);
-             InputStream xiidmURL = getClass().getResourceAsStream("/" + XIIDM_ZIP_NAME)
         ) {
             Files.copy(cgmesURL, cgmesCaseDirectory.resolve(CGMES_ZIP_NAME), StandardCopyOption.REPLACE_EXISTING);
-            Files.copy(xiidmURL, xiidmCaseDirectory.resolve(XIIDM_ZIP_NAME), StandardCopyOption.REPLACE_EXISTING);
         }
         cgmesDataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + CGMES_ZIP_NAME).toURI()));
-        xiidmDataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + XIIDM_ZIP_NAME).toURI()));
     }
 }

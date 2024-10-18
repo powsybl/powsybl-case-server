@@ -8,23 +8,28 @@ package com.powsybl.caseserver.datasource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.caseserver.elasticsearch.DisableElasticsearch;
+import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.commons.datasource.DataSource;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cloud.stream.function.StreamBridge;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -40,6 +45,8 @@ public abstract class AbstractCaseDataSourceControllerTest {
     @Autowired
     private MockMvc mvc;
 
+    protected static CaseService caseService;
+
     @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
     protected String rootDirectory;
 
@@ -47,19 +54,19 @@ public abstract class AbstractCaseDataSourceControllerTest {
 
     static String CGMES_FILE_NAME = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2/MicroGridTestConfiguration_BC_BE_DL_V2.xml";
 
-    static String XIIDM_ZIP_NAME = "LF.zip";
-
-    static String XIIDM_FILE_NAME = "LF.xml";
-
     UUID cgmesCaseUuid;
-
-    UUID xiidmCaseUuid;
 
     protected DataSource cgmesDataSource;
 
-    protected DataSource xiidmDataSource;
-
     private ObjectMapper mapper = new ObjectMapper();
+
+    public static UUID importCase(String filename, String contentType) throws IOException {
+        UUID caseUUID;
+        try (InputStream inputStream = S3CaseDataSourceControllerTest.class.getResourceAsStream("/" + filename)) {
+            caseUUID = caseService.importCase(new MockMultipartFile(filename, filename, contentType, inputStream.readAllBytes()), false, false);
+        }
+        return caseUUID;
+    }
 
     @Test
     public void testBaseName() throws Exception {
@@ -99,22 +106,58 @@ public abstract class AbstractCaseDataSourceControllerTest {
         }
     }
 
-    @Test
-    public void testInputStreamWithZipFile() throws Exception {
-        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", xiidmCaseUuid)
-                        .param("fileName", XIIDM_FILE_NAME))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        try (InputStreamReader isReader = new InputStreamReader(xiidmDataSource.newInputStream(XIIDM_FILE_NAME), StandardCharsets.UTF_8)) {
+    private static String readDataSource(DataSource dataSource, String fileName) throws Exception {
+        try (InputStreamReader isReader = new InputStreamReader(dataSource.newInputStream(fileName), StandardCharsets.UTF_8)) {
             BufferedReader reader = new BufferedReader(isReader);
             StringBuilder datasourceResponse = new StringBuilder();
             String str;
             while ((str = reader.readLine()) != null) {
                 datasourceResponse.append(str).append("\n");
             }
-            assertEquals(datasourceResponse.toString(), mvcResult.getResponse().getContentAsString());
+            return datasourceResponse.toString();
         }
+    }
+
+    @Test
+    public void testInputStreamWithZipFile() throws Exception {
+        String zipName = "LF.zip";
+        String fileName = "LF.xml";
+        UUID caseUuid = importCase(zipName, "application/zip");
+        DataSource dataSource = DataSource.fromPath(Paths.get(S3CaseDataSourceControllerTest.class.getResource("/" + zipName).toURI()));
+
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", caseUuid)
+                .param("fileName", fileName))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertEquals(readDataSource(dataSource, fileName), mvcResult.getResponse().getContentAsString());
+    }
+
+    @Test
+    public void testInputStreamWithGZipFile() throws Exception {
+        String gzipName = "LF.xml.gz";
+        String fileName = "LF.xml";
+        UUID caseUuid = importCase(gzipName, "application/zip");
+        DataSource dataSource = DataSource.fromPath(Paths.get(S3CaseDataSourceControllerTest.class.getResource("/" + gzipName).toURI()));
+
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", caseUuid)
+                        .param("fileName", fileName))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertEquals(readDataSource(dataSource, fileName), mvcResult.getResponse().getContentAsString());
+    }
+
+    @Test
+    public void testInputStreamWithXiidmPlainFile() throws Exception {
+        String fileName = "LF.xml";
+        UUID caseUuid = importCase(fileName, "application/zip");
+        DataSource dataSource = DataSource.fromPath(Paths.get(S3CaseDataSourceControllerTest.class.getResource("/" + fileName).toURI()));
+
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", caseUuid)
+                        .param("fileName", fileName))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertEquals(readDataSource(dataSource, fileName), mvcResult.getResponse().getContentAsString());
     }
 
     @Test

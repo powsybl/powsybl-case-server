@@ -15,7 +15,6 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -38,13 +37,9 @@ public class S3CaseDataSourceControllerTest extends AbstractCaseDataSourceContro
 
     @Before
     public void setUp() throws URISyntaxException, IOException {
-        //insert a cgmes file in the S3
-        try (InputStream cgmesIS = getClass().getResourceAsStream("/" + CGMES_ZIP_NAME);
-             InputStream xiidmIS = getClass().getResourceAsStream("/" + XIIDM_ZIP_NAME)) {
-            cgmesCaseUuid = s3CaseService.importCase(new MockMultipartFile(CGMES_ZIP_NAME, CGMES_ZIP_NAME, "application/zip", cgmesIS.readAllBytes()), false, false);
-            xiidmCaseUuid = s3CaseService.importCase(new MockMultipartFile(XIIDM_ZIP_NAME, XIIDM_ZIP_NAME, "application/zip", xiidmIS.readAllBytes()), false, false);
-        }
-        cgmesDataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + CGMES_ZIP_NAME).toURI()));
-        xiidmDataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + XIIDM_ZIP_NAME).toURI()));
+        caseService = s3CaseService;
+        cgmesCaseUuid = importCase(CGMES_ZIP_NAME, "application/zip");
+        cgmesDataSource = DataSource.fromPath(Paths.get(S3CaseDataSourceControllerTest.class.getResource("/" + CGMES_ZIP_NAME).toURI()));
     }
+
 }
