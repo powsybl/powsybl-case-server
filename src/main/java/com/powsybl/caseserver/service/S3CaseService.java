@@ -314,7 +314,7 @@ public class S3CaseService implements CaseService {
         // For compressed cases, we append the compression extension to the case name as only the compressed file is stored in S3.
         // i.e. : Assuming test.xml.gz is stored in S3. When you request datasourceExists(randomUUID, "test.xml"), you ask to S3 API ("test.xml" + ".gz") exists ? => true
         if (isCompressedCaseFile(getCaseName(caseUuid))) {
-            key = "." + getCompressionFormat(caseUuid);
+            key = key + "." + getCompressionFormat(caseUuid);
         }
 
         HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
