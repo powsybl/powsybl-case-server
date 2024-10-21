@@ -352,7 +352,7 @@ public class S3CaseService implements CaseService {
     public UUID importCase(MultipartFile mpf, boolean withExpiration, boolean withIndexation) {
         UUID caseUuid = UUID.randomUUID();
 
-        String caseName = mpf.getOriginalFilename();
+        String caseName = Objects.requireNonNull(mpf.getOriginalFilename());
         validateCaseName(caseName);
 
         String format = withTempCopy(caseUuid, caseName, mpf::transferTo, this::getFormat);

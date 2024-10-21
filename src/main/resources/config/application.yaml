@@ -1,10 +1,6 @@
 spring:
   application:
     name: case-server
-  logging:
-    level:
-      root: DEBUG
-      com.powsybl.caseserver: DEBUG # Set the package you want to log at DEBUG level
 
   cloud:
     stream:

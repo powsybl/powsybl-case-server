@@ -58,7 +58,7 @@ public abstract class AbstractCaseDataSourceControllerTest {
 
     protected DataSource cgmesDataSource;
 
-    private ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper();
 
     public static UUID importCase(String filename, String contentType) throws IOException {
         UUID caseUUID;

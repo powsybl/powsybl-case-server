@@ -96,7 +96,7 @@ public interface CaseService {
         }
     }
 
-    default Optional<ExportCaseInfos> exportCase(UUID caseUuid, String format, String fileName, Map<String, Object> formatParameters) throws IOException {
+    default Optional<ExportCaseInfos> exportCase(UUID caseUuid, String format, Map<String, Object> formatParameters) throws IOException {
         if (!Exporter.getFormats().contains(format)) {
             throw CaseException.createUnsupportedFormat(format);
         }

@@ -32,28 +32,28 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
     private static final String CASES_PREFIX = "gsi-cases/";
 
     @Autowired
-    private S3CaseService caseService;
+    private S3CaseService s3CaseService;
 
     @Override
     public String getBaseName(UUID caseUuid) {
-        return DataSourceUtil.getBaseName(caseService.getCaseName(caseUuid));
+        return DataSourceUtil.getBaseName(s3CaseService.getCaseName(caseUuid));
     }
 
     @Override
     public Boolean datasourceExists(UUID caseUuid, String suffix, String ext) {
-        return caseService.datasourceExists(caseUuid, DataSourceUtil.getFileName(getBaseName(caseUuid), suffix, ext));
+        return s3CaseService.datasourceExists(caseUuid, DataSourceUtil.getFileName(getBaseName(caseUuid), suffix, ext));
     }
 
     @Override
     public Boolean datasourceExists(UUID caseUuid, String fileName) {
-        return caseService.datasourceExists(caseUuid, fileName);
+        return s3CaseService.datasourceExists(caseUuid, fileName);
     }
 
     @Override
     public byte[] getInputStream(UUID caseUuid, String fileName) {
-        final var caseFileKey = Objects.nonNull(caseService.getCompressionFormat(caseUuid)) && caseService.getCompressionFormat(caseUuid).equals("zip")
+        final var caseFileKey = Objects.nonNull(s3CaseService.getCompressionFormat(caseUuid)) && s3CaseService.getCompressionFormat(caseUuid).equals("zip")
                 ? uuidToPrefixKey(caseUuid) + fileName
-                : uuidToPrefixKey(caseUuid) + caseService.getCaseName(caseUuid);
+                : uuidToPrefixKey(caseUuid) + s3CaseService.getCaseName(caseUuid);
         return withS3DownloadedDataSource(caseUuid, caseFileKey,
             datasource -> IOUtils.toByteArray(datasource.newInputStream(Paths.get(fileName).getFileName().toString())));
     }
@@ -70,19 +70,19 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
 
     @Override
     public Set<String> listName(UUID caseUuid, String regex) {
-        return caseService.listName(caseUuid, regex);
+        return s3CaseService.listName(caseUuid, regex);
     }
 
     public <R, T extends Throwable> R withS3DownloadedDataSource(UUID caseUuid, FailableFunction<DataSource, R, T> f) {
         FailableFunction<Path, DataSource, T> pathToDataSource = DataSource::fromPath;
         FailableFunction<Path, R, T> composedFunction = pathToDataSource.andThen(f);
-        return caseService.withS3DownloadedTempPath(caseUuid, composedFunction);
+        return s3CaseService.withS3DownloadedTempPath(caseUuid, composedFunction);
     }
 
     public <R, T extends Throwable> R withS3DownloadedDataSource(UUID caseUuid, String caseFileKey, FailableFunction<DataSource, R, T> f) {
         FailableFunction<Path, DataSource, T> pathToDataSource = DataSource::fromPath;
         FailableFunction<Path, R, T> composedFunction = pathToDataSource.andThen(f);
-        return caseService.withS3DownloadedTempPath(caseUuid, caseFileKey, composedFunction);
+        return s3CaseService.withS3DownloadedTempPath(caseUuid, caseFileKey, composedFunction);
     }
 
 }
