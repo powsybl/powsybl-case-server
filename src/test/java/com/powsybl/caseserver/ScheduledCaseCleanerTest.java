@@ -10,54 +10,47 @@ import com.powsybl.caseserver.elasticsearch.CaseInfosRepository;
 import com.powsybl.caseserver.elasticsearch.DisableElasticsearch;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  */
-@RunWith(SpringRunner.class)
 @SpringBootTest
 @DisableElasticsearch
-public class ScheduledCaseCleanerTest {
+class ScheduledCaseCleanerTest {
 
     @Autowired
-    public CaseMetadataRepository caseMetadataRepository;
+    private CaseMetadataRepository caseMetadataRepository;
 
     @Autowired
-    public ScheduledCaseCleaner scheduledCaseCleaner;
+    private ScheduledCaseCleaner scheduledCaseCleaner;
 
     @MockBean
-    CaseInfosRepository caseInfosRepository;
+    private CaseInfosRepository caseInfosRepository;
 
     @MockBean
-    public CaseService caseService;
+    private CaseService caseService;
 
-    @Before
-    public void setUp() {
-        cleanDB();
-    }
-
-    private void cleanDB() {
+    @AfterEach
+    void cleanDB() {
         caseMetadataRepository.deleteAll();
     }
 
     @Test
-    public void test() {
+    void test() {
         Instant now = Instant.now();
         Instant yesterday = now.minus(1, ChronoUnit.DAYS);
         CaseMetadataEntity shouldNotExpireEntity = new CaseMetadataEntity(UUID.randomUUID(), now.plus(1, ChronoUnit.HOURS), false);
@@ -74,5 +67,4 @@ public class ScheduledCaseCleanerTest {
         assertTrue(caseMetadataRepository.findById(shouldExpireEntity.getId()).isEmpty());
         verify(caseService, times(1)).deleteCase(shouldExpireEntity.getId());
     }
-
 }

@@ -17,10 +17,9 @@ import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.caseserver.utils.TestUtils;
 import com.powsybl.computation.ComputationManager;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,7 +30,6 @@ import org.springframework.http.MediaType;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -51,18 +49,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -70,12 +58,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-@RunWith(SpringRunner.class)
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, properties = {"case-store-directory=/cases"})
 @ContextConfigurationWithTestChannel
-public class CaseControllerTest {
-
+class CaseControllerTest {
     private static final String TEST_CASE = "testCase.xiidm";
     private static final String TEST_CASE_FORMAT = "XIIDM";
     private static final String NOT_A_NETWORK = "notANetwork.txt";
@@ -108,20 +94,16 @@ public class CaseControllerTest {
 
     private final String caseImportDestination = "case.import.destination";
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         fileSystem = Jimfs.newFileSystem(Configuration.unix());
         caseService.setFileSystem(fileSystem);
         caseService.setComputationManager(Mockito.mock(ComputationManager.class));
-        cleanDB();
+        caseMetadataRepository.deleteAll();
         outputDestination.clear();
     }
 
-    private void cleanDB() {
-        caseMetadataRepository.deleteAll();
-    }
-
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         fileSystem.close();
         List<String> destinations = List.of(caseImportDestination);
@@ -142,14 +124,14 @@ public class CaseControllerTest {
     }
 
     @Test
-    public void testStorageNotCreated() throws Exception {
+    void testStorageNotCreated() throws Exception {
         // expect a fail since the storage dir. is not created
         mvc.perform(delete("/v1/cases"))
                 .andExpect(status().isUnprocessableEntity());
     }
 
     @Test
-    public void testDeleteCases() throws Exception {
+    void testDeleteCases() throws Exception {
         // create the storage dir
         createStorageDir();
 
@@ -158,7 +140,7 @@ public class CaseControllerTest {
     }
 
     @Test
-    public void testCheckNonExistingCase() throws Exception {
+    void testCheckNonExistingCase() throws Exception {
         // create the storage dir
         createStorageDir();
 
@@ -170,7 +152,7 @@ public class CaseControllerTest {
     }
 
     @Test
-    public void testImportValidCase() throws Exception {
+    void testImportValidCase() throws Exception {
         createStorageDir();
 
         // import a case
@@ -225,7 +207,7 @@ public class CaseControllerTest {
     }
 
     @Test
-    public void testImportInvalidFile() throws Exception {
+    void testImportInvalidFile() throws Exception {
         createStorageDir();
 
         // import a non valid case and expect a fail
@@ -244,7 +226,7 @@ public class CaseControllerTest {
     }
 
     @Test
-    public void testDownloadNonExistingCase() throws Exception {
+    void testDownloadNonExistingCase() throws Exception {
         createStorageDir();
 
         // download a non existing case
@@ -254,7 +236,7 @@ public class CaseControllerTest {
     }
 
     @Test
-    public void testExportNonExistingCaseFromat() throws Exception {
+    void testExportNonExistingCaseFromat() throws Exception {
         createStorageDir();
 
         // import a case
@@ -267,7 +249,7 @@ public class CaseControllerTest {
     }
 
     @Test
-    public void deleteNonExistingCase() throws Exception {
+    void deleteNonExistingCase() throws Exception {
         createStorageDir();
 
         // import a case
@@ -286,7 +268,7 @@ public class CaseControllerTest {
     }
 
     @Test
-    public void test() throws Exception {
+    void test() throws Exception {
         // create the storage dir
         createStorageDir();
 
@@ -475,7 +457,7 @@ public class CaseControllerTest {
     }
 
     @Test
-    public void testDuplicateNonIndexedCase() throws Exception {
+    void testDuplicateNonIndexedCase() throws Exception {
         // create the storage dir
         createStorageDir();
 
@@ -516,7 +498,7 @@ public class CaseControllerTest {
     }
 
     @Test
-    public void validateCaseNameTest() {
+    void validateCaseNameTest() {
         CaseService.validateCaseName("test.xiidm");
         CaseService.validateCaseName("test-case.7zip");
         CaseService.validateCaseName("testcase1.7zip");
@@ -541,7 +523,7 @@ public class CaseControllerTest {
     }
 
     @Test
-    public void searchCaseTest() throws Exception {
+    void searchCaseTest() throws Exception {
         // create the storage dir
         createStorageDir();
 
@@ -771,13 +753,13 @@ public class CaseControllerTest {
         assertFalse(response.contains("\"name\":\"20200424T1330Z_2D_RTEFRANCE_001.zip\""));
     }
 
-    private String getDateSearchTerm(String entsoeFormatDate) {
+    private static String getDateSearchTerm(String entsoeFormatDate) {
         String utcFormattedDate = EntsoeFileNameParser.parseDateTime(entsoeFormatDate).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         return "date:\"" + utcFormattedDate + "\"";
     }
 
     @Test
-    public void invalidFileInCaseDirectoryShouldBeIgnored() throws Exception {
+    void invalidFileInCaseDirectoryShouldBeIgnored() throws Exception {
         createStorageDir();
         Path filePath = fileSystem.getPath(rootDirectory).resolve("randomFile.txt");
         Files.createFile(filePath);
