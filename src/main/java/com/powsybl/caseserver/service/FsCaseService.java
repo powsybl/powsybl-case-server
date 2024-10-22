@@ -99,12 +99,6 @@ public class FsCaseService implements CaseService {
     }
 
     @Override
-    public CaseInfos getCaseInfos(UUID caseUuid) {
-        Path file = getCaseFile(caseUuid);
-        return getCaseInfos(file);
-    }
-
-    @Override
     public String getCaseName(UUID caseUuid) {
         Path file = getCaseFile(caseUuid);
         if (file == null) {
@@ -115,6 +109,12 @@ public class FsCaseService implements CaseService {
             throw CaseException.createFileNameNotFound(caseUuid);
         }
         return caseInfos.getName();
+    }
+
+    @Override
+    public CaseInfos getCaseInfos(UUID caseUuid) {
+        Path file = getCaseFile(caseUuid);
+        return getCaseInfos(file);
     }
 
     public Path getCaseFile(UUID caseUuid) {
