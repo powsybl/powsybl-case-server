@@ -75,9 +75,9 @@ public interface CaseService {
         return cases;
     }
 
-    default Importer getImporterOrThrowsException(Path caseFile, ComputationManager computationManager) {
+    default Importer getImporterOrThrowsException(Path caseFile) {
         DataSource dataSource = DataSource.fromPath(caseFile);
-        Importer importer = Importer.find(dataSource, computationManager);
+        Importer importer = Importer.find(dataSource, getComputationManager());
         if (importer == null) {
             throw CaseException.createFileNotImportable(caseFile);
         }
@@ -167,4 +167,6 @@ public interface CaseService {
     void setComputationManager(ComputationManager computationManager);
 
     CaseMetadataRepository getCaseMetadataRepository();
+
+    ComputationManager getComputationManager();
 }

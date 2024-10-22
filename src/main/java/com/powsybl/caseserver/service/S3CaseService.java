@@ -90,7 +90,7 @@ public class S3CaseService implements CaseService {
     }
 
     String getFormat(Path caseFile) {
-        Importer importer = getImporterOrThrowsException(caseFile, computationManager);
+        Importer importer = getImporterOrThrowsException(caseFile);
         return importer.getFormat();
     }
 
@@ -541,6 +541,11 @@ public class S3CaseService implements CaseService {
     @Override
     public void setComputationManager(ComputationManager computationManager) {
         this.computationManager = Objects.requireNonNull(computationManager);
+    }
+
+    @Override
+    public ComputationManager getComputationManager() {
+        return computationManager;
     }
 
     @Override

@@ -73,8 +73,20 @@ public class FsCaseService implements CaseService {
     }
 
     String getFormat(Path caseFile) {
-        Importer importer = getImporterOrThrowsException(caseFile, computationManager);
+        Importer importer = getImporterOrThrowsException(caseFile);
         return importer.getFormat();
+    }
+
+    @Override
+    public List<CaseInfos> getCases() {
+        try (Stream<Path> walk = Files.walk(getStorageRootDir())) {
+            return walk.filter(Files::isRegularFile)
+                    .map(this::getCaseInfos)
+                    .filter(Objects::nonNull)
+                    .toList();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private CaseInfos getCaseInfos(Path file) {
@@ -127,6 +139,16 @@ public class FsCaseService implements CaseService {
     }
 
     @Override
+    public boolean caseExists(UUID caseName) {
+        checkStorageInitialization();
+        Path caseFile = getCaseFile(caseName);
+        if (caseFile == null) {
+            return false;
+        }
+        return Files.exists(caseFile) && Files.isRegularFile(caseFile);
+    }
+
+    @Override
     public Optional<byte[]> getCaseBytes(UUID caseUuid) {
         checkStorageInitialization();
 
@@ -144,16 +166,6 @@ public class FsCaseService implements CaseService {
             }
         }
         return Optional.empty();
-    }
-
-    @Override
-    public boolean caseExists(UUID caseName) {
-        checkStorageInitialization();
-        Path caseFile = getCaseFile(caseName);
-        if (caseFile == null) {
-            return false;
-        }
-        return Files.exists(caseFile) && Files.isRegularFile(caseFile);
     }
 
     @Override
@@ -187,7 +199,7 @@ public class FsCaseService implements CaseService {
 
         Importer importer;
         try {
-            importer = getImporterOrThrowsException(caseFile, computationManager);
+            importer = getImporterOrThrowsException(caseFile);
         } catch (CaseException e) {
             try {
                 Files.deleteIfExists(caseFile);
@@ -334,15 +346,8 @@ public class FsCaseService implements CaseService {
     }
 
     @Override
-    public List<CaseInfos> getCases() {
-        try (Stream<Path> walk = Files.walk(getStorageRootDir())) {
-            return walk.filter(Files::isRegularFile)
-                    .map(this::getCaseInfos)
-                    .filter(Objects::nonNull)
-                    .toList();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+    public ComputationManager getComputationManager() {
+        return computationManager;
     }
 
     @Override
