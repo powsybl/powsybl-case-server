@@ -52,16 +52,16 @@ public interface CaseService {
         return CaseInfos.builder().name(fileBaseName).uuid(caseUuid).format(format).build();
     }
 
-    default void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, boolean withIndexation, String originalFilename, String compressionFormat, CaseMetadataRepository caseMetadataRepository) {
+    default void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, boolean withIndexation, String originalFilename, String compressionFormat) {
         Instant expirationTime = null;
         if (withExpiration) {
             expirationTime = Instant.now().plus(1, ChronoUnit.HOURS);
         }
-        caseMetadataRepository.save(new CaseMetadataEntity(newCaseUuid, expirationTime, withIndexation, originalFilename, compressionFormat));
+        getCaseMetadataRepository().save(new CaseMetadataEntity(newCaseUuid, expirationTime, withIndexation, originalFilename, compressionFormat));
     }
 
-    default void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, boolean withIndexation, CaseMetadataRepository caseMetadataRepository) {
-        createCaseMetadataEntity(newCaseUuid, withExpiration, withIndexation, null, null, caseMetadataRepository);
+    default void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, boolean withIndexation) {
+        createCaseMetadataEntity(newCaseUuid, withExpiration, withIndexation, null, null);
     }
 
     default List<CaseInfos> getMetadata(List<UUID> ids) {
@@ -130,15 +130,13 @@ public interface CaseService {
         }
     }
 
-    default List<CaseInfos> getCasesToReindex(CaseMetadataRepository caseMetadataRepository) {
-        Set<UUID> casesToReindex = caseMetadataRepository.findAllByIndexedTrue()
+    default List<CaseInfos> getCasesToReindex() {
+        Set<UUID> casesToReindex = getCaseMetadataRepository().findAllByIndexedTrue()
                 .stream()
                 .map(CaseMetadataEntity::getId)
                 .collect(Collectors.toSet());
         return getCases().stream().filter(c -> casesToReindex.contains(c.getUuid())).toList();
     }
-
-    List<CaseInfos> getCasesToReindex();
 
     List<CaseInfos> getCases();
 
@@ -166,5 +164,7 @@ public interface CaseService {
 
     List<CaseInfos> searchCases(String query);
 
-    void setComputationManager(ComputationManager mock);
+    void setComputationManager(ComputationManager computationManager);
+
+    CaseMetadataRepository getCaseMetadataRepository();
 }

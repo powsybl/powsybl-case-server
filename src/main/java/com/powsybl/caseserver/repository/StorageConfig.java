@@ -44,7 +44,7 @@ public class StorageConfig {
 
     @Primary
     @Bean
-    public CaseDataSourceService caseSourceService() {
+    public CaseDataSourceService caseDataSourceService() {
         if ("file".equals(storageType)) {
             return new FsCaseDataSourceService();
         } else if ("S3".equals(storageType)) {

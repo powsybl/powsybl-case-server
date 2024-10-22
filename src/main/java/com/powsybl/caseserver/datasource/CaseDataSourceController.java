@@ -30,7 +30,7 @@ import java.util.UUID;
 public class CaseDataSourceController {
 
     @Autowired
-    @Qualifier("caseSourceService")
+    @Qualifier("caseDataSourceService")
     private CaseDataSourceService caseDataSourceService;
 
     @GetMapping(value = "/cases/{caseUuid}/datasource/baseName")

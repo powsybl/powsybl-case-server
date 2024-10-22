@@ -198,7 +198,7 @@ public class FsCaseService implements CaseService {
             throw e;
         }
 
-        createCaseMetadataEntity(caseUuid, withExpiration, withIndexation, caseMetadataRepository);
+        createCaseMetadataEntity(caseUuid, withExpiration, withIndexation);
         CaseInfos caseInfos = createInfos(caseFile.getFileName().toString(), caseUuid, importer.getFormat());
         if (withIndexation) {
             caseInfosService.addCaseInfos(caseInfos);
@@ -227,7 +227,7 @@ public class FsCaseService implements CaseService {
             if (existingCase.isIndexed()) {
                 caseInfosService.addCaseInfos(caseInfos);
             }
-            createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed(), caseMetadataRepository);
+            createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed());
 
             notificationService.sendImportMessage(caseInfos.createMessage());
             return newCaseUuid;
@@ -243,10 +243,6 @@ public class FsCaseService implements CaseService {
 
     private CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
         return caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
-    }
-
-    public List<CaseInfos> getCasesToReindex() {
-        return getCasesToReindex(caseMetadataRepository);
     }
 
     @Transactional
@@ -354,6 +350,11 @@ public class FsCaseService implements CaseService {
         checkStorageInitialization();
 
         return caseInfosService.searchCaseInfos(query);
+    }
+
+    @Override
+    public CaseMetadataRepository getCaseMetadataRepository() {
+        return caseMetadataRepository;
     }
 
 }

@@ -385,7 +385,7 @@ public class S3CaseService implements CaseService {
             throw CaseException.createFileNotImportable(caseName, e);
         }
 
-        createCaseMetadataEntity(caseUuid, withExpiration, withIndexation, caseName, compressionFormat, caseMetadataRepository);
+        createCaseMetadataEntity(caseUuid, withExpiration, withIndexation, caseName, compressionFormat);
         CaseInfos caseInfos = createInfos(caseName, caseUuid, format);
         if (withIndexation) {
             caseInfosService.addCaseInfos(caseInfos);
@@ -464,13 +464,9 @@ public class S3CaseService implements CaseService {
         if (existingCase.isIndexed()) {
             caseInfosService.addCaseInfos(caseInfos);
         }
-        createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed(), existingCase.getOriginalFilename(), existingCase.getCompressionFormat(), caseMetadataRepository);
+        createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed(), existingCase.getOriginalFilename(), existingCase.getCompressionFormat());
         notificationService.sendImportMessage(caseInfos.createMessage());
         return newCaseUuid;
-    }
-
-    public List<CaseInfos> getCasesToReindex() {
-        return getCasesToReindex(caseMetadataRepository);
     }
 
     @Transactional
@@ -545,6 +541,11 @@ public class S3CaseService implements CaseService {
     @Override
     public void setComputationManager(ComputationManager computationManager) {
         this.computationManager = Objects.requireNonNull(computationManager);
+    }
+
+    @Override
+    public CaseMetadataRepository getCaseMetadataRepository() {
+        return caseMetadataRepository;
     }
 
     public List<CaseInfos> searchCases(String query) {
