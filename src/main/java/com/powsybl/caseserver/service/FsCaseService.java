@@ -99,6 +99,12 @@ public class FsCaseService implements CaseService {
     }
 
     @Override
+    public CaseInfos getCaseInfos(UUID caseUuid) {
+        Path file = getCaseFile(caseUuid);
+        return getCaseInfos(file);
+    }
+
+    @Override
     public String getCaseName(UUID caseUuid) {
         Path file = getCaseFile(caseUuid);
         if (file == null) {
@@ -146,32 +152,6 @@ public class FsCaseService implements CaseService {
             return false;
         }
         return Files.exists(caseFile) && Files.isRegularFile(caseFile);
-    }
-
-    @Override
-    public Optional<byte[]> getCaseBytes(UUID caseUuid) {
-        checkStorageInitialization();
-
-        Path caseFile = getCaseFile(caseUuid);
-        if (caseFile == null) {
-            return Optional.empty();
-        }
-
-        if (Files.exists(caseFile) && Files.isRegularFile(caseFile)) {
-            try {
-                byte[] bytes = Files.readAllBytes(caseFile);
-                return Optional.of(bytes);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-        return Optional.empty();
-    }
-
-    @Override
-    public CaseInfos getCaseInfos(UUID caseUuid) {
-        Path file = getCaseFile(caseUuid);
-        return getCaseInfos(file);
     }
 
     @Override
@@ -355,6 +335,26 @@ public class FsCaseService implements CaseService {
         checkStorageInitialization();
 
         return caseInfosService.searchCaseInfos(query);
+    }
+
+    @Override
+    public Optional<byte[]> getCaseBytes(UUID caseUuid) {
+        checkStorageInitialization();
+
+        Path caseFile = getCaseFile(caseUuid);
+        if (caseFile == null) {
+            return Optional.empty();
+        }
+
+        if (Files.exists(caseFile) && Files.isRegularFile(caseFile)) {
+            try {
+                byte[] bytes = Files.readAllBytes(caseFile);
+                return Optional.of(bytes);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        return Optional.empty();
     }
 
     @Override
