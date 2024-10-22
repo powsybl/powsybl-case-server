@@ -50,6 +50,7 @@
         <log4j2-mock-version>0.0.2</log4j2-mock-version>
         <powsybl-ws-dependencies.version>2.15.0</powsybl-ws-dependencies.version>
         <testcontainers.version>1.18.3</testcontainers.version>
+        <spring-cloud-aws-starter-s3>3.2.0</spring-cloud-aws-starter-s3>
     </properties>
 
     <build>
@@ -163,7 +164,7 @@
         <dependency>
             <groupId>io.awspring.cloud</groupId>
             <artifactId>spring-cloud-aws-starter-s3</artifactId>
-            <version>3.0.1</version>
+            <version>${spring-cloud-aws-starter-s3}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.data</groupId>
