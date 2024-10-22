@@ -94,7 +94,7 @@ public class FsCaseService implements CaseService {
         }
         CaseInfos caseInfos = getCaseInfos(file);
         if (caseInfos == null) {
-            throw CaseException.getFileNameNotFound(caseUuid);
+            throw CaseException.createFileNameNotFound(caseUuid);
         }
         return caseInfos.getName();
     }

@@ -41,11 +41,6 @@ public final class CaseException extends RuntimeException {
         this.type = Objects.requireNonNull(type);
     }
 
-    public CaseException(Type type, String message, Exception e) {
-        super(message, e);
-        this.type = type;
-    }
-
     public CaseException(Type type, String message, Throwable e) {
         super(message, e);
         this.type = type;
@@ -85,7 +80,7 @@ public final class CaseException extends RuntimeException {
         return new CaseException(Type.FILE_NOT_IMPORTABLE, "This file cannot be imported: " + file, e);
     }
 
-    public static CaseException getFileNameNotFound(UUID uuid) {
+    public static CaseException createFileNameNotFound(UUID uuid) {
         Objects.requireNonNull(uuid);
         return new CaseException(Type.FILE_NOT_FOUND, "The file name with the following uuid doesn't exist: " + uuid);
     }
@@ -105,19 +100,9 @@ public final class CaseException extends RuntimeException {
         return new CaseException(Type.TEMP_DIRECTORY_CREATION, "Error creating temporary directory: " + uuid, e);
     }
 
-    public static CaseException initTempFile(UUID uuid, Exception e) {
-        Objects.requireNonNull(uuid);
-        return new CaseException(Type.TEMP_FILE_INIT, "Error initializing temporary case file: " + uuid, e);
-    }
-
     public static CaseException initTempFile(UUID uuid, Throwable e) {
         Objects.requireNonNull(uuid);
         return new CaseException(Type.TEMP_FILE_INIT, "Error initializing temporary case file: " + uuid, e);
-    }
-
-    public static CaseException processTempFile(UUID uuid, Exception e) {
-        Objects.requireNonNull(uuid);
-        return new CaseException(Type.TEMP_FILE_PROCESS, "Error processing temporary case file: " + uuid, e);
     }
 
     public static CaseException processTempFile(UUID uuid, Throwable e) {
