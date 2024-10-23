@@ -6,6 +6,7 @@
  */
 package com.powsybl.caseserver.service;
 
+import com.google.common.io.ByteStreams;
 import com.powsybl.caseserver.CaseException;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
@@ -226,7 +227,7 @@ public class S3CaseService implements CaseService {
     private List<CaseInfos> infosFromDownloadCaseFileSummaries(List<S3Object> objectSummaries) {
         List<CaseInfos> caseInfosList = new ArrayList<>();
         for (S3Object objectSummary : objectSummaries) {
-            final var caseInfo = infosFromDownloadCaseFileSummary(objectSummary);
+            final var caseInfo = getCaseInfos(parseUuidFromKey(objectSummary.key()));
             if (Objects.nonNull(caseInfo)) {
                 caseInfosList.add(caseInfo);
             }
@@ -316,7 +317,7 @@ public class S3CaseService implements CaseService {
     public Set<String> listName(UUID caseUuid, String regex) {
         List<S3Object> s3Objects = getCaseFileSummaries(caseUuid);
         List<String> fileNames = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(CASES_PREFIX + caseUuid.toString() + DELIMITER, "")).toList();
-        if (Objects.nonNull(getCompressionFormat(caseUuid)) && getCompressionFormat(caseUuid).equals("zip")) {
+        if (isArchivedCaseFile(fileNames.get(0))) {
             fileNames = fileNames.stream().filter(name -> !name.equals(getOriginalFilename(caseUuid))).toList();
         } else if (isCompressedCaseFile(fileNames.get(0))) {
             fileNames = List.of(fileNames.get(0).replace("." + getCompressionFormat(caseUuid), ""));
@@ -384,13 +385,7 @@ public class S3CaseService implements CaseService {
         String fileName = entry.getName();
         String extractedKey = uuidAndFilenameToKey(caseUuid, fileName);
 
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        byte[] buffer = new byte[1024];
-        int length;
-        while ((length = zipInputStream.read(buffer)) > 0) {
-            byteArrayOutputStream.write(buffer, 0, length);
-        }
-        byte[] fileBytes = byteArrayOutputStream.toByteArray();
+        byte[] fileBytes = ByteStreams.toByteArray(zipInputStream);
 
         PutObjectRequest extractedFileRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
