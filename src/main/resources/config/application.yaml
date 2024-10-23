@@ -28,4 +28,4 @@ powsybl-ws:
 cleaning-cases-cron: 0 * 2 * * ?
 
 storage:
-  type: file  # file or S3
+  type: S3  # file or S3
