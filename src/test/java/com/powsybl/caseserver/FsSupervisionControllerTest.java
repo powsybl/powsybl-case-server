@@ -10,28 +10,25 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.powsybl.caseserver.service.FsCaseService;
 import com.powsybl.computation.ComputationManager;
-import org.junit.Before;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
 /**
  * @author Jamal KHEYYAD <jamal.kheyyad at rte-international.com>
  */
-@RunWith(SpringRunner.class)
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, properties = {"case-store-directory=/cases"})
 @TestPropertySource(properties = {"storage.type=file"})
-public class FsSupervisionControllerTest extends AbstractSupervisionControllerTest {
+class FsSupervisionControllerTest extends AbstractSupervisionControllerTest {
 
     @Autowired
     private FsCaseService fsCaseService;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         caseService = fsCaseService;
         fileSystem = Jimfs.newFileSystem(Configuration.unix());

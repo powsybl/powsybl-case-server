@@ -9,11 +9,12 @@ package com.powsybl.caseserver;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.caseserver.service.SupervisionService;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
@@ -24,20 +25,21 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * @author Jamal KHEYYAD <jamal.kheyyad at rte-international.com>
  */
-
-public abstract class AbstractSupervisionControllerTest {
+@AutoConfigureMockMvc
+@SpringBootTest(classes = {CaseApplication.class}, properties = {"case-store-directory=/cases"})
+abstract class AbstractSupervisionControllerTest {
     @Autowired
-    SupervisionService supervisionService;
+    private SupervisionService supervisionService;
     @Autowired
     CaseMetadataRepository caseMetadataRepository;
     CaseService caseService;
-
     @Autowired
     protected MockMvc mockMvc;
 
@@ -48,21 +50,18 @@ public abstract class AbstractSupervisionControllerTest {
     FileSystem fileSystem;
 
     @Test
-    public void testGetCaseInfosCount() throws Exception {
+    void testGetCaseInfosCount() throws Exception {
         createStorageDir();
         importCase(true);
         importCase(true);
         importCase(false);
-
         mockMvc.perform(post("/v1/supervision/cases/reindex"))
                 .andExpect(status().isOk());
-
-        Assert.assertEquals(2, supervisionService.getIndexedCasesCount());
-
+        assertEquals(2, supervisionService.getIndexedCasesCount());
     }
 
     @Test
-    public void testReindexAll() throws Exception {
+    void testReindexAll() throws Exception {
         createStorageDir();
         importCase(true);
         importCase(true);
@@ -71,7 +70,7 @@ public abstract class AbstractSupervisionControllerTest {
         mockMvc.perform(delete("/v1/supervision/cases/indexation"))
                 .andExpect(status().isOk());
 
-        Assert.assertEquals(0, supervisionService.getIndexedCasesCount());
+        assertEquals(0, supervisionService.getIndexedCasesCount());
 
         //reindex
         mockMvc.perform(post("/v1/supervision/cases/reindex"))
@@ -80,17 +79,16 @@ public abstract class AbstractSupervisionControllerTest {
         String countStr = mockMvc.perform(get("/v1/supervision/cases/indexation-count"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        Assert.assertEquals("2", countStr);
-        Assert.assertEquals(2, supervisionService.getIndexedCasesCount());
+        assertEquals("2", countStr);
+        assertEquals(2, supervisionService.getIndexedCasesCount());
 
     }
 
     @Test
-    public void testGetIndexName() throws Exception {
+    void testGetIndexName() throws Exception {
         String result = mockMvc.perform(get("/v1/supervision/cases/index-name"))
                         .andReturn().getResponse().getContentAsString();
-
-        Assert.assertEquals("cases", result);
+        assertEquals("cases", result);
     }
 
     private void importCase(Boolean indexed) throws Exception {
@@ -107,13 +105,9 @@ public abstract class AbstractSupervisionControllerTest {
         }
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         fileSystem.close();
-        cleanDB();
-    }
-
-    private void cleanDB() {
         caseMetadataRepository.deleteAll();
     }
 

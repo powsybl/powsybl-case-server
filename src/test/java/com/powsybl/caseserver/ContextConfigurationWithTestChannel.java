@@ -10,16 +10,14 @@ package com.powsybl.caseserver;
 import org.springframework.cloud.stream.binder.test.TestChannelBinderConfiguration;
 import org.springframework.test.context.ContextConfiguration;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 /**
  * @author Slimane Amar <slimane.amar at rte-france.com>
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
+@Inherited
 @ContextConfiguration(classes = { CaseApplication.class, TestChannelBinderConfiguration.class })
 public @interface ContextConfigurationWithTestChannel {
 }

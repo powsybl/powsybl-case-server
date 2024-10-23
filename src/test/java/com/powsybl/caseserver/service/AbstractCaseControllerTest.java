@@ -9,15 +9,18 @@ package com.powsybl.caseserver.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteStreams;
+import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.caseserver.utils.TestUtils;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.stream.binder.test.OutputDestination;
 import org.springframework.http.MediaType;
 import org.springframework.messaging.Message;
@@ -42,7 +45,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -51,9 +54,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
-
-public abstract class AbstractCaseControllerTest {
-
+@AutoConfigureMockMvc
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, properties = {"case-store-directory=/cases"})
+@ContextConfigurationWithTestChannel
+abstract class AbstractCaseControllerTest {
     private static final String TEST_CASE = "testCase.xiidm";
     private static final String TEST_CASE_FORMAT = "XIIDM";
     private static final String NOT_A_NETWORK = "notANetwork.txt";
@@ -84,7 +88,7 @@ public abstract class AbstractCaseControllerTest {
 
     private final String caseImportDestination = "case.import.destination";
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         fileSystem.close();
         List<String> destinations = List.of(caseImportDestination);
@@ -105,7 +109,7 @@ public abstract class AbstractCaseControllerTest {
     }
 
     @Test
-    public void testDeleteCases() throws Exception {
+    void testDeleteCases() throws Exception {
         // create the storage dir
         createStorageDir();
 
@@ -114,7 +118,7 @@ public abstract class AbstractCaseControllerTest {
     }
 
     @Test
-    public void testCheckNonExistingCase() throws Exception {
+    void testCheckNonExistingCase() throws Exception {
         // create the storage dir
         createStorageDir();
 
@@ -126,7 +130,7 @@ public abstract class AbstractCaseControllerTest {
     }
 
     @Test
-    public void testImportValidCase() throws Exception {
+    void testImportValidCase() throws Exception {
         createStorageDir();
 
         // import a case
@@ -181,7 +185,7 @@ public abstract class AbstractCaseControllerTest {
     }
 
     @Test
-    public void testImportInvalidFile() throws Exception {
+    void testImportInvalidFile() throws Exception {
         createStorageDir();
 
         // import a non valid case and expect a fail
@@ -200,7 +204,7 @@ public abstract class AbstractCaseControllerTest {
     }
 
     @Test
-    public void testDownloadNonExistingCase() throws Exception {
+    void testDownloadNonExistingCase() throws Exception {
         createStorageDir();
 
         // download a non existing case
@@ -210,7 +214,7 @@ public abstract class AbstractCaseControllerTest {
     }
 
     @Test
-    public void testExportNonExistingCaseFromat() throws Exception {
+    void testExportNonExistingCaseFromat() throws Exception {
         createStorageDir();
 
         // import a case
@@ -223,7 +227,7 @@ public abstract class AbstractCaseControllerTest {
     }
 
     @Test
-    public void deleteNonExistingCase() throws Exception {
+    void deleteNonExistingCase() throws Exception {
         createStorageDir();
 
         // import a case
@@ -242,7 +246,7 @@ public abstract class AbstractCaseControllerTest {
     }
 
     @Test
-    public void test() throws Exception {
+    void test() throws Exception {
         // create the storage dir
         createStorageDir();
 
@@ -435,7 +439,7 @@ public abstract class AbstractCaseControllerTest {
     }
 
     @Test
-    public void testDuplicateNonIndexedCase() throws Exception {
+    void testDuplicateNonIndexedCase() throws Exception {
         // create the storage dir
         createStorageDir();
 
@@ -476,7 +480,7 @@ public abstract class AbstractCaseControllerTest {
     }
 
     @Test
-    public void searchCaseTest() throws Exception {
+    void searchCaseTest() throws Exception {
         // create the storage dir
         createStorageDir();
 
@@ -705,13 +709,13 @@ public abstract class AbstractCaseControllerTest {
         assertFalse(response.contains("\"name\":\"20200424T1330Z_2D_RTEFRANCE_001.zip\""));
     }
 
-    private String getDateSearchTerm(String entsoeFormatDate) {
+    private static String getDateSearchTerm(String entsoeFormatDate) {
         String utcFormattedDate = EntsoeFileNameParser.parseDateTime(entsoeFormatDate).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         return "date:\"" + utcFormattedDate + "\"";
     }
 
     @Test
-    public void invalidFileInCaseDirectoryShouldBeIgnored() throws Exception {
+    void invalidFileInCaseDirectoryShouldBeIgnored() throws Exception {
         createStorageDir();
         Path filePath = fileSystem.getPath(rootDirectory).resolve("randomFile.txt");
         Files.createFile(filePath);

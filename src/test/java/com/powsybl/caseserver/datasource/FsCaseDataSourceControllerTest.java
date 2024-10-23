@@ -9,13 +9,11 @@ package com.powsybl.caseserver.datasource;
 import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
 import com.powsybl.caseserver.service.FsCaseService;
 import com.powsybl.commons.datasource.DataSource;
-import org.junit.Before;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,20 +24,19 @@ import java.util.UUID;
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
  */
-@RunWith(SpringRunner.class)
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @TestPropertySource(properties = {"storage.type=file"})
 @ContextConfigurationWithTestChannel
-public class FsCaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTest {
+class FsCaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTest {
 
     @Autowired
     protected FsCaseService fsCaseService;
 
     FileSystem fileSystem = FileSystems.getDefault();
 
-    @Before
-    public void setUp() throws URISyntaxException, IOException {
+    @BeforeEach
+    void setUp() throws URISyntaxException, IOException {
         caseService = fsCaseService;
         cgmesCaseUuid = UUID.randomUUID();
         Path path = fileSystem.getPath(rootDirectory);

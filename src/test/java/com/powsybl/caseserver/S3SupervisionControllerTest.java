@@ -11,29 +11,26 @@ import com.google.common.jimfs.Jimfs;
 import com.powsybl.caseserver.service.MinioContainerConfig;
 import com.powsybl.caseserver.service.S3CaseService;
 import com.powsybl.computation.ComputationManager;
-import org.junit.Before;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
 /**
  * @author Jamal KHEYYAD <jamal.kheyyad at rte-international.com>
  */
-@RunWith(SpringRunner.class)
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @TestPropertySource(properties = {"storage.type=S3"})
-public class S3SupervisionControllerTest extends AbstractSupervisionControllerTest implements MinioContainerConfig {
+class S3SupervisionControllerTest extends AbstractSupervisionControllerTest implements MinioContainerConfig {
 
     @Autowired
     private S3CaseService s3CaseService;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         caseService = s3CaseService;
         fileSystem = Jimfs.newFileSystem(Configuration.unix());
         caseService.setComputationManager(Mockito.mock(ComputationManager.class));
