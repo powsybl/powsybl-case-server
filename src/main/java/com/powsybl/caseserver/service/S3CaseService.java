@@ -381,10 +381,35 @@ public class S3CaseService implements CaseService {
         }
     }
 
+    private void copyZipContent(InputStream inputStream, UUID sourcecaseUuid, UUID caseUuid) throws IOException {
+        try (ZipInputStream zipInputStream = new SecuredZipInputStream(inputStream, 1000, MAX_SIZE)) {
+            ZipEntry entry;
+            while ((entry = zipInputStream.getNextEntry()) != null) {
+                if (!entry.isDirectory()) {
+                    copyEntry(sourcecaseUuid, caseUuid, entry.getName());
+                }
+                zipInputStream.closeEntry();
+            }
+        }
+    }
+
+    private void copyEntry(UUID sourcecaseUuid, UUID caseUuid, String fileName) {
+        CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
+                .sourceBucket(bucketName)
+                .sourceKey(CASES_PREFIX + sourcecaseUuid + "/" + fileName)
+                .destinationBucket(bucketName)
+                .destinationKey(CASES_PREFIX + caseUuid + "/" + fileName)
+                .build();
+        try {
+            s3Client.copyObject(copyObjectRequest);
+        } catch (S3Exception e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Source file " + caseUuid + "/" + fileName + NOT_FOUND);
+        }
+    }
+
     private void processEntry(UUID caseUuid, ZipInputStream zipInputStream, ZipEntry entry) throws IOException {
         String fileName = entry.getName();
         String extractedKey = uuidAndFilenameToKey(caseUuid, fileName);
-
         byte[] fileBytes = ByteStreams.toByteArray(zipInputStream);
 
         PutObjectRequest extractedFileRequest = PutObjectRequest.builder()
@@ -392,7 +417,6 @@ public class S3CaseService implements CaseService {
                 .key(extractedKey)
                 .contentType(Files.probeContentType(Paths.get(fileName))) // Detect the MIME type
                 .build();
-
         s3Client.putObject(extractedFileRequest, RequestBody.fromBytes(fileBytes));
     }
 
@@ -403,7 +427,6 @@ public class S3CaseService implements CaseService {
         }
 
         String sourceKey = getCaseFileObjectKey(sourceCaseUuid);
-        CaseInfos existingCaseInfos = getCaseInfos(sourceCaseUuid);
         UUID newCaseUuid = UUID.randomUUID();
         String targetKey = uuidAndFilenameToKey(newCaseUuid, parseFilenameFromKey(sourceKey));
         CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
@@ -420,13 +443,14 @@ public class S3CaseService implements CaseService {
         CaseMetadataEntity existingCase = getCaseMetaDataEntity(sourceCaseUuid);
         createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed(), existingCase.getOriginalFilename(), existingCase.getCompressionFormat(), existingCase.getFormat());
         Optional<byte[]> caseBytes = getCaseBytes(newCaseUuid);
-        if (caseBytes.isPresent() && Objects.nonNull(getCompressionFormat(sourceCaseUuid)) && getCompressionFormat(sourceCaseUuid).equals("zip")) {
+        if (caseBytes.isPresent() && isArchivedCaseFile(existingCase.getOriginalFilename())) {
             try {
-                importZipContent(new ByteArrayInputStream(caseBytes.get()), newCaseUuid);
+                copyZipContent(new ByteArrayInputStream(caseBytes.get()), sourceCaseUuid, newCaseUuid);
             } catch (Exception e) {
                 throw CaseException.importZipContent(sourceCaseUuid, e);
             }
         }
+        CaseInfos existingCaseInfos = getCaseInfos(sourceCaseUuid);
         CaseInfos caseInfos = createInfos(existingCaseInfos.getName(), newCaseUuid, existingCaseInfos.getFormat());
         if (existingCase.isIndexed()) {
             caseInfosService.addCaseInfos(caseInfos);

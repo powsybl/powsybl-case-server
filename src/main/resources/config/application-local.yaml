@@ -1,4 +1,0 @@
-cloud:
-  aws:
-    s3:
-      endpoint: 172.17.0.1
