@@ -219,11 +219,6 @@ public class S3CaseService implements CaseService {
         return CASES_PREFIX + caseUuid + "/" + getOriginalFilename(caseUuid);
     }
 
-    private CaseInfos infosFromDownloadCaseFileSummary(S3Object objectSummary) {
-        UUID uuid = parseUuidFromKey(objectSummary.key());
-        return getCaseInfos(uuid);
-    }
-
     private List<CaseInfos> infosFromDownloadCaseFileSummaries(List<S3Object> objectSummaries) {
         List<CaseInfos> caseInfosList = new ArrayList<>();
         for (S3Object objectSummary : objectSummaries) {
