@@ -52,16 +52,16 @@ public interface CaseService {
         return CaseInfos.builder().name(fileBaseName).uuid(caseUuid).format(format).build();
     }
 
-    default void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, boolean withIndexation, String originalFilename, String compressionFormat) {
+    default void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, boolean withIndexation, String originalFilename, String compressionFormat, String format) {
         Instant expirationTime = null;
         if (withExpiration) {
             expirationTime = Instant.now().plus(1, ChronoUnit.HOURS);
         }
-        getCaseMetadataRepository().save(new CaseMetadataEntity(newCaseUuid, expirationTime, withIndexation, originalFilename, compressionFormat));
+        getCaseMetadataRepository().save(new CaseMetadataEntity(newCaseUuid, expirationTime, withIndexation, originalFilename, compressionFormat, format));
     }
 
     default void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, boolean withIndexation) {
-        createCaseMetadataEntity(newCaseUuid, withExpiration, withIndexation, null, null);
+        createCaseMetadataEntity(newCaseUuid, withExpiration, withIndexation, null, null, null);
     }
 
     default List<CaseInfos> getMetadata(List<UUID> ids) {
@@ -156,13 +156,9 @@ public interface CaseService {
 
     UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration);
 
-    void disableCaseExpiration(UUID caseUuid);
-
     void deleteCase(UUID caseUuid);
 
     void deleteAllCases();
-
-    List<CaseInfos> searchCases(String query);
 
     void setComputationManager(ComputationManager computationManager);
 

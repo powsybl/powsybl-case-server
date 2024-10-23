@@ -27,7 +27,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import org.springframework.web.server.ResponseStatusException;
@@ -48,8 +47,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-
-import static com.powsybl.caseserver.dto.CaseInfos.*;
 
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
@@ -154,39 +151,25 @@ public class S3CaseService implements CaseService {
         return withS3DownloadedTempPath(caseUuid, null, f);
     }
 
-    public <R, T extends Throwable> R withS3DownloadedTempPath(UUID caseUuid, String caseFileKeyFromCaller, FailableFunction<Path, R, T> f) {
-        String caseFileKey = Objects.requireNonNullElse(caseFileKeyFromCaller, getCaseFileObjectKey(caseUuid));
-        String filename = parseFilenameFromKey(caseFileKey);
+    public <R, T extends Throwable> R withS3DownloadedTempPath(UUID caseUuid, String caseFileKey, FailableFunction<Path, R, T> f) {
+        String nonNullCaseFileKey = Objects.requireNonNullElse(caseFileKey, getCaseFileObjectKey(caseUuid));
+        String filename = parseFilenameFromKey(nonNullCaseFileKey);
         return withTempCopy(caseUuid, filename, path ->
-                        s3Client.getObject(GetObjectRequest.builder().bucket(bucketName).key(caseFileKey).build(), path),
+                        s3Client.getObject(GetObjectRequest.builder().bucket(bucketName).key(nonNullCaseFileKey).build(), path),
                 f);
     }
 
     @Override
     public String getFormat(UUID caseUuid) {
-        String format = getCaseMetadata(caseUuid).get(FORMAT_HEADER_KEY);
-        if (format == null) {
-            return withS3DownloadedTempPath(caseUuid, this::getFormat);
-        }
-        return format;
+        return getCaseMetaDataEntity(caseUuid).getFormat();
     }
 
     public String getCompressionFormat(UUID caseUuid) {
-        return caseMetadataRepository.findById(caseUuid).orElseThrow().getCompressionFormat();
+        return getCaseMetaDataEntity(caseUuid).getCompressionFormat();
     }
 
     public String getOriginalFilename(UUID caseUuid) {
-        return caseMetadataRepository.findById(caseUuid).orElseThrow().getOriginalFilename();
-    }
-
-    public Map<String, String> getCaseMetadata(UUID caseUuid) {
-        String caseFileKey = getCaseFileObjectKey(caseUuid);
-        HeadObjectResponse headObjectResponse = s3Client.headObject(HeadObjectRequest.builder()
-                .bucket(bucketName)
-                .key(caseFileKey)
-                .build());
-
-        return headObjectResponse.metadata();
+        return getCaseMetaDataEntity(caseUuid).getOriginalFilename();
     }
 
     // key format is "gsi-cases/UUID/filename"
@@ -232,13 +215,7 @@ public class S3CaseService implements CaseService {
     }
 
     public String getCaseFileObjectKey(UUID caseUuid) {
-        List<String> allKeys = getCaseFileSummaries(caseUuid).stream()
-                .map(S3Object::key)
-                .toList();
-        return allKeys.stream()
-                .filter(key -> key.contains(".zip"))
-                .findFirst()
-                .orElse(allKeys.isEmpty() ? null : allKeys.get(0));
+        return CASES_PREFIX + caseUuid + "/" + getOriginalFilename(caseUuid);
     }
 
     private CaseInfos infosFromDownloadCaseFileSummary(S3Object objectSummary) {
@@ -273,23 +250,22 @@ public class S3CaseService implements CaseService {
 
     @Override
     public Optional<byte[]> getCaseBytes(UUID caseUuid) {
-        String caseFileKey = getCaseFileObjectKey(caseUuid);
+        String caseFileKey = null;
+        try {
+            caseFileKey = getCaseFileObjectKey(caseUuid);
+            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(caseFileKey)
+                    .build();
 
-        if (Objects.nonNull(caseFileKey)) {
-            try {
-                GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                        .bucket(bucketName)
-                        .key(caseFileKey)
-                        .build();
-
-                ResponseBytes<GetObjectResponse> objectBytes = s3Client.getObjectAsBytes(getObjectRequest);
-                byte[] content = objectBytes.asByteArray();
-                return Optional.of(content);
-            } catch (NoSuchKeyException e) {
-                LOGGER.error("The expected key does not exist in the bucket s3 : {}", caseFileKey);
-                return Optional.empty();
-            }
-        } else {
+            ResponseBytes<GetObjectResponse> objectBytes = s3Client.getObjectAsBytes(getObjectRequest);
+            byte[] content = objectBytes.asByteArray();
+            return Optional.of(content);
+        } catch (NoSuchKeyException e) {
+            LOGGER.error("The expected key does not exist in the bucket s3 : {}", caseFileKey);
+            return Optional.empty();
+        } catch (CaseException | ResponseStatusException e) {
+            LOGGER.error(e.getMessage());
             return Optional.empty();
         }
     }
@@ -361,9 +337,6 @@ public class S3CaseService implements CaseService {
         try (InputStream inputStream = mpf.getInputStream()) {
             String key = uuidAndFilenameToKey(caseUuid, caseName);
 
-            Map<String, String> caseMetadata = new HashMap<>();
-            caseMetadata.put(FORMAT_HEADER_KEY, format);
-
             if (isArchivedCaseFile(caseName)) {
                 importZipContent(mpf.getInputStream(), caseUuid);
                 compressionFormat = FileNameUtils.getExtension(Paths.get(caseName));
@@ -374,7 +347,6 @@ public class S3CaseService implements CaseService {
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(key)
-                    .metadata(caseMetadata)
                     .contentType(mpf.getContentType())
                     .build();
 
@@ -385,7 +357,7 @@ public class S3CaseService implements CaseService {
             throw CaseException.createFileNotImportable(caseName, e);
         }
 
-        createCaseMetadataEntity(caseUuid, withExpiration, withIndexation, caseName, compressionFormat);
+        createCaseMetadataEntity(caseUuid, withExpiration, withIndexation, caseName, compressionFormat, format);
         CaseInfos caseInfos = createInfos(caseName, caseUuid, format);
         if (withIndexation) {
             caseInfosService.addCaseInfos(caseInfos);
@@ -450,6 +422,8 @@ public class S3CaseService implements CaseService {
         } catch (S3Exception e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "source case " + sourceCaseUuid + NOT_FOUND);
         }
+        CaseMetadataEntity existingCase = getCaseMetaDataEntity(sourceCaseUuid);
+        createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed(), existingCase.getOriginalFilename(), existingCase.getCompressionFormat(), existingCase.getFormat());
         Optional<byte[]> caseBytes = getCaseBytes(newCaseUuid);
         if (caseBytes.isPresent() && Objects.nonNull(getCompressionFormat(sourceCaseUuid)) && getCompressionFormat(sourceCaseUuid).equals("zip")) {
             try {
@@ -458,22 +432,12 @@ public class S3CaseService implements CaseService {
                 throw CaseException.importZipContent(sourceCaseUuid, e);
             }
         }
-        CaseMetadataEntity existingCase = getCaseMetaDataEntity(sourceCaseUuid);
-
         CaseInfos caseInfos = createInfos(existingCaseInfos.getName(), newCaseUuid, existingCaseInfos.getFormat());
         if (existingCase.isIndexed()) {
             caseInfosService.addCaseInfos(caseInfos);
         }
-        createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed(), existingCase.getOriginalFilename(), existingCase.getCompressionFormat());
         notificationService.sendImportMessage(caseInfos.createMessage());
         return newCaseUuid;
-    }
-
-    @Transactional
-    @Override
-    public void disableCaseExpiration(UUID caseUuid) {
-        CaseMetadataEntity caseMetadataEntity = caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + NOT_FOUND));
-        caseMetadataEntity.setExpirationDate(null);
     }
 
     @Override
@@ -551,10 +515,6 @@ public class S3CaseService implements CaseService {
     @Override
     public CaseMetadataRepository getCaseMetadataRepository() {
         return caseMetadataRepository;
-    }
-
-    public List<CaseInfos> searchCases(String query) {
-        return caseInfosService.searchCaseInfos(query);
     }
 
     private CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {

@@ -27,10 +27,6 @@ import jakarta.persistence.Table;
 @Table(name = "caseMetadata")
 public class CaseMetadataEntity {
 
-    public CaseMetadataEntity(UUID id, Instant expirationDate, boolean indexed) {
-        new CaseMetadataEntity(id, expirationDate, indexed, null, null);
-    }
-
     @Id
     @Column(name = "id")
     private UUID id;
@@ -44,6 +40,9 @@ public class CaseMetadataEntity {
     @Column(name = "originalFilename", columnDefinition = "Original case file name")
     private String originalFilename;
 
-    @Column(name = "compressionFormat", columnDefinition = "Compression format of the case")
+    @Column(name = "compressionFormat", columnDefinition = "Case compression format")
     private String compressionFormat;
+
+    @Column(name = "format", columnDefinition = "Case format")
+    private String format;
 }

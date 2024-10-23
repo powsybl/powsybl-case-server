@@ -10,4 +10,9 @@
             <column name="original_filename" type="varchar(255)"/>
         </addColumn>
     </changeSet>
+    <changeSet author="homereti (generated)" id="1729169583421-3">
+        <addColumn tableName="case_metadata">
+            <column name="format" type="varchar(255)"/>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>

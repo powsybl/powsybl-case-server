@@ -7,7 +7,9 @@
 package com.powsybl.caseserver;
 
 import com.powsybl.caseserver.dto.CaseInfos;
+import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.service.CaseService;
+import com.powsybl.caseserver.service.MetadataService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -19,10 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -57,6 +56,12 @@ public class CaseController {
     @Autowired
     @Qualifier("storageService")
     private CaseService caseService;
+
+    @Autowired
+    private CaseInfosService caseInfosService;
+
+    @Autowired
+    private MetadataService metadataService;
 
     @GetMapping(value = "/cases")
     @Operation(summary = "Get all cases")
@@ -181,7 +186,7 @@ public class CaseController {
         @ApiResponse(responseCode = "404", description = "Source case not found")})
     public ResponseEntity<Void> disableCaseExpiration(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("disableCaseExpiration request received for caseUuid = {}", caseUuid);
-        caseService.disableCaseExpiration(caseUuid);
+        metadataService.disableCaseExpiration(caseUuid);
         return ResponseEntity.ok().build();
     }
 
@@ -208,7 +213,7 @@ public class CaseController {
     @Operation(summary = "Search cases by metadata")
     public ResponseEntity<List<CaseInfos>> searchCases(@RequestParam(value = "q") String query) {
         LOGGER.debug("search cases request received");
-        List<CaseInfos> cases = caseService.searchCases(query);
+        List<CaseInfos> cases = caseInfosService.searchCaseInfos(query);
         return ResponseEntity.ok().body(cases);
     }
 
