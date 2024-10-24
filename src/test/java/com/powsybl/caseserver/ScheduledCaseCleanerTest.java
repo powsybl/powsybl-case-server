@@ -6,6 +6,7 @@
  */
 package com.powsybl.caseserver;
 
+import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.caseserver.elasticsearch.CaseInfosRepository;
 import com.powsybl.caseserver.elasticsearch.DisableElasticsearch;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
@@ -53,9 +54,9 @@ class ScheduledCaseCleanerTest {
     void test() {
         Instant now = Instant.now();
         Instant yesterday = now.minus(1, ChronoUnit.DAYS);
-        CaseMetadataEntity shouldNotExpireEntity = new CaseMetadataEntity(UUID.randomUUID(), now.plus(1, ChronoUnit.HOURS), false);
-        CaseMetadataEntity shouldExpireEntity = new CaseMetadataEntity(UUID.randomUUID(), yesterday.plus(1, ChronoUnit.HOURS), false);
-        CaseMetadataEntity noExpireDateEntity = new CaseMetadataEntity(UUID.randomUUID(), null, false);
+        CaseMetadataEntity shouldNotExpireEntity = new CaseMetadataEntity(UUID.randomUUID(), now.plus(1, ChronoUnit.HOURS), false, "originalName", "compressionFormat", "format");
+        CaseMetadataEntity shouldExpireEntity = new CaseMetadataEntity(UUID.randomUUID(), yesterday.plus(1, ChronoUnit.HOURS), false, "originalName", "compressionFormat", "format");
+        CaseMetadataEntity noExpireDateEntity = new CaseMetadataEntity(UUID.randomUUID(), null, false, "originalName", "compressionFormat", "format");
         caseMetadataRepository.save(shouldExpireEntity);
         caseMetadataRepository.save(shouldNotExpireEntity);
         caseMetadataRepository.save(noExpireDateEntity);
