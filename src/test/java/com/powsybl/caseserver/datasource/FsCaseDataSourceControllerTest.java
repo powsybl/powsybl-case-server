@@ -6,6 +6,7 @@
  */
 package com.powsybl.caseserver.datasource;
 
+import com.google.common.jimfs.Jimfs;
 import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
 import com.powsybl.caseserver.service.FsCaseService;
 import com.powsybl.commons.datasource.DataSource;
@@ -33,7 +34,7 @@ class FsCaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTes
     @Autowired
     protected FsCaseService fsCaseService;
 
-    FileSystem fileSystem = FileSystems.getDefault();
+    FileSystem fileSystem = Jimfs.newFileSystem();
 
     @BeforeEach
     void setUp() throws URISyntaxException, IOException {
