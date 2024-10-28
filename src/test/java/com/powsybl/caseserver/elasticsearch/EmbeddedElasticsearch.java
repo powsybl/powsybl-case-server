@@ -6,11 +6,10 @@
  */
 package com.powsybl.caseserver.elasticsearch;
 
-import org.springframework.stereotype.Component;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
-
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import org.springframework.stereotype.Component;
+import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 import java.util.Map;
 

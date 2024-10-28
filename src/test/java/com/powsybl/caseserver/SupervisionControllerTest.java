@@ -11,11 +11,9 @@ import com.google.common.jimfs.Jimfs;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.caseserver.services.SupervisionService;
 import com.powsybl.computation.ComputationManager;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,8 +21,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.io.IOException;
@@ -33,23 +29,22 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * @author Jamal KHEYYAD <jamal.kheyyad at rte-international.com>
  */
-@RunWith(SpringRunner.class)
 @AutoConfigureMockMvc
-@SpringBootTest(properties = {"case-store-directory=/cases"})
-@ContextConfiguration(classes = {CaseApplication.class})
-public class SupervisionControllerTest {
+@SpringBootTest(classes = {CaseApplication.class}, properties = {"case-store-directory=/cases"})
+class SupervisionControllerTest {
     @Autowired
-    SupervisionService supervisionService;
+    private SupervisionService supervisionService;
     @Autowired
-    CaseMetadataRepository caseMetadataRepository;
+    private CaseMetadataRepository caseMetadataRepository;
     @Autowired
-    CaseService caseService;
+    private CaseService caseService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -61,21 +56,18 @@ public class SupervisionControllerTest {
     private FileSystem fileSystem;
 
     @Test
-    public void testGetCaseInfosCount() throws Exception {
+    void testGetCaseInfosCount() throws Exception {
         createStorageDir();
         importCase(true);
         importCase(true);
         importCase(false);
-
         mockMvc.perform(post("/v1/supervision/cases/reindex"))
                 .andExpect(status().isOk());
-
-        Assert.assertEquals(2, supervisionService.getIndexedCasesCount());
-
+        assertEquals(2, supervisionService.getIndexedCasesCount());
     }
 
     @Test
-    public void testReindexAll() throws Exception {
+    void testReindexAll() throws Exception {
         createStorageDir();
         importCase(true);
         importCase(true);
@@ -84,7 +76,7 @@ public class SupervisionControllerTest {
         mockMvc.perform(delete("/v1/supervision/cases/indexation"))
                 .andExpect(status().isOk());
 
-        Assert.assertEquals(0, supervisionService.getIndexedCasesCount());
+        assertEquals(0, supervisionService.getIndexedCasesCount());
 
         //reindex
         mockMvc.perform(post("/v1/supervision/cases/reindex"))
@@ -93,17 +85,16 @@ public class SupervisionControllerTest {
         String countStr = mockMvc.perform(get("/v1/supervision/cases/indexation-count"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        Assert.assertEquals("2", countStr);
-        Assert.assertEquals(2, supervisionService.getIndexedCasesCount());
+        assertEquals("2", countStr);
+        assertEquals(2, supervisionService.getIndexedCasesCount());
 
     }
 
     @Test
-    public void testGetIndexName() throws Exception {
+    void testGetIndexName() throws Exception {
         String result = mockMvc.perform(get("/v1/supervision/cases/index-name"))
                         .andReturn().getResponse().getContentAsString();
-
-        Assert.assertEquals("cases", result);
+        assertEquals("cases", result);
     }
 
     private void importCase(Boolean indexed) throws Exception {
@@ -120,20 +111,16 @@ public class SupervisionControllerTest {
         }
     }
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         fileSystem = Jimfs.newFileSystem(Configuration.unix());
         caseService.setFileSystem(fileSystem);
         caseService.setComputationManager(Mockito.mock(ComputationManager.class));
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         fileSystem.close();
-        cleanDB();
-    }
-
-    private void cleanDB() {
         caseMetadataRepository.deleteAll();
     }
 
