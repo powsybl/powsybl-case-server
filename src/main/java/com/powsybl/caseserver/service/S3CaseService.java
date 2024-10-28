@@ -313,10 +313,6 @@ public class S3CaseService implements CaseService {
         return ARCHIVE_FORMATS.stream().anyMatch(cf -> caseName.endsWith("." + cf));
     }
 
-    public static boolean isPlainCaseFile(String caseName) {
-        return !isArchivedCaseFile(caseName) && !isCompressedCaseFile(caseName);
-    }
-
     public Set<String> listName(UUID caseUuid, String regex) {
         List<S3Object> s3Objects = getCaseFileSummaries(caseUuid);
         List<String> fileNames = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(CASES_PREFIX + caseUuid.toString() + DELIMITER, "")).toList();
