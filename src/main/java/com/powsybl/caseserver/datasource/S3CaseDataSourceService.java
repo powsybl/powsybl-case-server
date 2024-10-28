@@ -52,9 +52,12 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
 
     @Override
     public byte[] getInputStream(UUID caseUuid, String fileName) {
-        final var caseFileKey = S3CaseService.isArchivedCaseFile(s3CaseService.getCaseName(caseUuid))
-                ? uuidToPrefixKey(caseUuid) + (s3CaseService.getCaseName(caseUuid).equals(fileName) ? fileName : fileName + GZIP_EXTENSION)
-                : uuidToPrefixKey(caseUuid) + s3CaseService.getCaseName(caseUuid);
+        String caseFileKey;
+        if(S3CaseService.isArchivedCaseFile(s3CaseService.getCaseName(caseUuid))) {
+            caseFileKey = uuidToPrefixKey(caseUuid) + (s3CaseService.getCaseName(caseUuid).equals(fileName) ? fileName : fileName + GZIP_EXTENSION);
+        } else {
+            caseFileKey = uuidToPrefixKey(caseUuid) + s3CaseService.getCaseName(caseUuid);
+        }
         return withS3DownloadedDataSource(caseUuid, caseFileKey,
             datasource -> IOUtils.toByteArray(datasource.newInputStream(Paths.get(fileName).getFileName().toString())));
     }
