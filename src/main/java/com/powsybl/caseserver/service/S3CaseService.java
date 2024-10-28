@@ -18,6 +18,7 @@ import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
 import com.powsybl.ws.commons.SecuredZipInputStream;
 import org.apache.commons.compress.utils.FileNameUtils;
+import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.function.FailableConsumer;
 import org.apache.commons.lang3.function.FailableFunction;
@@ -46,6 +47,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -62,6 +64,7 @@ public class S3CaseService implements CaseService {
     public static final List<String> COMPRESSION_FORMATS = List.of("bz2", "gz", "xz", "zst");
     public static final List<String> ARCHIVE_FORMATS = List.of("zip");
     public static final String DELIMITER = "/";
+    public static final String GZIP_EXTENSION = ".gz";
 
     private ComputationManager computationManager = LocalComputationManager.getDefault();
 
@@ -255,8 +258,7 @@ public class S3CaseService implements CaseService {
                     .build();
 
             ResponseBytes<GetObjectResponse> objectBytes = s3Client.getObjectAsBytes(getObjectRequest);
-            byte[] content = objectBytes.asByteArray();
-            return Optional.of(content);
+            return Optional.of(objectBytes.asByteArray());
         } catch (NoSuchKeyException e) {
             LOGGER.error("The expected key does not exist in the bucket s3 : {}", caseFileKey);
             return Optional.empty();
@@ -283,10 +285,13 @@ public class S3CaseService implements CaseService {
         }
 
         String key = uuidToPrefixKey(caseUuid) + fileName;
+        String caseName = getCaseName(caseUuid);
         // For compressed cases, we append the compression extension to the case name as only the compressed file is stored in S3.
         // i.e. : Assuming test.xml.gz is stored in S3. When you request datasourceExists(randomUUID, "test.xml"), you ask to S3 API ("test.xml" + ".gz") exists ? => true
-        if (isCompressedCaseFile(getCaseName(caseUuid))) {
+        if (isCompressedCaseFile(caseName)) {
             key = key + "." + getCompressionFormat(caseUuid);
+        } else if (isArchivedCaseFile(caseName)) {
+            key = key + GZIP_EXTENSION;
         }
 
         HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
@@ -301,12 +306,16 @@ public class S3CaseService implements CaseService {
         }
     }
 
-    static boolean isCompressedCaseFile(String caseName) {
+    public static boolean isCompressedCaseFile(String caseName) {
         return COMPRESSION_FORMATS.stream().anyMatch(cf -> caseName.endsWith("." + cf));
     }
 
-    static boolean isArchivedCaseFile(String caseName) {
+    public static boolean isArchivedCaseFile(String caseName) {
         return ARCHIVE_FORMATS.stream().anyMatch(cf -> caseName.endsWith("." + cf));
+    }
+
+    public static boolean isPlainCaseFile(String caseName) {
+        return !isArchivedCaseFile(caseName) && !isCompressedCaseFile(caseName);
     }
 
     public Set<String> listName(UUID caseUuid, String regex) {
@@ -314,6 +323,7 @@ public class S3CaseService implements CaseService {
         List<String> fileNames = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(CASES_PREFIX + caseUuid.toString() + DELIMITER, "")).toList();
         if (isArchivedCaseFile(fileNames.get(0))) {
             fileNames = fileNames.stream().filter(name -> !name.equals(getOriginalFilename(caseUuid))).toList();
+            fileNames = fileNames.stream().map(name -> name.replace(GZIP_EXTENSION, "")).toList();
         } else if (isCompressedCaseFile(fileNames.get(0))) {
             fileNames = List.of(fileNames.get(0).replace("." + getCompressionFormat(caseUuid), ""));
         }
@@ -328,16 +338,13 @@ public class S3CaseService implements CaseService {
         validateCaseName(caseName);
 
         String format = withTempCopy(caseUuid, caseName, mpf::transferTo, this::getFormat);
-        String compressionFormat = null;
+        String compressionFormat = FileNameUtils.getExtension(Paths.get(caseName));
 
         try (InputStream inputStream = mpf.getInputStream()) {
             String key = uuidAndFilenameToKey(caseUuid, caseName);
 
             if (isArchivedCaseFile(caseName)) {
                 importZipContent(mpf.getInputStream(), caseUuid);
-                compressionFormat = FileNameUtils.getExtension(Paths.get(caseName));
-            } else if (isCompressedCaseFile(caseName)) {
-                compressionFormat = FileNameUtils.getExtension(Paths.get(caseName));
             }
 
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
@@ -345,7 +352,6 @@ public class S3CaseService implements CaseService {
                     .key(key)
                     .contentType(mpf.getContentType())
                     .build();
-
             // Use putObject to upload the file
             s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, mpf.getSize()));
 
@@ -381,7 +387,7 @@ public class S3CaseService implements CaseService {
             ZipEntry entry;
             while ((entry = zipInputStream.getNextEntry()) != null) {
                 if (!entry.isDirectory()) {
-                    copyEntry(sourcecaseUuid, caseUuid, entry.getName());
+                    copyEntry(sourcecaseUuid, caseUuid, entry.getName() + GZIP_EXTENSION);
                 }
                 zipInputStream.closeEntry();
             }
@@ -405,14 +411,22 @@ public class S3CaseService implements CaseService {
     private void processEntry(UUID caseUuid, ZipInputStream zipInputStream, ZipEntry entry) throws IOException {
         String fileName = entry.getName();
         String extractedKey = uuidAndFilenameToKey(caseUuid, fileName);
-        byte[] fileBytes = ByteStreams.toByteArray(zipInputStream);
+        byte[] fileBytes = compress(ByteStreams.toByteArray(zipInputStream));
 
         PutObjectRequest extractedFileRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
-                .key(extractedKey)
+                .key(extractedKey + GZIP_EXTENSION)
                 .contentType(Files.probeContentType(Paths.get(fileName))) // Detect the MIME type
                 .build();
         s3Client.putObject(extractedFileRequest, RequestBody.fromBytes(fileBytes));
+    }
+
+    private static byte[] compress(byte[] data) throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        GZIPOutputStream gzipOutputStream = new GZIPOutputStream(outputStream);
+        gzipOutputStream.write(data, 0, data.length);
+        gzipOutputStream.close();
+        return outputStream.toByteArray();
     }
 
     @Override

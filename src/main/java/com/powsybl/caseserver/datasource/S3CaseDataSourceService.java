@@ -22,6 +22,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
+import static com.powsybl.caseserver.service.S3CaseService.GZIP_EXTENSION;
+
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
  */
@@ -51,8 +53,8 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
 
     @Override
     public byte[] getInputStream(UUID caseUuid, String fileName) {
-        final var caseFileKey = Objects.nonNull(s3CaseService.getCompressionFormat(caseUuid)) && s3CaseService.getCompressionFormat(caseUuid).equals("zip")
-                ? uuidToPrefixKey(caseUuid) + fileName
+        final var caseFileKey = S3CaseService.isArchivedCaseFile(s3CaseService.getCaseName(caseUuid))
+                ? uuidToPrefixKey(caseUuid) + (s3CaseService.getCaseName(caseUuid).equals(fileName) ? fileName : fileName + GZIP_EXTENSION)
                 : uuidToPrefixKey(caseUuid) + s3CaseService.getCaseName(caseUuid);
         return withS3DownloadedDataSource(caseUuid, caseFileKey,
             datasource -> IOUtils.toByteArray(datasource.newInputStream(Paths.get(fileName).getFileName().toString())));
