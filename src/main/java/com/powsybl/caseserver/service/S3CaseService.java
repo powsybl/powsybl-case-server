@@ -314,13 +314,16 @@ public class S3CaseService implements CaseService {
     }
 
     public Set<String> listName(UUID caseUuid, String regex) {
-        List<S3Object> s3Objects = getCaseFileSummaries(caseUuid);
-        List<String> fileNames = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(CASES_PREFIX + caseUuid.toString() + DELIMITER, "")).toList();
-        if (isArchivedCaseFile(fileNames.get(0))) {
-            fileNames = fileNames.stream().filter(name -> !name.equals(getOriginalFilename(caseUuid))).toList();
-            fileNames = fileNames.stream().map(name -> name.replace(GZIP_EXTENSION, "")).toList();
-        } else if (isCompressedCaseFile(fileNames.get(0))) {
-            fileNames = List.of(fileNames.get(0).replace("." + getCompressionFormat(caseUuid), ""));
+        List<String> fileNames;
+        if (isCompressedCaseFile(getOriginalFilename(caseUuid))) {
+            fileNames = List.of(getOriginalFilename(caseUuid).replace("." + getCompressionFormat(caseUuid), ""));
+        } else {
+            List<S3Object> s3Objects = getCaseFileSummaries(caseUuid);
+            fileNames = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(CASES_PREFIX + caseUuid.toString() + DELIMITER, "")).toList();
+            if (isArchivedCaseFile(getOriginalFilename(caseUuid))) {
+                fileNames = fileNames.stream().filter(name -> !name.equals(getOriginalFilename(caseUuid))).toList();
+                fileNames = fileNames.stream().map(name -> name.replace(GZIP_EXTENSION, "")).toList();
+            }
         }
         return fileNames.stream().filter(n -> n.matches(regex)).collect(Collectors.toSet());
     }
