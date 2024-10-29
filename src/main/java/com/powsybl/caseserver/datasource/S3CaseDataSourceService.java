@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Service;
 
+import java.io.FileInputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Set;
@@ -54,12 +56,16 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
     public byte[] getInputStream(UUID caseUuid, String fileName) {
         String caseFileKey;
         if(S3CaseService.isArchivedCaseFile(s3CaseService.getCaseName(caseUuid))) {
-            caseFileKey = uuidToPrefixKey(caseUuid) + (s3CaseService.getCaseName(caseUuid).equals(fileName) ? fileName : fileName + GZIP_EXTENSION);
+            caseFileKey = uuidToPrefixKey(caseUuid) + fileName + GZIP_EXTENSION;
         } else {
             caseFileKey = uuidToPrefixKey(caseUuid) + s3CaseService.getCaseName(caseUuid);
         }
-        return withS3DownloadedDataSource(caseUuid, caseFileKey,
-            datasource -> IOUtils.toByteArray(datasource.newInputStream(Paths.get(fileName).getFileName().toString())));
+        if (S3CaseService.isArchivedCaseFile(s3CaseService.getCaseName(caseUuid))) {
+            return s3CaseService.withS3DownloadedTempPath(caseUuid, caseFileKey,  file -> S3CaseService.decompress(Files.readAllBytes(file)));
+        } else {
+            return withS3DownloadedDataSource(caseUuid, caseFileKey,
+                datasource -> IOUtils.toByteArray(datasource.newInputStream(Paths.get(fileName).getFileName().toString())));
+        }
     }
 
     private String uuidToPrefixKey(UUID uuid) {
@@ -68,8 +74,7 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
 
     @Override
     public byte[] getInputStream(UUID caseUuid, String suffix, String ext) {
-        return withS3DownloadedDataSource(caseUuid,
-            datasource -> IOUtils.toByteArray(datasource.newInputStream(suffix, ext)));
+        return getInputStream(caseUuid, DataSourceUtil.getFileName(getBaseName(caseUuid), suffix, ext));
     }
 
     @Override
