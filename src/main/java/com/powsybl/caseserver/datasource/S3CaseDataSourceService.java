@@ -16,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Service;
 
-import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -55,13 +54,13 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
     @Override
     public byte[] getInputStream(UUID caseUuid, String fileName) {
         String caseFileKey;
-        if(S3CaseService.isArchivedCaseFile(s3CaseService.getCaseName(caseUuid))) {
+        if (S3CaseService.isArchivedCaseFile(s3CaseService.getCaseName(caseUuid))) {
             caseFileKey = uuidToPrefixKey(caseUuid) + fileName + GZIP_EXTENSION;
         } else {
             caseFileKey = uuidToPrefixKey(caseUuid) + s3CaseService.getCaseName(caseUuid);
         }
         if (S3CaseService.isArchivedCaseFile(s3CaseService.getCaseName(caseUuid))) {
-            return s3CaseService.withS3DownloadedTempPath(caseUuid, caseFileKey,  file -> S3CaseService.decompress(Files.readAllBytes(file)));
+            return s3CaseService.withS3DownloadedTempPath(caseUuid, caseFileKey, file -> S3CaseService.decompress(Files.readAllBytes(file)));
         } else {
             return withS3DownloadedDataSource(caseUuid, caseFileKey,
                 datasource -> IOUtils.toByteArray(datasource.newInputStream(Paths.get(fileName).getFileName().toString())));
