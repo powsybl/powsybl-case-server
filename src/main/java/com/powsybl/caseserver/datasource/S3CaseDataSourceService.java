@@ -11,14 +11,11 @@ import com.powsybl.caseserver.service.S3CaseService;
 import com.powsybl.commons.datasource.DataSource;
 import com.powsybl.commons.datasource.DataSourceUtil;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.function.FailableFunction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Set;
 import java.util.UUID;
 
