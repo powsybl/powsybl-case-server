@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2020, RTE (http://www.rte-france.com)
+ * Copyright (c) 2024, RTE (http://www.rte-france.com)
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -22,6 +22,8 @@ import java.util.UUID;
 
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
+ * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
+ * @author Etienne Homer <etienne.homer at rte-france.com>
  */
 @RestController
 @RequestMapping(value = "/" + CaseConstants.API_VERSION)
@@ -36,7 +38,7 @@ public class CaseDataSourceController {
     @GetMapping(value = "/cases/{caseUuid}/datasource/baseName")
     @Operation(summary = "Get datasource baseName")
     public ResponseEntity<String> getBaseName(@PathVariable("caseUuid") UUID caseUuid) {
-        final String baseName = caseDataSourceService.getBaseName(caseUuid);
+        String baseName = caseDataSourceService.getBaseName(caseUuid);
         return ResponseEntity.ok().body(baseName);
     }
 
@@ -45,7 +47,7 @@ public class CaseDataSourceController {
     public ResponseEntity<Boolean> datasourceExists(@PathVariable("caseUuid") UUID caseUuid,
                                                     @RequestParam String suffix,
                                                     @RequestParam String ext) {
-        final Boolean exists = caseDataSourceService.datasourceExists(caseUuid, suffix, ext);
+        Boolean exists = caseDataSourceService.datasourceExists(caseUuid, suffix, ext);
         return ResponseEntity.ok().body(exists);
     }
 

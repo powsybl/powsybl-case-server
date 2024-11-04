@@ -34,8 +34,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
+ * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
+ * @author Etienne Homer <etienne.homer at rte-france.com>
  */
-
 @DisableElasticsearch
 public abstract class AbstractCaseDataSourceControllerTest {
 
