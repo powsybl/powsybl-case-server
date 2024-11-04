@@ -11,16 +11,15 @@ import com.powsybl.caseserver.service.S3CaseService;
 import com.powsybl.commons.datasource.DataSource;
 import com.powsybl.commons.datasource.DataSourceUtil;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.function.FailableFunction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Objects;
+import java.nio.file.Files;
 import java.util.Set;
 import java.util.UUID;
+
+import static com.powsybl.caseserver.service.S3CaseService.*;
 
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
@@ -52,39 +51,29 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
 
     @Override
     public byte[] getInputStream(UUID caseUuid, String fileName) {
-        final var caseFileKey = Objects.nonNull(s3CaseService.getCompressionFormat(caseUuid)) && s3CaseService.getCompressionFormat(caseUuid).equals("zip")
-                ? uuidToPrefixKey(caseUuid) + fileName
-                : uuidToPrefixKey(caseUuid) + s3CaseService.getCaseName(caseUuid);
-        return withS3DownloadedDataSource(caseUuid, caseFileKey,
-            datasource -> IOUtils.toByteArray(datasource.newInputStream(Paths.get(fileName).getFileName().toString())));
-    }
-
-    private String uuidToPrefixKey(UUID uuid) {
-        return CASES_PREFIX + uuid.toString() + "/";
+        String caseName = s3CaseService.getCaseName(caseUuid);
+        String caseFileKey;
+        // For archived cases (.zip, .tar, ...), individual files are gzipped in S3 server.
+        // Here the requested file is decompressed and simply returned.
+        if (S3CaseService.isArchivedCaseFile(caseName)) {
+            caseFileKey = uuidToKeyWithFileName(caseUuid, fileName + GZIP_EXTENSION);
+            return s3CaseService.withS3DownloadedTempPath(caseUuid, caseFileKey,
+                    file -> S3CaseService.decompress(Files.readAllBytes(file)));
+        } else {
+            caseFileKey = uuidToKeyWithFileName(caseUuid, caseName);
+            return s3CaseService.withS3DownloadedTempPath(caseUuid, caseFileKey,
+                    casePath -> IOUtils.toByteArray(DataSource.fromPath(casePath).newInputStream(fileName)));
+        }
     }
 
     @Override
     public byte[] getInputStream(UUID caseUuid, String suffix, String ext) {
-        return withS3DownloadedDataSource(caseUuid,
-            datasource -> IOUtils.toByteArray(datasource.newInputStream(suffix, ext)));
+        return getInputStream(caseUuid, DataSourceUtil.getFileName(getBaseName(caseUuid), suffix, ext));
     }
 
     @Override
     public Set<String> listName(UUID caseUuid, String regex) {
         return s3CaseService.listName(caseUuid, regex);
     }
-
-    public <R, T extends Throwable> R withS3DownloadedDataSource(UUID caseUuid, FailableFunction<DataSource, R, T> f) {
-        FailableFunction<Path, DataSource, T> pathToDataSource = DataSource::fromPath;
-        FailableFunction<Path, R, T> composedFunction = pathToDataSource.andThen(f);
-        return s3CaseService.withS3DownloadedTempPath(caseUuid, composedFunction);
-    }
-
-    public <R, T extends Throwable> R withS3DownloadedDataSource(UUID caseUuid, String caseFileKey, FailableFunction<DataSource, R, T> f) {
-        FailableFunction<Path, DataSource, T> pathToDataSource = DataSource::fromPath;
-        FailableFunction<Path, R, T> composedFunction = pathToDataSource.andThen(f);
-        return s3CaseService.withS3DownloadedTempPath(caseUuid, caseFileKey, composedFunction);
-    }
-
 }
 

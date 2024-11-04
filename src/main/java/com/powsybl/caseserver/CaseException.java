@@ -114,6 +114,10 @@ public final class CaseException extends RuntimeException {
         return new CaseException(Type.ZIP_FILE_PROCESS, "Error processing zip content file: " + uuid, e);
     }
 
+    public static CaseException copyZipContent(UUID uuid, Exception e) {
+        return new CaseException(Type.ZIP_FILE_PROCESS, "Error copying zip content file: " + uuid, e);
+    }
+
     public static CaseException createUnsupportedFormat(String format) {
         return new CaseException(Type.UNSUPPORTED_FORMAT, "The format: " + format + " is unsupported");
     }
