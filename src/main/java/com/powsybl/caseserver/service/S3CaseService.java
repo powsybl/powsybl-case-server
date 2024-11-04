@@ -318,7 +318,7 @@ public class S3CaseService implements CaseService {
         int index = filename.lastIndexOf(extension);
         if (index == -1) {
             return filename;
-        } else if(index + extension.length() != filename.length()) {
+        } else if (index + extension.length() != filename.length()) {
             //extension to remove is not at the end
             throw CaseException.createIllegalCaseName(filename);
         }
