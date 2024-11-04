@@ -61,10 +61,11 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
             caseFileKey = uuidToKeyWithFileName(caseUuid, fileName + GZIP_EXTENSION);
             return s3CaseService.withS3DownloadedTempPath(caseUuid, caseFileKey,
                     file -> S3CaseService.decompress(Files.readAllBytes(file)));
+        } else {
+            caseFileKey = uuidToKeyWithFileName(caseUuid, caseName);
+            return s3CaseService.withS3DownloadedTempPath(caseUuid, caseFileKey,
+                    casePath -> IOUtils.toByteArray(DataSource.fromPath(casePath).newInputStream(fileName)));
         }
-        caseFileKey = uuidToKeyWithFileName(caseUuid, caseName);
-        return withS3DownloadedDataSource(caseUuid, caseFileKey,
-                datasource -> IOUtils.toByteArray(datasource.newInputStream(Paths.get(fileName).getFileName().toString())));
     }
 
     @Override
@@ -76,12 +77,5 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
     public Set<String> listName(UUID caseUuid, String regex) {
         return s3CaseService.listName(caseUuid, regex);
     }
-
-    public <R, T extends Throwable> R withS3DownloadedDataSource(UUID caseUuid, String caseFileKey, FailableFunction<DataSource, R, T> f) {
-        FailableFunction<Path, DataSource, T> pathToDataSource = DataSource::fromPath;
-        FailableFunction<Path, R, T> composedFunction = pathToDataSource.andThen(f);
-        return s3CaseService.withS3DownloadedTempPath(caseUuid, caseFileKey, composedFunction);
-    }
-
 }
 
