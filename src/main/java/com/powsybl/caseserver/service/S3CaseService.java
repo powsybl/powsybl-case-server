@@ -327,7 +327,7 @@ public class S3CaseService implements CaseService {
                 // the original archive name has to be filtered.
                 fileNames = fileNames.stream().filter(name -> !name.equals(getOriginalFilename(caseUuid))).toList();
                 // each subfile hase been gzipped -> we have to remove the gz extension (only one, the one we added).
-                fileNames = fileNames.stream().map(name -> name.replaceFirst("\\" + GZIP_EXTENSION, "")).toList();
+                fileNames = fileNames.stream().map(name -> name.replaceFirst("\\.gz", "")).toList();
             }
         }
         return fileNames.stream().filter(n -> n.matches(regex)).collect(Collectors.toSet());

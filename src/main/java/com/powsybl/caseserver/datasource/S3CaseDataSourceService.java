@@ -29,8 +29,6 @@ import static com.powsybl.caseserver.service.S3CaseService.*;
 @ComponentScan(basePackageClasses = CaseService.class)
 public class S3CaseDataSourceService implements CaseDataSourceService {
 
-    private static final String CASES_PREFIX = "gsi-cases/";
-
     @Autowired
     private S3CaseService s3CaseService;
 
