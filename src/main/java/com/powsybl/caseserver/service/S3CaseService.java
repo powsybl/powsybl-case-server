@@ -98,7 +98,7 @@ public class S3CaseService implements CaseService {
 
     // creates a directory, and then in this directory, initializes a file with content.
     // After applying f to the file, deletes the file and the directory.
-    private <R, T1 extends Throwable, T2 extends Throwable> R withTempCopy(UUID caseUuid, String filename,
+    private <R, T1 extends Exception, T2 extends Exception> R withTempCopy(UUID caseUuid, String filename,
                                                                                          FailableConsumer<Path, T1> contentInitializer, FailableFunction<Path, R, T2> f) {
         Path tempdirPath;
         Path tempCasePath;
@@ -119,19 +119,15 @@ public class S3CaseService implements CaseService {
             tempCasePath = tempdirPath.resolve(filename);
             try {
                 contentInitializer.accept(tempCasePath);
-            } catch (CaseException e) {
+            } catch (Exception e) {
                 throw CaseException.initTempFile(caseUuid, e);
-            } catch (Throwable ex) {
-                throw CaseException.initTempFile(caseUuid, ex);
             }
             // after this line, need to cleanup the file
             try {
                 try {
                     return f.apply(tempCasePath);
-                } catch (CaseException e) {
+                } catch (Exception e) {
                     throw CaseException.createFileNotImportable(tempdirPath);
-                } catch (Throwable t) {
-                    throw CaseException.processTempFile(caseUuid, t);
                 }
             } finally {
                 try {
@@ -152,11 +148,11 @@ public class S3CaseService implements CaseService {
     }
 
     // downloads from s3 and cleanup
-    public <R, T extends Throwable> R withS3DownloadedTempPath(UUID caseUuid, FailableFunction<Path, R, T> f) {
+    public <R, T extends Exception> R withS3DownloadedTempPath(UUID caseUuid, FailableFunction<Path, R, T> f) {
         return withS3DownloadedTempPath(caseUuid, null, f);
     }
 
-    public <R, T extends Throwable> R withS3DownloadedTempPath(UUID caseUuid, String caseFileKey, FailableFunction<Path, R, T> f) {
+    public <R, T extends Exception> R withS3DownloadedTempPath(UUID caseUuid, String caseFileKey, FailableFunction<Path, R, T> f) {
         String nonNullCaseFileKey = Objects.requireNonNullElse(caseFileKey, uuidToKeyWithOriginameFileName(caseUuid));
         String filename = parseFilenameFromKey(nonNullCaseFileKey);
         return withTempCopy(caseUuid, filename, path ->
