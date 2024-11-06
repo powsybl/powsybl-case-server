@@ -316,7 +316,7 @@ public class S3CaseService implements CaseService {
 
     private static String removeExtension(String filename, String extension) {
         int index = filename.lastIndexOf(extension);
-        if (index == -1 || index == filename.length() - extension.length() /*extension to remove is not at the end*/) {
+        if (index == -1 || index < filename.length() - extension.length() /*extension to remove is not at the end*/) {
             return filename;
         }
         return filename.substring(0, index);
