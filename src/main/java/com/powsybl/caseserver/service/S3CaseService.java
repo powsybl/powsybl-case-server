@@ -120,7 +120,7 @@ public class S3CaseService implements CaseService {
             try {
                 contentInitializer.accept(tempCasePath);
             } catch (Exception e) {
-                throw CaseException.initTempFile(caseUuid, e);
+                throw CaseException.createUInitTempFileError(caseUuid, e);
             }
             // after this line, need to cleanup the file
             try {
@@ -153,7 +153,7 @@ public class S3CaseService implements CaseService {
     }
 
     public <R, T extends Exception> R withS3DownloadedTempPath(UUID caseUuid, String caseFileKey, FailableFunction<Path, R, T> f) {
-        String nonNullCaseFileKey = Objects.requireNonNullElse(caseFileKey, uuidToKeyWithOriginameFileName(caseUuid));
+        String nonNullCaseFileKey = Objects.requireNonNullElse(caseFileKey, uuidToKeyWithOriginalFileName(caseUuid));
         String filename = parseFilenameFromKey(nonNullCaseFileKey);
         return withTempCopy(caseUuid, filename, path ->
                         s3Client.getObject(GetObjectRequest.builder().bucket(bucketName).key(nonNullCaseFileKey).build(), path), f);
@@ -193,7 +193,7 @@ public class S3CaseService implements CaseService {
         return uuidToKeyPrefix(uuid) + filename;
     }
 
-    public String uuidToKeyWithOriginameFileName(UUID caseUuid) {
+    public String uuidToKeyWithOriginalFileName(UUID caseUuid) {
         return uuidToKeyWithFileName(caseUuid, getOriginalFilename(caseUuid));
     }
 
@@ -247,7 +247,7 @@ public class S3CaseService implements CaseService {
     public Optional<byte[]> getCaseBytes(UUID caseUuid) {
         String caseFileKey = null;
         try {
-            caseFileKey = uuidToKeyWithOriginameFileName(caseUuid);
+            caseFileKey = uuidToKeyWithOriginalFileName(caseUuid);
             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                     .bucket(bucketName)
                     .key(caseFileKey)
@@ -458,7 +458,7 @@ public class S3CaseService implements CaseService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Source case " + sourceCaseUuid + NOT_FOUND);
         }
 
-        String sourceKey = uuidToKeyWithOriginameFileName(sourceCaseUuid);
+        String sourceKey = uuidToKeyWithOriginalFileName(sourceCaseUuid);
         UUID newCaseUuid = UUID.randomUUID();
         String targetKey = uuidToKeyWithFileName(newCaseUuid, parseFilenameFromKey(sourceKey));
         // To optimize copy, cases to copy are not downloaded on the case-server. They are directly copied on the S3 server.
@@ -480,7 +480,7 @@ public class S3CaseService implements CaseService {
             try {
                 copyZipContent(new ByteArrayInputStream(caseBytes.get()), sourceCaseUuid, newCaseUuid);
             } catch (Exception e) {
-                throw CaseException.copyZipContent(sourceCaseUuid, e);
+                throw CaseException.createCopyZipContentError(sourceCaseUuid, e);
             }
         }
         CaseInfos existingCaseInfos = getCaseInfos(sourceCaseUuid);

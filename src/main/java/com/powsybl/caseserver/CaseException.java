@@ -100,21 +100,12 @@ public final class CaseException extends RuntimeException {
         return new CaseException(Type.TEMP_DIRECTORY_CREATION, "Error creating temporary directory: " + uuid, e);
     }
 
-    public static CaseException initTempFile(UUID uuid, Throwable e) {
+    public static CaseException createUInitTempFileError(UUID uuid, Throwable e) {
         Objects.requireNonNull(uuid);
         return new CaseException(Type.TEMP_FILE_INIT, "Error initializing temporary case file: " + uuid, e);
     }
 
-    public static CaseException processTempFile(UUID uuid, Throwable e) {
-        Objects.requireNonNull(uuid);
-        return new CaseException(Type.TEMP_FILE_PROCESS, "Error processing temporary case file: " + uuid, e);
-    }
-
-    public static CaseException importZipContent(UUID uuid, Exception e) {
-        return new CaseException(Type.ZIP_FILE_PROCESS, "Error processing zip content file: " + uuid, e);
-    }
-
-    public static CaseException copyZipContent(UUID uuid, Exception e) {
+    public static CaseException createCopyZipContentError(UUID uuid, Exception e) {
         return new CaseException(Type.ZIP_FILE_PROCESS, "Error copying zip content file: " + uuid, e);
     }
 
