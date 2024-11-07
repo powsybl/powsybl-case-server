@@ -312,18 +312,21 @@ public class S3CaseService implements CaseService {
 
     public Set<String> listName(UUID caseUuid, String regex) {
         List<String> fileNames;
-        if (isCompressedCaseFile(getOriginalFilename(caseUuid))) {
+        String originalFilename = getOriginalFilename(caseUuid);
+        if (isCompressedCaseFile(originalFilename)) {
             // For a compressed file basename.xml.gz, listName() should return ['basename.xml']. That's why we remove the compression extension to the filename.
-            fileNames = List.of(removeExtension(getOriginalFilename(caseUuid), "." + getCompressionFormat(caseUuid)));
+            fileNames = List.of(removeExtension(originalFilename, "." + originalFilename));
         } else {
             List<S3Object> s3Objects = getCaseS3Objects(caseUuid);
             fileNames = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(CASES_PREFIX + caseUuid.toString() + DELIMITER, "")).toList();
             // For archived cases :
-            if (isArchivedCaseFile(getOriginalFilename(caseUuid))) {
-                // the original archive name has to be filtered.
-                fileNames = fileNames.stream().filter(name -> !name.equals(getOriginalFilename(caseUuid))).toList();
-                // each subfile hase been gzipped -> we have to remove the gz extension (only one, the one we added).
-                fileNames = fileNames.stream().map(name -> removeExtension(name, GZIP_EXTENSION)).toList();
+            if (isArchivedCaseFile(originalFilename)) {
+                fileNames = fileNames.stream()
+                        // the original archive name has to be filtered.
+                        .filter(name -> !name.equals(originalFilename))
+                        // each subfile hase been gzipped -> we have to remove the gz extension (only one, the one we added).
+                        .map(name -> removeExtension(name, GZIP_EXTENSION))
+                        .collect(Collectors.toList());
             }
         }
         return fileNames.stream().filter(n -> n.matches(regex)).collect(Collectors.toSet());
