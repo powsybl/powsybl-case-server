@@ -22,7 +22,7 @@ import org.springframework.test.context.TestPropertySource;
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
  */
-@TestPropertySource(properties = {"storage.type=file"})
+@TestPropertySource(properties = {"storage.type=FS"})
 class FsCaseControllerTest extends AbstractCaseControllerTest {
 
     @Autowired

@@ -22,7 +22,7 @@ import org.springframework.test.context.TestPropertySource;
  */
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, properties = {"case-store-directory=/cases"})
-@TestPropertySource(properties = {"storage.type=file"})
+@TestPropertySource(properties = {"storage.type=FS"})
 class FsSupervisionControllerTest extends AbstractSupervisionControllerTest {
 
     @Autowired

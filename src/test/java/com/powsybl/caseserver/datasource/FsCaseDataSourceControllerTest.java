@@ -27,7 +27,7 @@ import java.util.UUID;
  */
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
-@TestPropertySource(properties = {"storage.type=file"})
+@TestPropertySource(properties = {"storage.type=FS"})
 @ContextConfigurationWithTestChannel
 class FsCaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTest {
 
