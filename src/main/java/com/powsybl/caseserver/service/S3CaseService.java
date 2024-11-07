@@ -407,14 +407,14 @@ public class S3CaseService implements CaseService {
         // To optimize copy, files to copy are not downloaded on the case-server. They are directly copied on the S3 server.
         CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
                 .sourceBucket(bucketName)
-                .sourceKey(CASES_PREFIX + sourcecaseUuid + "/" + fileName)
+                .sourceKey(CASES_PREFIX + sourcecaseUuid + DELIMITER + fileName)
                 .destinationBucket(bucketName)
-                .destinationKey(CASES_PREFIX + caseUuid + "/" + fileName)
+                .destinationKey(CASES_PREFIX + caseUuid + DELIMITER + fileName)
                 .build();
         try {
             s3Client.copyObject(copyObjectRequest);
         } catch (S3Exception e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Source file " + caseUuid + "/" + fileName + NOT_FOUND);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Source file " + caseUuid + DELIMITER + fileName + NOT_FOUND);
         }
     }
 
