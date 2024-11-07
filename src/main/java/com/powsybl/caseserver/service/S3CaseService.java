@@ -513,7 +513,7 @@ public class S3CaseService implements CaseService {
         if (!objectsToDelete.isEmpty()) {
             DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
                 .bucket(bucketName)
-                .delete(Delete.builder().objects(objectsToDelete).build())
+                .delete(delete -> delete.objects(objectsToDelete))
                 .build();
             s3Client.deleteObjects(deleteObjectsRequest);
             caseInfosService.deleteCaseInfosByUuid(caseUuid.toString());
@@ -536,7 +536,7 @@ public class S3CaseService implements CaseService {
         if (!objectsToDelete.isEmpty()) {
             DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
                     .bucket(bucketName)
-                    .delete(Delete.builder().objects(objectsToDelete).build())
+                    .delete(delete -> delete.objects(objectsToDelete))
                     .build();
 
             s3Client.deleteObjects(deleteObjectsRequest);
