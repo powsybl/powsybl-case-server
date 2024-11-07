@@ -315,7 +315,7 @@ public class S3CaseService implements CaseService {
         String originalFilename = getOriginalFilename(caseUuid);
         if (isCompressedCaseFile(originalFilename)) {
             // For a compressed file basename.xml.gz, listName() should return ['basename.xml']. That's why we remove the compression extension to the filename.
-            filenames = List.of(removeExtension(originalFilename, "." + originalFilename));
+            filenames = List.of(removeExtension(originalFilename, "." + getCompressionFormat(caseUuid)));
         } else {
             List<S3Object> s3Objects = getCaseS3Objects(caseUuid);
             filenames = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(CASES_PREFIX + caseUuid.toString() + DELIMITER, "")).toList();
