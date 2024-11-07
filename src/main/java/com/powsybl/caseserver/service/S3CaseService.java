@@ -197,9 +197,9 @@ public class S3CaseService implements CaseService {
         return uuidToKeyWithFileName(caseUuid, getOriginalFilename(caseUuid));
     }
 
-    private List<S3Object> getCasesSummaries(String prefix) {
+    private List<S3Object> getCaseS3Objects(String keyPrefix) {
         List<S3Object> s3Objects = new ArrayList<>();
-        ListObjectsV2Iterable listObjectsV2Iterable = s3Client.listObjectsV2Paginator(getListObjectsV2Request(prefix));
+        ListObjectsV2Iterable listObjectsV2Iterable = s3Client.listObjectsV2Paginator(getListObjectsV2Request(keyPrefix));
         listObjectsV2Iterable.iterator().forEachRemaining(listObjectsChunk ->
             s3Objects.addAll(listObjectsChunk.contents())
         );
@@ -210,23 +210,8 @@ public class S3CaseService implements CaseService {
         return ListObjectsV2Request.builder().bucket(bucketName).prefix(prefix).build();
     }
 
-    private List<S3Object> getCaseFileSummaries(UUID caseUuid) {
-        List<S3Object> files = getCasesSummaries(uuidToKeyPrefix(caseUuid));
-        if (files.size() > 1) {
-            LOGGER.warn("Multiple files for case {}", caseUuid);
-        }
-        return files;
-    }
-
-    private List<CaseInfos> infosFromDownloadCaseFileSummaries(List<S3Object> objectSummaries) {
-        List<CaseInfos> caseInfosList = new ArrayList<>();
-        for (S3Object objectSummary : objectSummaries) {
-            final var caseInfo = getCaseInfos(parseUuidFromKey(objectSummary.key()));
-            if (Objects.nonNull(caseInfo)) {
-                caseInfosList.add(caseInfo);
-            }
-        }
-        return caseInfosList;
+    private List<S3Object> getCaseS3Objects(UUID caseUuid) {
+        return getCaseS3Objects(uuidToKeyPrefix(caseUuid));
     }
 
     @Override
@@ -266,17 +251,24 @@ public class S3CaseService implements CaseService {
 
     @Override
     public List<CaseInfos> getCases() {
-        List<S3Object> s3ObjectSummaries = getCasesSummaries(CASES_PREFIX);
-        return infosFromDownloadCaseFileSummaries(s3ObjectSummaries);
+        List<CaseInfos> caseInfosList = new ArrayList<>();
+        CaseInfos caseInfos;
+        for (S3Object o : getCaseS3Objects(CASES_PREFIX)) {
+            caseInfos = getCaseInfos(parseUuidFromKey(o.key()));
+            if (Objects.nonNull(caseInfos)) {
+                caseInfosList.add(caseInfos);
+            }
+        }
+        return caseInfosList;
     }
 
     @Override
     public boolean caseExists(UUID uuid) {
-        return !getCasesSummaries(uuidToKeyPrefix(uuid)).isEmpty();
+        return !getCaseS3Objects(uuid).isEmpty();
     }
 
     public Boolean datasourceExists(UUID caseUuid, String fileName) {
-        if (getCaseFileSummaries(caseUuid).size() > 1 && fileName.equals(getCaseName(caseUuid))) {
+        if (getCaseS3Objects(caseUuid).size() > 1 && fileName.equals(getCaseName(caseUuid))) {
             return Boolean.FALSE;
         }
 
@@ -324,7 +316,7 @@ public class S3CaseService implements CaseService {
             // For a compressed file basename.xml.gz, listName() should return ['basename.xml']. That's why we remove the compression extension to the filename.
             fileNames = List.of(removeExtension(getOriginalFilename(caseUuid), "." + getCompressionFormat(caseUuid)));
         } else {
-            List<S3Object> s3Objects = getCaseFileSummaries(caseUuid);
+            List<S3Object> s3Objects = getCaseS3Objects(caseUuid);
             fileNames = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(CASES_PREFIX + caseUuid.toString() + DELIMITER, "")).toList();
             // For archived cases :
             if (isArchivedCaseFile(getOriginalFilename(caseUuid))) {
