@@ -172,7 +172,7 @@ public class S3CaseService implements CaseService {
         return getCaseMetaDataEntity(caseUuid).getOriginalFilename();
     }
 
-    // key format is "gsi-cases/UUID/filename"
+    // key format is "gsi-cases/UUID/path/to/file"
     private UUID parseUuidFromKey(String key) {
         int firstSlash = key.indexOf(DELIMITER);
         int secondSlash = key.indexOf(DELIMITER, firstSlash + 1);
