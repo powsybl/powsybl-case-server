@@ -62,6 +62,11 @@ public class CaseInfosService {
         return Lists.newArrayList(caseInfosRepository.findAll());
     }
 
+    /*
+ The query is an elasticsearch (Lucene) form query, so here it will be :
+ date:XXX AND geographicalCode:(X)
+ date:XXX AND geographicalCode:(X OR Y OR Z)
+*/
     public List<CaseInfos> searchCaseInfos(@NonNull final String query) {
         NativeQuery searchQuery = new NativeQueryBuilder().withQuery(QueryStringQuery.of(qs -> qs.query(query))._toQuery()).build();
         return Lists.newArrayList(operations.search(searchQuery, CaseInfos.class)

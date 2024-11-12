@@ -20,11 +20,17 @@ public final class CaseException extends RuntimeException {
 
     public enum Type {
         FILE_NOT_IMPORTABLE,
+        FILE_NOT_FOUND,
         STORAGE_DIR_NOT_CREATED,
         ILLEGAL_FILE_NAME,
         DIRECTORY_ALREADY_EXISTS,
         DIRECTORY_EMPTY,
         DIRECTORY_NOT_FOUND,
+        ORIGINAL_FILE_NOT_FOUND,
+        TEMP_FILE_INIT,
+        TEMP_FILE_PROCESS,
+        TEMP_DIRECTORY_CREATION,
+        ZIP_FILE_PROCESS,
         UNSUPPORTED_FORMAT
     }
 
@@ -35,7 +41,16 @@ public final class CaseException extends RuntimeException {
         this.type = Objects.requireNonNull(type);
     }
 
-    public static CaseException createDirectoryAreadyExists(Path directory) {
+    public CaseException(Type type, String message, Throwable e) {
+        super(message, e);
+        this.type = type;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public static CaseException createDirectoryAreadyExists(String directory) {
         Objects.requireNonNull(directory);
         return new CaseException(Type.DIRECTORY_ALREADY_EXISTS, "A directory with the same name already exists: " + directory);
     }
@@ -50,9 +65,24 @@ public final class CaseException extends RuntimeException {
         return new CaseException(Type.DIRECTORY_NOT_FOUND, "The directory with the following uuid doesn't exist: " + uuid);
     }
 
+    public static CaseException createOriginalFileNotFound(UUID uuid) {
+        Objects.requireNonNull(uuid);
+        return new CaseException(Type.ORIGINAL_FILE_NOT_FOUND, "The original file were not retrieved in the directory with the following uuid: " + uuid);
+    }
+
     public static CaseException createFileNotImportable(Path file) {
         Objects.requireNonNull(file);
         return new CaseException(Type.FILE_NOT_IMPORTABLE, "This file cannot be imported: " + file);
+    }
+
+    public static CaseException createFileNotImportable(String file, Exception e) {
+        Objects.requireNonNull(file);
+        return new CaseException(Type.FILE_NOT_IMPORTABLE, "This file cannot be imported: " + file, e);
+    }
+
+    public static CaseException createFileNameNotFound(UUID uuid) {
+        Objects.requireNonNull(uuid);
+        return new CaseException(Type.FILE_NOT_FOUND, "The file name with the following uuid doesn't exist: " + uuid);
     }
 
     public static CaseException createStorageNotInitialized(Path storageRootDir) {
@@ -63,6 +93,20 @@ public final class CaseException extends RuntimeException {
     public static CaseException createIllegalCaseName(String caseName) {
         Objects.requireNonNull(caseName);
         return new CaseException(Type.ILLEGAL_FILE_NAME, "This is not an acceptable case name: " + caseName);
+    }
+
+    public static CaseException createTempDirectory(UUID uuid, Exception e) {
+        Objects.requireNonNull(uuid);
+        return new CaseException(Type.TEMP_DIRECTORY_CREATION, "Error creating temporary directory: " + uuid, e);
+    }
+
+    public static CaseException createUInitTempFileError(UUID uuid, Throwable e) {
+        Objects.requireNonNull(uuid);
+        return new CaseException(Type.TEMP_FILE_INIT, "Error initializing temporary case file: " + uuid, e);
+    }
+
+    public static CaseException createCopyZipContentError(UUID uuid, Exception e) {
+        return new CaseException(Type.ZIP_FILE_PROCESS, "Error copying zip content file: " + uuid, e);
     }
 
     public static CaseException createUnsupportedFormat(String format) {

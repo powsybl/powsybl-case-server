@@ -1,12 +1,13 @@
 /**
- * Copyright (c) 2020, RTE (http://www.rte-france.com)
+ * Copyright (c) 2023, RTE (http://www.rte-france.com)
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.powsybl.caseserver.datasource.util;
+package com.powsybl.caseserver.datasource;
 
-import com.powsybl.caseserver.CaseService;
+import com.powsybl.caseserver.service.CaseService;
+import com.powsybl.caseserver.service.FsCaseService;
 import com.powsybl.commons.datasource.DataSource;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,20 +25,23 @@ import java.util.UUID;
 
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
+ * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
  */
 @Service
 @ComponentScan(basePackageClasses = CaseService.class)
-public class CaseDataSourceService {
+public class FsCaseDataSourceService implements CaseDataSourceService {
 
     @Autowired
-    private CaseService caseService;
+    private FsCaseService fsCaseService;
 
-    String getBaseName(UUID caseUuid) {
+    @Override
+    public String getBaseName(UUID caseUuid) {
         DataSource dataSource = getDatasource(caseUuid);
         return dataSource.getBaseName();
     }
 
-    Boolean datasourceExists(UUID caseUuid, String suffix, String ext) {
+    @Override
+    public Boolean datasourceExists(UUID caseUuid, String suffix, String ext) {
         DataSource dataSource = getDatasource(caseUuid);
         try {
             return dataSource.exists(suffix, ext);
@@ -46,7 +50,8 @@ public class CaseDataSourceService {
         }
     }
 
-    Boolean datasourceExists(UUID caseUuid, String fileName) {
+    @Override
+    public Boolean datasourceExists(UUID caseUuid, String fileName) {
         DataSource dataSource = getDatasource(caseUuid);
         try {
             return dataSource.exists(fileName);
@@ -55,7 +60,8 @@ public class CaseDataSourceService {
         }
     }
 
-    byte[] getInputStream(UUID caseUuid, String fileName) {
+    @Override
+    public byte[] getInputStream(UUID caseUuid, String fileName) {
         DataSource dataSource = getDatasource(caseUuid);
         try (InputStream inputStream = dataSource.newInputStream(fileName)) {
             return IOUtils.toByteArray(inputStream);
@@ -64,7 +70,8 @@ public class CaseDataSourceService {
         }
     }
 
-    byte[] getInputStream(UUID caseUuid, String suffix, String ext) {
+    @Override
+    public byte[] getInputStream(UUID caseUuid, String suffix, String ext) {
         DataSource dataSource = getDatasource(caseUuid);
         try (InputStream inputStream = dataSource.newInputStream(suffix, ext)) {
             return IOUtils.toByteArray(inputStream);
@@ -73,7 +80,8 @@ public class CaseDataSourceService {
         }
     }
 
-    Set<String> listName(UUID caseUuid, String regex) {
+    @Override
+    public Set<String> listName(UUID caseUuid, String regex) {
         DataSource dataSource = getDatasource(caseUuid);
         String decodedRegex = URLDecoder.decode(regex, StandardCharsets.UTF_8);
         try {
@@ -84,12 +92,12 @@ public class CaseDataSourceService {
     }
 
     private DataSource initDatasource(UUID caseUuid) {
-        Path file = caseService.getCaseFile(caseUuid);
+        Path file = fsCaseService.getCaseFile(caseUuid);
         return DataSource.fromPath(file);
     }
 
     private DataSource getDatasource(UUID caseUuid) {
-        caseService.checkStorageInitialization();
+        fsCaseService.checkStorageInitialization();
         return initDatasource(caseUuid);
     }
 
