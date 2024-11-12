@@ -17,3 +17,8 @@ powsybl-ws:
     host: localhost
 
 cleaning-cases-cron: 0 * 2 * * ?
+
+cloud:
+  aws:
+    s3:
+      endpoint: 172.17.0.1

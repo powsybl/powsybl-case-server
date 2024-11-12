@@ -1,15 +1,16 @@
 /**
- * Copyright (c) 2020, RTE (http://www.rte-france.com)
+ * Copyright (c) 2024, RTE (http://www.rte-france.com)
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package com.powsybl.caseserver.datasource.util;
+package com.powsybl.caseserver.datasource;
 
 import com.powsybl.caseserver.CaseConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,8 @@ import java.util.UUID;
 
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
+ * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
+ * @author Etienne Homer <etienne.homer at rte-france.com>
  */
 @RestController
 @RequestMapping(value = "/" + CaseConstants.API_VERSION)
@@ -29,6 +32,7 @@ import java.util.UUID;
 public class CaseDataSourceController {
 
     @Autowired
+    @Qualifier("caseDataSourceService")
     private CaseDataSourceService caseDataSourceService;
 
     @GetMapping(value = "/cases/{caseUuid}/datasource/baseName")
