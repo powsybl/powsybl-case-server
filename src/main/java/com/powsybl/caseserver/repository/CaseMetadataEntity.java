@@ -36,4 +36,13 @@ public class CaseMetadataEntity {
 
     @Column(name = "indexed", columnDefinition = "boolean default false", nullable = false)
     private boolean indexed = false;
+
+    @Column(name = "originalFilename", columnDefinition = "Original case file name")
+    private String originalFilename;
+
+    @Column(name = "compressionFormat", columnDefinition = "Case compression format")
+    private String compressionFormat;
+
+    @Column(name = "format", columnDefinition = "Case format")
+    private String format;
 }

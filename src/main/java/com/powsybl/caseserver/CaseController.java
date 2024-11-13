@@ -7,6 +7,9 @@
 package com.powsybl.caseserver;
 
 import com.powsybl.caseserver.dto.CaseInfos;
+import com.powsybl.caseserver.elasticsearch.CaseInfosService;
+import com.powsybl.caseserver.service.CaseService;
+import com.powsybl.caseserver.service.MetadataService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -16,11 +19,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,7 +34,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -54,14 +54,21 @@ public class CaseController {
     private static final Logger LOGGER = LoggerFactory.getLogger(CaseController.class);
 
     @Autowired
+    @Qualifier("storageService")
     private CaseService caseService;
+
+    @Autowired
+    private CaseInfosService caseInfosService;
+
+    @Autowired
+    private MetadataService metadataService;
 
     @GetMapping(value = "/cases")
     @Operation(summary = "Get all cases")
     //For maintenance purpose
     public ResponseEntity<List<CaseInfos>> getCases() {
         LOGGER.debug("getCases request received");
-        List<CaseInfos> cases = caseService.getCases(caseService.getStorageRootDir());
+        List<CaseInfos> cases = caseService.getCases();
         if (cases == null) {
             return ResponseEntity.noContent().build();
         }
@@ -72,11 +79,10 @@ public class CaseController {
     @Operation(summary = "Get a case infos")
     public ResponseEntity<CaseInfos> getCaseInfos(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("getCaseInfos request received");
-        Path file = caseService.getCaseFile(caseUuid);
-        if (file == null) {
+        if (!caseService.caseExists(caseUuid)) {
             return ResponseEntity.noContent().build();
         }
-        CaseInfos caseInfos = caseService.getCase(file);
+        CaseInfos caseInfos = caseService.getCaseInfos(caseUuid);
         return ResponseEntity.ok().body(caseInfos);
     }
 
@@ -84,11 +90,10 @@ public class CaseController {
     @Operation(summary = "Get case Format")
     public ResponseEntity<String> getCaseFormat(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("getCaseFormat request received");
-        Path file = caseService.getCaseFile(caseUuid);
-        if (file == null) {
+        if (!caseService.caseExists(caseUuid)) {
             throw createDirectoryNotFound(caseUuid);
         }
-        String caseFormat = caseService.getFormat(file);
+        String caseFormat = caseService.getFormat(caseUuid);
         return ResponseEntity.ok().body(caseFormat);
     }
 
@@ -96,6 +101,9 @@ public class CaseController {
     @Operation(summary = "Get case name")
     public ResponseEntity<String> getCaseName(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("getCaseName request received");
+        if (!caseService.caseExists(caseUuid)) {
+            throw createDirectoryNotFound(caseUuid);
+        }
         String caseName = caseService.getCaseName(caseUuid);
         return ResponseEntity.ok().body(caseName);
     }
@@ -179,7 +187,7 @@ public class CaseController {
         @ApiResponse(responseCode = "404", description = "Source case not found")})
     public ResponseEntity<Void> disableCaseExpiration(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("disableCaseExpiration request received for caseUuid = {}", caseUuid);
-        caseService.disableCaseExpiration(caseUuid);
+        metadataService.disableCaseExpiration(caseUuid);
         return ResponseEntity.ok().build();
     }
 
@@ -187,6 +195,9 @@ public class CaseController {
     @Operation(summary = "delete a case")
     public ResponseEntity<Void> deleteCase(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("deleteCase request received with parameter caseUuid = {}", caseUuid);
+        if (!caseService.caseExists(caseUuid)) {
+            throw createDirectoryNotFound(caseUuid);
+        }
         caseService.deleteCase(caseUuid);
         return ResponseEntity.ok().build();
     }
@@ -203,14 +214,14 @@ public class CaseController {
     @Operation(summary = "Search cases by metadata")
     public ResponseEntity<List<CaseInfos>> searchCases(@RequestParam(value = "q") String query) {
         LOGGER.debug("search cases request received");
-        List<CaseInfos> cases = caseService.searchCases(query);
+        List<CaseInfos> cases = caseInfosService.searchCaseInfos(query);
         return ResponseEntity.ok().body(cases);
     }
 
     @GetMapping(value = "/cases/metadata")
     @Operation(summary = "Get cases Metadata")
     public ResponseEntity<List<CaseInfos>> getMetadata(@RequestParam("ids") List<UUID> ids) {
-        LOGGER.debug("get Case metadata");
+        LOGGER.debug("get Cases metadata");
         return ResponseEntity.ok().body(caseService.getMetadata(ids));
     }
 }
