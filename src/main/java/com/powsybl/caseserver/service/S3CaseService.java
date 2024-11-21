@@ -80,7 +80,8 @@ public class S3CaseService implements CaseService {
     @Value("${spring.cloud.aws.bucket}")
     private String bucketName;
 
-    private static final String CASES_PREFIX = "gsi-cases/";
+    @Value("${storage.s3.rootDirectory}")
+    private String rootDirectory;
 
     public static final String NOT_FOUND = " not found";
 
@@ -172,7 +173,7 @@ public class S3CaseService implements CaseService {
         return getCaseMetaDataEntity(caseUuid).getOriginalFilename();
     }
 
-    // key format is "gsi-cases/UUID/path/to/file"
+    // key format is "cases/UUID/path/to/file"
     private UUID parseUuidFromKey(String key) {
         int firstSlash = key.indexOf(DELIMITER);
         int secondSlash = key.indexOf(DELIMITER, firstSlash + 1);
@@ -185,11 +186,11 @@ public class S3CaseService implements CaseService {
         return key.substring(secondSlash + 1);
     }
 
-    public static String uuidToKeyPrefix(UUID uuid) {
-        return CASES_PREFIX + uuid.toString() + DELIMITER;
+    public String uuidToKeyPrefix(UUID uuid) {
+        return rootDirectory + uuid.toString() + DELIMITER;
     }
 
-    public static String uuidToKeyWithFileName(UUID uuid, String filename) {
+    public String uuidToKeyWithFileName(UUID uuid, String filename) {
         return uuidToKeyPrefix(uuid) + filename;
     }
 
@@ -253,7 +254,7 @@ public class S3CaseService implements CaseService {
     public List<CaseInfos> getCases() {
         List<CaseInfos> caseInfosList = new ArrayList<>();
         CaseInfos caseInfos;
-        for (S3Object o : getCaseS3Objects(CASES_PREFIX)) {
+        for (S3Object o : getCaseS3Objects(rootDirectory)) {
             caseInfos = getCaseInfos(parseUuidFromKey(o.key()));
             if (Objects.nonNull(caseInfos)) {
                 caseInfosList.add(caseInfos);
@@ -318,7 +319,7 @@ public class S3CaseService implements CaseService {
             filenames = List.of(removeExtension(originalFilename, "." + getCompressionFormat(caseUuid)));
         } else {
             List<S3Object> s3Objects = getCaseS3Objects(caseUuid);
-            filenames = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(CASES_PREFIX + caseUuid.toString() + DELIMITER, "")).toList();
+            filenames = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(rootDirectory + caseUuid.toString() + DELIMITER, "")).toList();
             // For archived cases :
             if (isArchivedCaseFile(originalFilename)) {
                 filenames = filenames.stream()
@@ -410,9 +411,9 @@ public class S3CaseService implements CaseService {
         // To optimize copy, files to copy are not downloaded on the case-server. They are directly copied on the S3 server.
         CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
                 .sourceBucket(bucketName)
-                .sourceKey(CASES_PREFIX + sourcecaseUuid + DELIMITER + fileName)
+                .sourceKey(rootDirectory + sourcecaseUuid + DELIMITER + fileName)
                 .destinationBucket(bucketName)
-                .destinationKey(CASES_PREFIX + caseUuid + DELIMITER + fileName)
+                .destinationKey(rootDirectory + caseUuid + DELIMITER + fileName)
                 .build();
         try {
             s3Client.copyObject(copyObjectRequest);
@@ -525,7 +526,7 @@ public class S3CaseService implements CaseService {
     public void deleteAllCases() {
         ListObjectsV2Request listObjectsRequest = ListObjectsV2Request.builder()
                 .bucket(bucketName)
-                .prefix(CASES_PREFIX)
+                .prefix(rootDirectory)
                 .build();
 
         ListObjectsV2Response listObjectsResponse = s3Client.listObjectsV2(listObjectsRequest);
