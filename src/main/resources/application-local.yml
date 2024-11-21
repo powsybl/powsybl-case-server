@@ -11,14 +11,12 @@ spring:
       ## to fill if authentication is needed
       # user:
       # password:
+  cloud:
+    aws:
+      endpoint: http://localhost:19000
 
 powsybl-ws:
   database:
     host: localhost
 
 cleaning-cases-cron: 0 * 2 * * ?
-
-cloud:
-  aws:
-    s3:
-      endpoint: 172.17.0.1
