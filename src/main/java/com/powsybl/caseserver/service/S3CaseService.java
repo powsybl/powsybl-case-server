@@ -187,7 +187,7 @@ public class S3CaseService implements CaseService {
     }
 
     public String uuidToKeyPrefix(UUID uuid) {
-        return rootDirectory + uuid.toString() + DELIMITER;
+        return rootDirectory + DELIMITER + uuid.toString() + DELIMITER;
     }
 
     public String uuidToKeyWithFileName(UUID uuid, String filename) {
@@ -254,7 +254,7 @@ public class S3CaseService implements CaseService {
     public List<CaseInfos> getCases() {
         List<CaseInfos> caseInfosList = new ArrayList<>();
         CaseInfos caseInfos;
-        for (S3Object o : getCaseS3Objects(rootDirectory)) {
+        for (S3Object o : getCaseS3Objects(rootDirectory + DELIMITER)) {
             caseInfos = getCaseInfos(parseUuidFromKey(o.key()));
             if (Objects.nonNull(caseInfos)) {
                 caseInfosList.add(caseInfos);
@@ -319,7 +319,7 @@ public class S3CaseService implements CaseService {
             filenames = List.of(removeExtension(originalFilename, "." + getCompressionFormat(caseUuid)));
         } else {
             List<S3Object> s3Objects = getCaseS3Objects(caseUuid);
-            filenames = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(rootDirectory + caseUuid.toString() + DELIMITER, "")).toList();
+            filenames = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(rootDirectory + DELIMITER + caseUuid.toString() + DELIMITER, "")).toList();
             // For archived cases :
             if (isArchivedCaseFile(originalFilename)) {
                 filenames = filenames.stream()
@@ -411,9 +411,9 @@ public class S3CaseService implements CaseService {
         // To optimize copy, files to copy are not downloaded on the case-server. They are directly copied on the S3 server.
         CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
                 .sourceBucket(bucketName)
-                .sourceKey(rootDirectory + sourcecaseUuid + DELIMITER + fileName)
+                .sourceKey(rootDirectory + DELIMITER + sourcecaseUuid + DELIMITER + fileName)
                 .destinationBucket(bucketName)
-                .destinationKey(rootDirectory + caseUuid + DELIMITER + fileName)
+                .destinationKey(rootDirectory + DELIMITER + caseUuid + DELIMITER + fileName)
                 .build();
         try {
             s3Client.copyObject(copyObjectRequest);
@@ -526,7 +526,7 @@ public class S3CaseService implements CaseService {
     public void deleteAllCases() {
         ListObjectsV2Request listObjectsRequest = ListObjectsV2Request.builder()
                 .bucket(bucketName)
-                .prefix(rootDirectory)
+                .prefix(rootDirectory + DELIMITER)
                 .build();
 
         ListObjectsV2Response listObjectsResponse = s3Client.listObjectsV2(listObjectsRequest);
