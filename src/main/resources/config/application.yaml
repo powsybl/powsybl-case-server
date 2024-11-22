@@ -19,7 +19,7 @@ spring:
       bucket: my-bucket
       credentials:
         access-key: my-access-key
-        secret-key: my-access-key
+        secret-key: my-secret-key
 
 powsybl-ws:
   database:
