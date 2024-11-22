@@ -59,7 +59,7 @@ public class FsCaseService implements CaseService {
     @Autowired
     private CaseInfosService caseInfosService;
 
-    @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
+    @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/${storage.s3.rootDirectory}\")}}")
     private String rootDirectory;
 
     public FsCaseService(CaseMetadataRepository caseMetadataRepository) {
