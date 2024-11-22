@@ -16,10 +16,10 @@ spring:
         profile:
           name: default
         static: test
-      bucket: bucket-gridsuite
+      bucket: my-bucket
       credentials:
-        access-key: minioadmin
-        secret-key: minioadmin
+        access-key: my-access-key
+        secret-key: my-access-key
 
 powsybl-ws:
   database:
@@ -30,4 +30,4 @@ cleaning-cases-cron: 0 * 2 * * ?
 storage:
   type: FS  # FS or S3
   s3:
-    rootDirectory: cases
+    rootDirectory: network-cases
