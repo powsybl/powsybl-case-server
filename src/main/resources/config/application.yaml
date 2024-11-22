@@ -18,8 +18,8 @@ spring:
         static: test
       bucket: my-bucket
       credentials:
-        access-key: my-access-key
-        secret-key: my-secret-key
+        access-key: minioadmin
+        secret-key: minioadmin
 
 powsybl-ws:
   database:
@@ -30,4 +30,4 @@ cleaning-cases-cron: 0 * 2 * * ?
 storage:
   type: FS  # FS or S3
   s3:
-    rootDirectory: network-cases
+    rootDirectory: cases
