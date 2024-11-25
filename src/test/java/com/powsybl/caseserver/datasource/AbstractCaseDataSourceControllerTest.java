@@ -12,7 +12,6 @@ import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.commons.datasource.DataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.mock.web.MockMultipartFile;
