@@ -80,7 +80,7 @@ public class S3CaseService implements CaseService {
     @Value("${spring.cloud.aws.bucket}")
     private String bucketName;
 
-    @Value("${storage.s3.rootDirectory}")
+    @Value("${case-subpath}")
     private String rootDirectory;
 
     public static final String NOT_FOUND = " not found";
@@ -90,6 +90,11 @@ public class S3CaseService implements CaseService {
 
     public S3CaseService(CaseMetadataRepository caseMetadataRepository) {
         this.caseMetadataRepository = caseMetadataRepository;
+    }
+
+    @Override
+    public String getRootDirectory() {
+        return rootDirectory;
     }
 
     String getFormat(Path caseFile) {

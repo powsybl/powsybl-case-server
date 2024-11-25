@@ -59,11 +59,19 @@ public class FsCaseService implements CaseService {
     @Autowired
     private CaseInfosService caseInfosService;
 
-    @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/${storage.s3.rootDirectory}\")}}")
-    private String rootDirectory;
+    @Value("${case-home:#{systemProperties['user.home']}}")
+    private String caseHome;
+
+    @Value("${case-subpath}")
+    private String caseSubpath;
 
     public FsCaseService(CaseMetadataRepository caseMetadataRepository) {
         this.caseMetadataRepository = caseMetadataRepository;
+    }
+
+    @Override
+    public String getRootDirectory() {
+        return caseHome + "/" + caseSubpath;
     }
 
     @Override
@@ -295,7 +303,7 @@ public class FsCaseService implements CaseService {
     }
 
     public Path getStorageRootDir() {
-        return fileSystem.getPath(rootDirectory);
+        return fileSystem.getPath(getRootDirectory());
     }
 
     private boolean isStorageCreated() {

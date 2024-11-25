@@ -40,11 +40,11 @@ class FsCaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTes
     void setUp() throws URISyntaxException, IOException {
         caseService = fsCaseService;
         cgmesCaseUuid = UUID.randomUUID();
-        Path path = fileSystem.getPath(rootDirectory);
+        Path path = fileSystem.getPath(caseService.getRootDirectory());
         if (!Files.exists(path)) {
             Files.createDirectories(path);
         }
-        Path cgmesCaseDirectory = fileSystem.getPath(rootDirectory).resolve(cgmesCaseUuid.toString());
+        Path cgmesCaseDirectory = fileSystem.getPath(caseService.getRootDirectory()).resolve(cgmesCaseUuid.toString());
         if (!Files.exists(cgmesCaseDirectory)) {
             Files.createDirectories(cgmesCaseDirectory);
         }

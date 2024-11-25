@@ -30,5 +30,5 @@ cleaning-cases-cron: 0 * 2 * * ?
 
 storage:
   type: FS  # FS or S3
-  s3:
-    rootDirectory: cases
+
+case-subpath: cases
