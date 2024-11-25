@@ -15,6 +15,7 @@ import com.powsybl.computation.ComputationManager;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.*;
@@ -35,6 +37,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
+import static com.powsybl.caseserver.service.S3CaseService.DELIMITER;
 
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
@@ -65,13 +68,20 @@ public class FsCaseService implements CaseService {
     @Value("${case-subpath}")
     private String caseSubpath;
 
+    private String rootDirectory;
+
     public FsCaseService(CaseMetadataRepository caseMetadataRepository) {
         this.caseMetadataRepository = caseMetadataRepository;
     }
 
+    @PostConstruct
+    private void postConstruct() {
+        rootDirectory = caseHome + DELIMITER + caseSubpath;
+    }
+
     @Override
     public String getRootDirectory() {
-        return caseHome + "/" + caseSubpath;
+        return rootDirectory;
     }
 
     @Override
