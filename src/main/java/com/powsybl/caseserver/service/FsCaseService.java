@@ -93,7 +93,7 @@ public class FsCaseService implements CaseService {
         try {
             return createInfos(file, UUID.fromString(file.getParent().getFileName().toString()));
         } catch (Exception e) {
-            LOGGER.error("Error processing file {}: {}", file.getFileName(), e.getMessage(), e);
+            LOGGER.error("Error processing file {}: {}", file != null ? file.getFileName() : null, e.getMessage(), e);
             return null;
         }
     }
