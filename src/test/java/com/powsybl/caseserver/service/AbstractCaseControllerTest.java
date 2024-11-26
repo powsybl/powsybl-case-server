@@ -18,7 +18,6 @@ import com.powsybl.caseserver.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.stream.binder.test.OutputDestination;
@@ -55,7 +54,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
  */
 @AutoConfigureMockMvc
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK, properties = {"case-store-directory=/cases"})
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ContextConfigurationWithTestChannel
 abstract class AbstractCaseControllerTest {
     private static final String TEST_CASE = "testCase.xiidm";
@@ -81,9 +80,6 @@ abstract class AbstractCaseControllerTest {
     @Autowired
     private ObjectMapper mapper;
 
-    @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
-    String rootDirectory;
-
     FileSystem fileSystem;
 
     private final String caseImportDestination = "case.import.destination";
@@ -96,7 +92,7 @@ abstract class AbstractCaseControllerTest {
     }
 
     private void createStorageDir() throws IOException {
-        Path path = fileSystem.getPath(rootDirectory);
+        Path path = fileSystem.getPath(caseService.getRootDirectory());
         if (!Files.exists(path)) {
             Files.createDirectories(path);
         }
@@ -726,7 +722,7 @@ abstract class AbstractCaseControllerTest {
     @Test
     void invalidFileInCaseDirectoryShouldBeIgnored() throws Exception {
         createStorageDir();
-        Path filePath = fileSystem.getPath(rootDirectory).resolve("randomFile.txt");
+        Path filePath = fileSystem.getPath(caseService.getRootDirectory()).resolve("randomFile.txt");
         Files.createFile(filePath);
         importCase(TEST_CASE, false);
 
