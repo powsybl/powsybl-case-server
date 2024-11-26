@@ -15,7 +15,6 @@ import com.powsybl.computation.ComputationManager;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
-import jakarta.validation.constraints.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,7 +89,8 @@ public class FsCaseService implements CaseService {
         }
     }
 
-    private CaseInfos getCaseInfos(@NotNull Path file) {
+    private CaseInfos getCaseInfos(Path file) {
+        Objects.requireNonNull(file);
         try {
             return createInfos(file, UUID.fromString(file.getParent().getFileName().toString()));
         } catch (Exception e) {
