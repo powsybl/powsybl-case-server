@@ -435,6 +435,15 @@ abstract class AbstractCaseControllerTest {
     }
 
     @Test
+    void testGetMetadataOfNonExistingCase() throws Exception {
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/metadata?ids=" + UUID.randomUUID()))
+                .andExpect(status().isOk())
+                .andReturn();
+        String response = mvcResult.getResponse().getContentAsString();
+        assertEquals("[]", response);
+    }
+
+    @Test
     void testDuplicateNonIndexedCase() throws Exception {
         // create the storage dir
         createStorageDir();
