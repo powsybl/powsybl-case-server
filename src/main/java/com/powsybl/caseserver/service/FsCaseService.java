@@ -93,7 +93,7 @@ public class FsCaseService implements CaseService {
         try {
             return createInfos(file, UUID.fromString(file.getParent().getFileName().toString()));
         } catch (Exception e) {
-            LOGGER.error("Error processing file {}: {}", file != null ? file.getFileName() : null, e.getMessage(), e);
+            LOGGER.error("Error processing file {}: {}", file.getFileName(), e.getMessage(), e);
             return null;
         }
     }
@@ -114,6 +114,10 @@ public class FsCaseService implements CaseService {
     @Override
     public CaseInfos getCaseInfos(UUID caseUuid) {
         Path file = getCaseFile(caseUuid);
+        if (file == null) {
+            LOGGER.error("The directory with the following uuid doesn't exist: " + caseUuid);
+            return null;
+        }
         return getCaseInfos(file);
     }
 
