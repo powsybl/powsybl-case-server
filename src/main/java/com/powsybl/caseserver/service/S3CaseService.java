@@ -216,6 +216,10 @@ public class S3CaseService implements CaseService {
 
     @Override
     public CaseInfos getCaseInfos(UUID caseUuid) {
+        if (!caseExists(caseUuid)) {
+            LOGGER.error("The directory with the following uuid doesn't exist: {}", caseUuid);
+            return null;
+        }
         return new CaseInfos(caseUuid, getCaseName(caseUuid), getFormat(caseUuid));
     }
 

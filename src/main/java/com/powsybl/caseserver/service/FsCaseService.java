@@ -90,6 +90,7 @@ public class FsCaseService implements CaseService {
     }
 
     private CaseInfos getCaseInfos(Path file) {
+        Objects.requireNonNull(file);
         try {
             return createInfos(file, UUID.fromString(file.getParent().getFileName().toString()));
         } catch (Exception e) {
@@ -114,6 +115,10 @@ public class FsCaseService implements CaseService {
     @Override
     public CaseInfos getCaseInfos(UUID caseUuid) {
         Path file = getCaseFile(caseUuid);
+        if (file == null) {
+            LOGGER.error("The directory with the following uuid doesn't exist: {}", caseUuid);
+            return null;
+        }
         return getCaseInfos(file);
     }
 
