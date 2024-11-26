@@ -444,7 +444,7 @@ abstract class AbstractCaseControllerTest {
                 .andExpect(status().isOk())
                 .andReturn();
         String response = mvcResult.getResponse().getContentAsString();
-        assertEquals(response, "[]");
+        assertEquals("[]", response);
     }
 
     @Test

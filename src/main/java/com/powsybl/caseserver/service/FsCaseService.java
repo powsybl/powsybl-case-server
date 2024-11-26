@@ -116,7 +116,7 @@ public class FsCaseService implements CaseService {
     public CaseInfos getCaseInfos(UUID caseUuid) {
         Path file = getCaseFile(caseUuid);
         if (file == null) {
-            LOGGER.error("The directory with the following uuid doesn't exist: " + caseUuid);
+            LOGGER.error("The directory with the following uuid doesn't exist: {}", caseUuid);
             return null;
         }
         return getCaseInfos(file);
