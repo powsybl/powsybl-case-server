@@ -54,11 +54,11 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
         // For archived cases (.zip, .tar, ...), individual files are gzipped in S3 server.
         // Here the requested file is decompressed and simply returned.
         if (S3CaseService.isArchivedCaseFile(caseName)) {
-            caseFileKey = uuidToKeyWithFileName(caseUuid, fileName + GZIP_EXTENSION);
+            caseFileKey = s3CaseService.uuidToKeyWithFileName(caseUuid, fileName + GZIP_EXTENSION);
             return s3CaseService.withS3DownloadedTempPath(caseUuid, caseFileKey,
                     file -> S3CaseService.decompress(Files.readAllBytes(file)));
         } else {
-            caseFileKey = uuidToKeyWithFileName(caseUuid, caseName);
+            caseFileKey = s3CaseService.uuidToKeyWithFileName(caseUuid, caseName);
             return s3CaseService.withS3DownloadedTempPath(caseUuid, caseFileKey,
                     casePath -> IOUtils.toByteArray(DataSource.fromPath(casePath).newInputStream(fileName)));
         }

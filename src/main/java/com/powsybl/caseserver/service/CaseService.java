@@ -168,4 +168,6 @@ public interface CaseService {
     CaseMetadataRepository getCaseMetadataRepository();
 
     ComputationManager getComputationManager();
+
+    String getRootDirectory();
 }

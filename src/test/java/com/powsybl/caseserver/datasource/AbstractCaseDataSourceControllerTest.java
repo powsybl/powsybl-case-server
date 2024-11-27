@@ -12,7 +12,6 @@ import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.commons.datasource.DataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.mock.web.MockMultipartFile;
@@ -47,9 +46,6 @@ public abstract class AbstractCaseDataSourceControllerTest {
     private MockMvc mvc;
 
     protected static CaseService caseService;
-
-    @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
-    protected String rootDirectory;
 
     static final String CGMES_ZIP_NAME = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2.zip";
 

@@ -12,7 +12,6 @@ import com.powsybl.caseserver.service.SupervisionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -33,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Jamal KHEYYAD <jamal.kheyyad at rte-international.com>
  */
 @AutoConfigureMockMvc
-@SpringBootTest(classes = {CaseApplication.class}, properties = {"case-store-directory=/cases"})
+@SpringBootTest(classes = {CaseApplication.class})
 abstract class AbstractSupervisionControllerTest {
     @Autowired
     private SupervisionService supervisionService;
@@ -42,9 +41,6 @@ abstract class AbstractSupervisionControllerTest {
     CaseService caseService;
     @Autowired
     protected MockMvc mockMvc;
-
-    @Value("${case-store-directory:#{systemProperties['user.home'].concat(\"/cases\")}}")
-    String rootDirectory;
 
     private static final String TEST_CASE = "testCase.xiidm";
     FileSystem fileSystem;
@@ -112,7 +108,7 @@ abstract class AbstractSupervisionControllerTest {
     }
 
     private void createStorageDir() throws IOException {
-        Path path = fileSystem.getPath(rootDirectory);
+        Path path = fileSystem.getPath(caseService.getRootDirectory());
         if (!Files.exists(path)) {
             Files.createDirectories(path);
         }
