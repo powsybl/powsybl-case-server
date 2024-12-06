@@ -13,6 +13,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.apache.http.HttpHost;
+import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.elasticsearch.client.ClientConfiguration;
@@ -31,13 +33,13 @@ public class SupervisionController {
 
     private final SupervisionService supervisionService;
     private final CaseService caseService;
-    private final ClientConfiguration elasticsearchClientConfiguration;
+    private final RestClient restClient;
     private final CaseInfosService caseInfosService;
 
-    public SupervisionController(SupervisionService supervisionService, CaseService caseService, ClientConfiguration elasticsearchClientConfiguration, CaseInfosService caseInfosService) {
+    public SupervisionController(SupervisionService supervisionService, CaseService caseService, RestClient restClient, CaseInfosService caseInfosService) {
         this.supervisionService = supervisionService;
         this.caseService = caseService;
-        this.elasticsearchClientConfiguration = elasticsearchClientConfiguration;
+        this.restClient = restClient;
         this.caseInfosService = caseInfosService;
     }
 
@@ -45,9 +47,10 @@ public class SupervisionController {
     @Operation(summary = "get the elasticsearch address")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "the elasticsearch address")})
     public ResponseEntity<String> getElasticsearchHost() {
-        String host = elasticsearchClientConfiguration.getEndpoints().get(0).getHostName()
+        HttpHost httpHost = restClient.getNodes().get(0).getHost();
+        String host = httpHost.getHostName()
                 + ":"
-                + elasticsearchClientConfiguration.getEndpoints().get(0).getPort();
+                + httpHost.getPort();
         return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(host);
     }
 
