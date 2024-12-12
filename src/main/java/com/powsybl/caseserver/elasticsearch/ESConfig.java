@@ -25,7 +25,6 @@ import java.util.Arrays;
  */
 
 @Configuration
-@EnableElasticsearchRepositories
 public class ESConfig extends ElasticsearchConfigurationSupport {
 
     public static final String CASE_INFOS_INDEX_NAME = "#{@environment.getProperty('powsybl-ws.elasticsearch.index.prefix')}cases";
