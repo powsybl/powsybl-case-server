@@ -10,6 +10,7 @@ import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.caseserver.service.MetadataService;
+import com.powsybl.commons.datasource.DataSourceUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -223,5 +224,14 @@ public class CaseController {
     public ResponseEntity<List<CaseInfos>> getMetadata(@RequestParam("ids") List<UUID> ids) {
         LOGGER.debug("get Cases metadata");
         return ResponseEntity.ok().body(caseService.getMetadata(ids));
+    }
+
+    @GetMapping(value = "/cases/caseBaseName")
+    @Operation(summary = "Get case base name")
+    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = "case base name"), })
+    public ResponseEntity<String> getCaseBaseName(@RequestParam("caseName") String caseName) {
+        LOGGER.debug("getCaseBaseName request received");
+        String baseName = DataSourceUtil.getBaseName(caseName);
+        return ResponseEntity.ok().body(baseName);
     }
 }
