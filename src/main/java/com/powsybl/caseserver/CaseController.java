@@ -230,7 +230,7 @@ public class CaseController {
     @Operation(summary = "Get case base name")
     @ApiResponses(value = { @ApiResponse(responseCode = "200", description = "case base name retrieved"), })
     public ResponseEntity<String> getCaseBaseName(@RequestParam("caseName") String caseName) {
-        LOGGER.debug("getCaseBaseName request received");
+        LOGGER.debug("getting base name from case file name");
         String baseName = DataSourceUtil.getBaseName(caseName);
         return ResponseEntity.ok(baseName);
     }
