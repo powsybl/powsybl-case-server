@@ -228,7 +228,7 @@ public class CaseController {
 
     @GetMapping("/cases/caseBaseName")
     @Operation(summary = "Get case base name")
-    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = "case base name retrieved"), })
+    @ApiResponse(responseCode = "200", description = "case base name retrieved")
     public ResponseEntity<String> getCaseBaseName(@RequestParam("caseName") String caseName) {
         LOGGER.debug("getting base name from case file name");
         String baseName = DataSourceUtil.getBaseName(caseName);
