@@ -739,4 +739,31 @@ abstract class AbstractCaseControllerTest {
                 .andExpect(status().isOk());
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
     }
+
+    @Test
+    void testGetCaseBaseName() throws Exception {
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/caseBaseName?caseName=case.xml"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String response = mvcResult.getResponse().getContentAsString();
+        assertEquals("case", response);
+
+        mvcResult = mvc.perform(get("/v1/cases/caseBaseName?caseName=case.xml.gz"))
+                .andExpect(status().isOk())
+                .andReturn();
+        response = mvcResult.getResponse().getContentAsString();
+        assertEquals("case", response);
+
+        mvcResult = mvc.perform(get("/v1/cases/caseBaseName?caseName=case.v1.xml"))
+                .andExpect(status().isOk())
+                .andReturn();
+        response = mvcResult.getResponse().getContentAsString();
+        assertEquals("case.v1", response);
+
+        mvcResult = mvc.perform(get("/v1/cases/caseBaseName?caseName=case.v1.xml.gz"))
+                .andExpect(status().isOk())
+                .andReturn();
+        response = mvcResult.getResponse().getContentAsString();
+        assertEquals("case.v1", response);
+    }
 }
