@@ -226,12 +226,12 @@ public class CaseController {
         return ResponseEntity.ok().body(caseService.getMetadata(ids));
     }
 
-    @GetMapping(value = "/cases/caseBaseName")
+    @GetMapping("/cases/caseBaseName")
     @Operation(summary = "Get case base name")
-    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = "case base name"), })
+    @ApiResponses(value = { @ApiResponse(responseCode = "200", description = "case base name retrieved"), })
     public ResponseEntity<String> getCaseBaseName(@RequestParam("caseName") String caseName) {
         LOGGER.debug("getCaseBaseName request received");
         String baseName = DataSourceUtil.getBaseName(caseName);
-        return ResponseEntity.ok().body(baseName);
+        return ResponseEntity.ok(baseName);
     }
 }
