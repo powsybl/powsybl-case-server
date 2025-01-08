@@ -20,6 +20,10 @@ import java.util.zip.GZIPOutputStream;
  */
 public class Utils {
 
+    private Utils() {
+
+    }
+
     public static final String GZIP_EXTENSION = ".gz";
     public static final String GZIP_FORMAT = "gz";
     public static final List<String> COMPRESSION_FORMATS = List.of("bz2", GZIP_FORMAT, "xz", "zst");
