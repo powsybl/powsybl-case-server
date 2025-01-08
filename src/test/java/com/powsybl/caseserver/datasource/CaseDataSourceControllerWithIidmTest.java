@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
 import com.powsybl.caseserver.elasticsearch.DisableElasticsearch;
 import com.powsybl.caseserver.service.CaseService;
+import com.powsybl.caseserver.service.MinioContainerConfig;
 import com.powsybl.caseserver.service.S3CaseService;
 import com.powsybl.commons.datasource.DataSource;
 import org.junit.jupiter.api.Assertions;
@@ -43,7 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @TestPropertySource(properties = {"storage.type=S3"})
 @ContextConfigurationWithTestChannel
-class CaseDataSourceControllerWithIidmTest {
+class CaseDataSourceControllerWithIidmTest implements MinioContainerConfig {
 
     @MockBean
     StreamBridge streamBridge;
