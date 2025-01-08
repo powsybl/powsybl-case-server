@@ -58,6 +58,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ContextConfigurationWithTestChannel
 abstract class AbstractCaseControllerTest {
     private static final String TEST_CASE = "testCase.xiidm";
+    private static final String TEST_CASE_GZ = "testCase.xiidm.gz";
     private static final String TEST_CASE_FORMAT = "XIIDM";
     private static final String NOT_A_NETWORK = "notANetwork.txt";
     private static final String STILL_NOT_A_NETWORK = "stillNotANetwork.xiidm";
@@ -136,7 +137,7 @@ abstract class AbstractCaseControllerTest {
         Message<byte[]> messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         MessageHeaders headersCase = messageImport.getHeaders();
-        assertEquals("testCase.xiidm", headersCase.get(CaseInfos.NAME_HEADER_KEY));
+        assertEquals("testCase.xiidm.gz", headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals(firstCaseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
 
@@ -154,7 +155,7 @@ abstract class AbstractCaseControllerTest {
         //retrieve case name
         mvc.perform(get("/v1/cases/{caseUuid}/name", firstCaseUuid))
                 .andExpect(status().isOk())
-                .andExpect(content().string(TEST_CASE))
+                .andExpect(content().string(TEST_CASE_GZ))
                 .andReturn();
 
         //retrieve unknown case name
@@ -164,7 +165,7 @@ abstract class AbstractCaseControllerTest {
         //retrieve case infos
         mvc.perform(get("/v1/cases/{caseUuid}/infos", firstCaseUuid))
                 .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.name").value(TEST_CASE))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.name").value(TEST_CASE_GZ))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.format").value(TEST_CASE_FORMAT))
                 .andReturn();
 
@@ -254,7 +255,7 @@ abstract class AbstractCaseControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$").isArray())
                 .andExpect(MockMvcResultMatchers.jsonPath("$", hasSize(1)))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].name").value(TEST_CASE))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].name").value("testCase.xiidm.gz"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].format").value(TEST_CASE_FORMAT))
                 .andReturn();
 
@@ -293,7 +294,7 @@ abstract class AbstractCaseControllerTest {
         Message<byte[]> messageImportPrivate2 = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImportPrivate2.getPayload()));
         MessageHeaders headersPrivateCase2 = messageImportPrivate2.getHeaders();
-        assertEquals("testCase.xiidm", headersPrivateCase2.get(CaseInfos.NAME_HEADER_KEY));
+        assertEquals(TEST_CASE_GZ, headersPrivateCase2.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals(secondCaseUuid, headersPrivateCase2.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("XIIDM", headersPrivateCase2.get(CaseInfos.FORMAT_HEADER_KEY));
 
@@ -315,7 +316,7 @@ abstract class AbstractCaseControllerTest {
         Message<byte[]> messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         MessageHeaders headersCase = messageImport.getHeaders();
-        assertEquals("testCase.xiidm", headersCase.get(CaseInfos.NAME_HEADER_KEY));
+        assertEquals(TEST_CASE_GZ, headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals(caseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
 
@@ -336,7 +337,7 @@ abstract class AbstractCaseControllerTest {
         assertEquals("", new String(messageImport.getPayload()));
         headersCase = messageImport.getHeaders();
         assertEquals(UUID.fromString(duplicateCaseUuid), headersCase.get(CaseInfos.UUID_HEADER_KEY));
-        assertEquals("testCase.xiidm", headersCase.get(CaseInfos.NAME_HEADER_KEY));
+        assertEquals(TEST_CASE_GZ, headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
 
         //check that the duplicated case doesn't have an expiration date
@@ -353,7 +354,7 @@ abstract class AbstractCaseControllerTest {
         messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         headersCase = messageImport.getHeaders();
-        assertEquals("testCase.xiidm", headersCase.get(CaseInfos.NAME_HEADER_KEY));
+        assertEquals(TEST_CASE_GZ, headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals(thirdCaseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
 
@@ -379,7 +380,7 @@ abstract class AbstractCaseControllerTest {
         assertEquals("", new String(messageImport.getPayload()));
         headersCase = messageImport.getHeaders();
         assertEquals(UUID.fromString(duplicateCaseUuid2), headersCase.get(CaseInfos.UUID_HEADER_KEY));
-        assertEquals("testCase.xiidm", headersCase.get(CaseInfos.NAME_HEADER_KEY));
+        assertEquals(TEST_CASE_GZ, headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
 
         //check that the duplicated case does have an expiration date
@@ -420,7 +421,7 @@ abstract class AbstractCaseControllerTest {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        assertTrue(mvcResult.getResponse().getContentAsString().contains("\"name\":\"testCase.xiidm\""));
+        assertTrue(mvcResult.getResponse().getContentAsString().contains("\"name\":\"testCase.xiidm.gz\""));
 
         // test case metadata
         mvcResult = mvc.perform(get("/v1/cases/metadata?ids=" + caseUuid))
@@ -506,7 +507,7 @@ abstract class AbstractCaseControllerTest {
         Message<byte[]> messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         MessageHeaders headersCase = messageImport.getHeaders();
-        assertEquals("testCase.xiidm", headersCase.get(CaseInfos.NAME_HEADER_KEY));
+        assertEquals(TEST_CASE_GZ, headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals(aCaseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
 
@@ -540,7 +541,7 @@ abstract class AbstractCaseControllerTest {
         messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         headersCase = messageImport.getHeaders();
-        assertEquals("20200103_0915_FO5_FR0.UCT", headersCase.get(CaseInfos.NAME_HEADER_KEY));
+        assertEquals("20200103_0915_FO5_FR0.UCT.gz", headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals(aCaseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("UCTE", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
 
@@ -557,7 +558,7 @@ abstract class AbstractCaseControllerTest {
         messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         headersCase = messageImport.getHeaders();
-        assertEquals("20200103_0915_SN5_D80.UCT", headersCase.get(CaseInfos.NAME_HEADER_KEY));
+        assertEquals("20200103_0915_SN5_D80.UCT.gz", headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals(aCaseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("UCTE", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
 
@@ -574,7 +575,7 @@ abstract class AbstractCaseControllerTest {
         messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         headersCase = messageImport.getHeaders();
-        assertEquals("20200103_0915_135_CH2.UCT", headersCase.get(CaseInfos.NAME_HEADER_KEY));
+        assertEquals("20200103_0915_135_CH2.UCT.gz", headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals(aCaseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("UCTE", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
 
@@ -585,11 +586,11 @@ abstract class AbstractCaseControllerTest {
 
         // assert that the 5 previously imported cases are present
         String response = mvcResult.getResponse().getContentAsString();
-        assertTrue(response.contains("\"name\":\"testCase.xiidm\""));
+        assertTrue(response.contains("\"name\":\"testCase.xiidm.gz\""));
         assertTrue(response.contains("\"name\":\"20200424T1330Z_2D_RTEFRANCE_001.zip\""));
-        assertTrue(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT\""));
-        assertTrue(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT\""));
-        assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
+        assertTrue(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT.gz\""));
+        assertTrue(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT.gz\""));
+        assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT.gz\""));
 
         // search the cases
         mvcResult = mvc.perform(get("/v1/cases/search")
@@ -597,33 +598,33 @@ abstract class AbstractCaseControllerTest {
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
-        assertTrue(response.contains("\"name\":\"testCase.xiidm\""));
+        assertTrue(response.contains("\"name\":\"testCase.xiidm.gz\""));
         assertTrue(response.contains("\"name\":\"20200424T1330Z_2D_RTEFRANCE_001.zip\""));
-        assertTrue(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT\""));
-        assertTrue(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT\""));
-        assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
+        assertTrue(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT.gz\""));
+        assertTrue(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT.gz\""));
+        assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT.gz\""));
 
         mvcResult = mvc.perform(get("/v1/cases/search")
                 .param("q", getDateSearchTerm("20200103_0915")))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
-        assertFalse(response.contains("\"name\":\"testCase.xiidm\""));
+        assertFalse(response.contains("\"name\":\"testCase.xiidm.gz\""));
         assertFalse(response.contains("\"name\":\"20200424T1330Z_2D_RTEFRANCE_001.zip\""));
-        assertTrue(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT\""));
-        assertTrue(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT\""));
-        assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
+        assertTrue(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT.gz\""));
+        assertTrue(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT.gz\""));
+        assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT.gz\""));
 
         mvcResult = mvc.perform(get("/v1/cases/search")
                 .param("q", "geographicalCode:(FR) OR tso:(RTEFRANCE)"))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
-        assertFalse(response.contains("\"name\":\"testCase.xiidm\""));
+        assertFalse(response.contains("\"name\":\"testCase.xiidm.gz\""));
         assertTrue(response.contains("\"name\":\"20200424T1330Z_2D_RTEFRANCE_001.zip\""));
-        assertTrue(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT\""));
-        assertFalse(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT\""));
-        assertFalse(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
+        assertTrue(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT.gz\""));
+        assertFalse(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT.gz\""));
+        assertFalse(response.contains("\"name\":\"20200103_0915_135_CH2.UCT.gz\""));
 
         mvcResult = mvc.perform(get("/v1/cases/search")
                 .param("q", getDateSearchTerm("20140116_0830") + " AND geographicalCode:(ES)"))
@@ -649,9 +650,9 @@ abstract class AbstractCaseControllerTest {
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
         assertFalse(response.contains("\"name\":\"20200424T1330Z_2D_RTEFRANCE_001.zip\""));
-        assertFalse(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT\""));
-        assertFalse(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT\""));
-        assertFalse(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
+        assertFalse(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT.gz\""));
+        assertFalse(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT.gz\""));
+        assertFalse(response.contains("\"name\":\"20200103_0915_135_CH2.UCT.gz\""));
 
         mvcResult = mvc.perform(get("/v1/cases/search")
                 .param("q", getDateSearchTerm("20200103_0915") + " AND geographicalCode:(CH)"))
@@ -659,18 +660,18 @@ abstract class AbstractCaseControllerTest {
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
         assertFalse(response.contains("\"name\":\"20200424T1330Z_2D_RTEFRANCE_001.zip\""));
-        assertFalse(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT\""));
-        assertFalse(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT\""));
-        assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
+        assertFalse(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT.gz\""));
+        assertFalse(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT.gz\""));
+        assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT.gz\""));
 
         mvcResult = mvc.perform(get("/v1/cases/search")
                 .param("q", getDateSearchTerm("20200103_0915") + " AND geographicalCode:(FR OR CH OR D8)"))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
-        assertTrue(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT\""));
-        assertTrue(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT\""));
-        assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
+        assertTrue(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT.gz\""));
+        assertTrue(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT.gz\""));
+        assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT.gz\""));
         assertFalse(response.contains("\"name\":\"20200424T1330Z_2D_RTEFRANCE_001.zip\""));
 
         mvcResult = mvc.perform(get("/v1/cases/search")
@@ -678,11 +679,11 @@ abstract class AbstractCaseControllerTest {
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
-        assertFalse(response.contains("\"name\":\"testCase.xiidm\""));
+        assertFalse(response.contains("\"name\":\"testCase.xiidm.gz\""));
         assertTrue(response.contains("\"name\":\"20200424T1330Z_2D_RTEFRANCE_001.zip\""));
-        assertFalse(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT\""));
-        assertFalse(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT\""));
-        assertFalse(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
+        assertFalse(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT.gz\""));
+        assertFalse(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT.gz\""));
+        assertFalse(response.contains("\"name\":\"20200103_0915_135_CH2.UCT.gz\""));
 
         // reindex all cases
         mvc.perform(post("/v1/supervision/cases/reindex"))
@@ -693,11 +694,11 @@ abstract class AbstractCaseControllerTest {
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
-        assertTrue(response.contains("\"name\":\"testCase.xiidm\""));
+        assertTrue(response.contains("\"name\":\"testCase.xiidm.gz\""));
         assertTrue(response.contains("\"name\":\"20200424T1330Z_2D_RTEFRANCE_001.zip\""));
-        assertTrue(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT\""));
-        assertTrue(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT\""));
-        assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
+        assertTrue(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT.gz\""));
+        assertTrue(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT.gz\""));
+        assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT.gz\""));
 
         // delete all cases
         mvc.perform(delete("/v1/cases"))
@@ -708,9 +709,9 @@ abstract class AbstractCaseControllerTest {
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
-        assertFalse(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT\""));
-        assertFalse(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT\""));
-        assertFalse(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
+        assertFalse(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT.gz\""));
+        assertFalse(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT.gz\""));
+        assertFalse(response.contains("\"name\":\"20200103_0915_135_CH2.UCT.gz\""));
         assertFalse(response.contains("\"name\":\"20200424T1330Z_2D_RTEFRANCE_001.zip\""));
     }
 
@@ -732,7 +733,7 @@ abstract class AbstractCaseControllerTest {
         String resultAsString = mvcResult.getResponse().getContentAsString();
         List<CaseInfos> caseInfos = mapper.readValue(resultAsString, new TypeReference<>() { });
         assertEquals(1, caseInfos.size());
-        assertEquals("testCase.xiidm", caseInfos.get(0).getName());
+        assertEquals("testCase.xiidm.gz", caseInfos.get(0).getName());
 
         Files.delete(filePath);
         mvc.perform(delete("/v1/cases"))

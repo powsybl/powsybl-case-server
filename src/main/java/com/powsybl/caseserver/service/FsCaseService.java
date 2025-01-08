@@ -16,6 +16,7 @@ import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
 import jakarta.annotation.PostConstruct;
+import org.apache.commons.compress.utils.FileNameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
+import static com.powsybl.caseserver.Utils.*;
 import static com.powsybl.caseserver.service.S3CaseService.DELIMITER;
 
 /**
@@ -130,6 +132,23 @@ public class FsCaseService implements CaseService {
     }
 
     @Override
+    public String getDownloadCaseName(UUID caseUuid) {
+        String name = getCaseName(caseUuid);
+        if (Boolean.FALSE.equals(isTheFileOriginallyGzipped(caseUuid))) {
+            name = removeExtension(name, GZIP_EXTENSION);
+        }
+        return name;
+    }
+
+    @Override
+    public Boolean isTheFileOriginallyGzipped(UUID caseUuid) {
+        CaseMetadataEntity caseMetadata = getCaseMetaDataEntity(caseUuid);
+        String name = caseMetadata.getOriginalFilename();
+        String compressionFormat = caseMetadata.getCompressionFormat();
+        return !name.endsWith(GZIP_EXTENSION) || compressionFormat.equals(GZIP_FORMAT);
+    }
+
+    @Override
     public CaseInfos getCaseInfos(UUID caseUuid) {
         Path file = getCaseFile(caseUuid);
         if (file == null) {
@@ -185,6 +204,7 @@ public class FsCaseService implements CaseService {
 
         String caseName = Objects.requireNonNull(mpf.getOriginalFilename()).trim();
         validateCaseName(caseName);
+        String compressionFormat = FileNameUtils.getExtension(Paths.get(caseName));
 
         if (Files.exists(uuidDirectory)) {
             throw CaseException.createDirectoryAreadyExists(uuidDirectory.toString());
@@ -192,9 +212,15 @@ public class FsCaseService implements CaseService {
 
         Path caseFile;
         try {
+            byte[] fileBytes = mpf.getBytes();
+            if (!isCompressedCaseFile(caseName) && !isArchivedCaseFile(caseName)) {
+                // not compressed files only
+                caseName += GZIP_EXTENSION;
+                fileBytes = compress(fileBytes);
+            }
             Files.createDirectory(uuidDirectory);
             caseFile = uuidDirectory.resolve(caseName);
-            mpf.transferTo(caseFile);
+            Files.write(caseFile, fileBytes);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -212,8 +238,9 @@ public class FsCaseService implements CaseService {
             throw e;
         }
 
-        createCaseMetadataEntity(caseUuid, withExpiration, withIndexation);
-        CaseInfos caseInfos = createInfos(caseFile.getFileName().toString(), caseUuid, importer.getFormat());
+        String format = importer.getFormat();
+        createCaseMetadataEntity(caseUuid, withExpiration, withIndexation, caseName, compressionFormat, format);
+        CaseInfos caseInfos = createInfos(caseFile.getFileName().toString(), caseUuid, format);
         if (withIndexation) {
             caseInfosService.addCaseInfos(caseInfos);
         }
@@ -353,10 +380,12 @@ public class FsCaseService implements CaseService {
         if (caseFile == null) {
             return Optional.empty();
         }
-
         if (Files.exists(caseFile) && Files.isRegularFile(caseFile)) {
             try {
                 byte[] bytes = Files.readAllBytes(caseFile);
+                if (Boolean.FALSE.equals(isTheFileOriginallyGzipped(caseUuid))) {
+                    bytes = decompress(bytes);
+                }
                 return Optional.of(bytes);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
