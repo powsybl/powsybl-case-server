@@ -159,7 +159,7 @@ public interface CaseService {
 
     Optional<byte[]> getCaseBytes(UUID caseUuid);
 
-    default boolean isTheFileOriginallyGzipped(UUID uuid) {
+    default Boolean isTheFileOriginallyGzipped(UUID uuid) {
         return true;
     }
 

@@ -277,7 +277,7 @@ public class S3CaseService implements CaseService {
     }
 
     @Override
-    public boolean isTheFileOriginallyGzipped(UUID caseUuid) {
+    public Boolean isTheFileOriginallyGzipped(UUID caseUuid) {
         CaseMetadataEntity caseMetadata = getCaseMetaDataEntity(caseUuid);
         String name = caseMetadata.getOriginalFilename();
         String compressionFormat = caseMetadata.getCompressionFormat();

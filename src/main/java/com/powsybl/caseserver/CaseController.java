@@ -110,15 +110,15 @@ public class CaseController {
     @Operation(summary = "Download a case")
     public ResponseEntity<byte[]> downloadCase(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("getCase request received with parameter caseUuid = {}", caseUuid);
-        Boolean isGzip = caseService.isTheFileOriginallyGzipped(caseUuid);
         byte[] bytes = caseService.getCaseBytes(caseUuid).orElse(null);
-        String name = caseService.getDownloadCaseName(caseUuid);
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-Disposition", name);
-        MediaType mediaType = Boolean.TRUE.equals(isGzip) ? MediaType.APPLICATION_OCTET_STREAM : MediaType.MULTIPART_FORM_DATA;
         if (bytes == null) {
             return ResponseEntity.noContent().build();
         }
+        String name = caseService.getDownloadCaseName(caseUuid);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", name);
+        Boolean isGzip = caseService.isTheFileOriginallyGzipped(caseUuid);
+        MediaType mediaType = Boolean.TRUE.equals(isGzip) ? MediaType.APPLICATION_OCTET_STREAM : MediaType.MULTIPART_FORM_DATA;
         return ResponseEntity.ok()
                 .headers(headers)
                 .contentType(mediaType)
