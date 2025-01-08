@@ -18,7 +18,7 @@ import java.util.zip.GZIPOutputStream;
 /**
  * @author Etienne Lesot <etienne.lesot at rte-france.com>
  */
-public class Utils {
+public final class Utils {
 
     private Utils() {
 
