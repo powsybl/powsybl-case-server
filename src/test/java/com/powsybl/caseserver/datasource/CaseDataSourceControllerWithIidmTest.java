@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @TestPropertySource(properties = {"storage.type=S3"})
 @ContextConfigurationWithTestChannel
-class CaseDataSourceControllerWithIIDMTest {
+class CaseDataSourceControllerWithIidmTest {
 
     @MockBean
     StreamBridge streamBridge;
@@ -73,8 +73,8 @@ class CaseDataSourceControllerWithIIDMTest {
 
     private static UUID importCase() throws IOException {
         UUID caseUUID;
-        try (InputStream inputStream = S3CaseDataSourceControllerTest.class.getResourceAsStream("/" + CaseDataSourceControllerWithIIDMTest.IIDM_NAME)) {
-            caseUUID = caseService.importCase(new MockMultipartFile(CaseDataSourceControllerWithIIDMTest.IIDM_NAME, CaseDataSourceControllerWithIIDMTest.IIDM_NAME, "application/zip", inputStream.readAllBytes()), false, false);
+        try (InputStream inputStream = S3CaseDataSourceControllerTest.class.getResourceAsStream("/" + CaseDataSourceControllerWithIidmTest.IIDM_NAME)) {
+            caseUUID = caseService.importCase(new MockMultipartFile(CaseDataSourceControllerWithIidmTest.IIDM_NAME, CaseDataSourceControllerWithIidmTest.IIDM_NAME, "application/zip", inputStream.readAllBytes()), false, false);
         }
         return caseUUID;
     }
