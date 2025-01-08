@@ -10,6 +10,7 @@ import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.caseserver.service.MetadataService;
+import com.powsybl.caseserver.service.S3CaseService;
 import com.powsybl.commons.datasource.DataSourceUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -35,10 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.UUID;
+import java.util.*;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
 
@@ -113,12 +111,18 @@ public class CaseController {
     @Operation(summary = "Download a case")
     public ResponseEntity<byte[]> downloadCase(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("getCase request received with parameter caseUuid = {}", caseUuid);
+        Boolean isGzip = caseService.isTheFileOriginallyGzipped(caseUuid);
         byte[] bytes = caseService.getCaseBytes(caseUuid).orElse(null);
+        String name = caseService.getDownloadCaseName(caseUuid);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", name);
+        MediaType mediaType = Boolean.TRUE.equals(isGzip) ? MediaType.APPLICATION_OCTET_STREAM : MediaType.MULTIPART_FORM_DATA;
         if (bytes == null) {
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .headers(headers)
+                .contentType(mediaType)
                 .body(bytes);
 
     }

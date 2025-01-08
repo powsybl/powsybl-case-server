@@ -151,9 +151,17 @@ public interface CaseService {
 
     String getCaseName(UUID caseUuid);
 
+    default String getDownloadCaseName(UUID caseUuid) {
+        return getCaseName(caseUuid);
+    }
+
     Optional<Network> loadNetwork(UUID caseUuid);
 
     Optional<byte[]> getCaseBytes(UUID caseUuid);
+
+    default boolean isTheFileOriginallyGzipped(UUID uuid) {
+        return true;
+    }
 
     UUID importCase(MultipartFile file, boolean withExpiration, boolean withIndexation);
 
