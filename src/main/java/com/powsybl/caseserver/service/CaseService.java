@@ -33,6 +33,8 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import static com.powsybl.caseserver.Utils.*;
+
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
  */
@@ -44,15 +46,26 @@ public interface CaseService {
         }
     }
 
+    CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid);
+
+    default Boolean isUploadedAsPlainFile(UUID caseUuid) {
+        String name = getCaseMetaDataEntity(caseUuid).getOriginalFilename();
+        return !isCompressedCaseFile(name) && !isArchivedCaseFile(name);
+    }
+
     default CaseInfos createInfos(String fileBaseName, UUID caseUuid, String format) {
         FileNameParser parser = FileNameParsers.findParser(fileBaseName);
+        String baseName = fileBaseName;
+        if (isCompressedCaseFile(fileBaseName)) {
+            baseName = removeExtension(fileBaseName, GZIP_EXTENSION);
+        }
         if (parser != null) {
             Optional<? extends FileNameInfos> fileNameInfos = parser.parse(fileBaseName);
             if (fileNameInfos.isPresent()) {
-                return CaseInfos.create(fileBaseName, caseUuid, format, fileNameInfos.get());
+                return CaseInfos.create(baseName, caseUuid, format, fileNameInfos.get());
             }
         }
-        return CaseInfos.builder().name(fileBaseName).uuid(caseUuid).format(format).build();
+        return CaseInfos.builder().name(baseName).uuid(caseUuid).format(format).build();
     }
 
     default void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, boolean withIndexation, String originalFilename, String compressionFormat, String format) {
@@ -151,13 +164,9 @@ public interface CaseService {
 
     String getCaseName(UUID caseUuid);
 
-    String getDownloadCaseName(UUID caseUuid);
-
     Optional<Network> loadNetwork(UUID caseUuid);
 
     Optional<byte[]> getCaseBytes(UUID caseUuid);
-
-    Boolean isTheFileOriginallyGzipped(UUID uuid);
 
     UUID importCase(MultipartFile file, boolean withExpiration, boolean withIndexation);
 

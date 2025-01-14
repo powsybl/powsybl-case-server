@@ -58,6 +58,9 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
             return s3CaseService.withS3DownloadedTempPath(caseUuid, caseFileKey,
                     file -> decompress(Files.readAllBytes(file)));
         } else {
+            if (s3CaseService.isUploadedAsPlainFile(caseUuid)) {
+                caseName += GZIP_EXTENSION;
+            }
             caseFileKey = s3CaseService.uuidToKeyWithFileName(caseUuid, caseName);
             return s3CaseService.withS3DownloadedTempPath(caseUuid, caseFileKey,
                     casePath -> IOUtils.toByteArray(DataSource.fromPath(casePath).newInputStream(fileName)));

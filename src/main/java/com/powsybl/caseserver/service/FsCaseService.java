@@ -128,24 +128,10 @@ public class FsCaseService implements CaseService {
         if (caseInfos == null) {
             throw CaseException.createFileNameNotFound(caseUuid);
         }
-        return caseInfos.getName();
-    }
-
-    @Override
-    public String getDownloadCaseName(UUID caseUuid) {
-        String name = getCaseName(caseUuid);
-        if (Boolean.FALSE.equals(isTheFileOriginallyGzipped(caseUuid))) {
-            name = removeExtension(name, GZIP_EXTENSION);
+        if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
+            return removeExtension(caseInfos.getName(), GZIP_EXTENSION);
         }
-        return name;
-    }
-
-    @Override
-    public Boolean isTheFileOriginallyGzipped(UUID caseUuid) {
-        CaseMetadataEntity caseMetadata = getCaseMetaDataEntity(caseUuid);
-        String name = caseMetadata.getOriginalFilename();
-        String compressionFormat = caseMetadata.getCompressionFormat();
-        return !name.endsWith(GZIP_EXTENSION) || compressionFormat.equals(GZIP_FORMAT);
+        return caseInfos.getName();
     }
 
     @Override
@@ -213,13 +199,14 @@ public class FsCaseService implements CaseService {
         Path caseFile;
         try {
             byte[] fileBytes = mpf.getBytes();
+            String fileNamePath = caseName;
             if (!isCompressedCaseFile(caseName) && !isArchivedCaseFile(caseName)) {
                 // not compressed files only
-                caseName += GZIP_EXTENSION;
+                fileNamePath += GZIP_EXTENSION;
                 fileBytes = compress(fileBytes);
             }
             Files.createDirectory(uuidDirectory);
-            caseFile = uuidDirectory.resolve(caseName);
+            caseFile = uuidDirectory.resolve(fileNamePath);
             Files.write(caseFile, fileBytes);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -282,7 +269,8 @@ public class FsCaseService implements CaseService {
         return createInfos(caseFile.getFileName().toString(), caseUuid, getFormat(caseFile));
     }
 
-    private CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
+    @Override
+    public CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
         return caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
     }
 
@@ -383,7 +371,7 @@ public class FsCaseService implements CaseService {
         if (Files.exists(caseFile) && Files.isRegularFile(caseFile)) {
             try {
                 byte[] bytes = Files.readAllBytes(caseFile);
-                if (Boolean.FALSE.equals(isTheFileOriginallyGzipped(caseUuid))) {
+                if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
                     bytes = decompress(bytes);
                 }
                 return Optional.of(bytes);

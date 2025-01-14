@@ -114,14 +114,12 @@ public class CaseController {
         if (bytes == null) {
             return ResponseEntity.noContent().build();
         }
-        String name = caseService.getDownloadCaseName(caseUuid);
+        String name = caseService.getCaseName(caseUuid);
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-Disposition", name);
-        Boolean isGzip = caseService.isTheFileOriginallyGzipped(caseUuid);
-        MediaType mediaType = Boolean.TRUE.equals(isGzip) ? MediaType.APPLICATION_OCTET_STREAM : MediaType.MULTIPART_FORM_DATA;
+        headers.add("caseName", name);
         return ResponseEntity.ok()
                 .headers(headers)
-                .contentType(mediaType)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(bytes);
 
     }

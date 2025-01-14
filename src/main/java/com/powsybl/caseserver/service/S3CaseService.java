@@ -196,6 +196,9 @@ public class S3CaseService implements CaseService {
     }
 
     public String uuidToKeyWithOriginalFileName(UUID caseUuid) {
+        if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
+            return uuidToKeyWithFileName(caseUuid, getOriginalFilename(caseUuid) + GZIP_EXTENSION);
+        }
         return uuidToKeyWithFileName(caseUuid, getOriginalFilename(caseUuid));
     }
 
@@ -235,15 +238,6 @@ public class S3CaseService implements CaseService {
     }
 
     @Override
-    public String getDownloadCaseName(UUID caseUuid) {
-        String name = getCaseName(caseUuid);
-        if (Boolean.FALSE.equals(isTheFileOriginallyGzipped(caseUuid))) {
-            name = removeExtension(name, GZIP_EXTENSION);
-        }
-        return name;
-    }
-
-    @Override
     public Optional<byte[]> getCaseBytes(UUID caseUuid) {
         String caseFileKey = null;
         try {
@@ -255,7 +249,7 @@ public class S3CaseService implements CaseService {
 
             ResponseBytes<GetObjectResponse> objectBytes = s3Client.getObjectAsBytes(getObjectRequest);
             byte[] resultBytes = objectBytes.asByteArray();
-            if (Boolean.FALSE.equals(isTheFileOriginallyGzipped(caseUuid))) {
+            if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
                 resultBytes = decompress(resultBytes);
             }
             return Optional.of(resultBytes);
@@ -269,14 +263,6 @@ public class S3CaseService implements CaseService {
             LOGGER.error("unenabled to decompress {}", caseFileKey);
             return Optional.empty();
         }
-    }
-
-    @Override
-    public Boolean isTheFileOriginallyGzipped(UUID caseUuid) {
-        CaseMetadataEntity caseMetadata = getCaseMetaDataEntity(caseUuid);
-        String name = caseMetadata.getOriginalFilename();
-        String compressionFormat = caseMetadata.getCompressionFormat();
-        return !name.endsWith(GZIP_EXTENSION) || compressionFormat.equals(GZIP_FORMAT);
     }
 
     @Override
@@ -307,12 +293,8 @@ public class S3CaseService implements CaseService {
         // For compressed cases, we append the compression extension to the case name as only the compressed file is stored in S3.
         // i.e. : Assuming test.xml.gz is stored in S3. When you request datasourceExists(randomUUID, "test.xml"), you ask to S3 API ("test.xml" + ".gz") exists ? => true
         if (isCompressedCaseFile(caseName)) {
-            if (Boolean.TRUE.equals(isTheFileOriginallyGzipped(caseUuid))) {
-                key = key + "." + getCompressionFormat(caseUuid);
-            } else {
-                key = key + GZIP_EXTENSION;
-            }
-        } else if (isArchivedCaseFile(caseName)) {
+            key = key + "." + getCompressionFormat(caseUuid);
+        } else if (isArchivedCaseFile(caseName) || Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
             key = key + GZIP_EXTENSION;
         }
 
@@ -332,13 +314,11 @@ public class S3CaseService implements CaseService {
         List<String> filenames;
         String originalFilename = getOriginalFilename(caseUuid);
         if (isCompressedCaseFile(originalFilename)) {
-            if (Boolean.TRUE.equals(isTheFileOriginallyGzipped(caseUuid))) {
-                // For a compressed file basename.xml.gz, listName() should return ['basename.xml']. That's why we remove the compression extension to the filename.
-                filenames = List.of(removeExtension(originalFilename, "." + getCompressionFormat(caseUuid)));
-            } else {
-                // for files that are not compressed when imported (but are in the back)
-                filenames = List.of(removeExtension(originalFilename, GZIP_EXTENSION));
-            }
+            // For a compressed file basename.xml.gz, listName() should return ['basename.xml']. That's why we remove the compression extension to the filename.
+            filenames = List.of(removeExtension(originalFilename, "." + getCompressionFormat(caseUuid)));
+        } else if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
+            // for files that are not compressed when imported (but are in the back)
+            filenames = List.of(removeExtension(originalFilename, GZIP_EXTENSION));
         } else {
             List<S3Object> s3Objects = getCaseS3Objects(caseUuid);
             filenames = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(rootDirectory + DELIMITER + caseUuid.toString() + DELIMITER, "")).toList();
@@ -384,9 +364,10 @@ public class S3CaseService implements CaseService {
             RequestBody requestBody;
             String contentType = mpf.getContentType();
             byte[] fileBytes = mpf.getBytes();
+            String fileName = caseName;
             if (!isArchivedFile && !isCompressedCaseFile(caseName)) {
                 // not compressed files only
-                caseName += GZIP_EXTENSION;
+                fileName += GZIP_EXTENSION;
                 contentType = "application/octet-stream";
                 fileBytes = compress(fileBytes);
                 requestBody = RequestBody.fromBytes(fileBytes);
@@ -396,7 +377,7 @@ public class S3CaseService implements CaseService {
                 // archived files and already compressed files
                 requestBody = RequestBody.fromInputStream(inputStream, mpf.getSize());
             }
-            String key = uuidToKeyWithFileName(caseUuid, caseName);
+            String key = uuidToKeyWithFileName(caseUuid, fileName);
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
                 .key(key)
@@ -584,7 +565,8 @@ public class S3CaseService implements CaseService {
         return caseMetadataRepository;
     }
 
-    private CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
+    @Override
+    public CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
         return caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + NOT_FOUND));
     }
 
