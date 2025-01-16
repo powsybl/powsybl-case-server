@@ -369,7 +369,6 @@ public class S3CaseService implements CaseService {
                 contentType = "application/octet-stream";
                 fileBytes = compress(fileBytes);
                 requestBody = RequestBody.fromBytes(fileBytes);
-                // Use putObject to upload the file
 
             } else {
                 // archived files and already compressed files
@@ -381,6 +380,7 @@ public class S3CaseService implements CaseService {
                 .key(key)
                 .contentType(contentType)
                 .build();
+            // Use putObject to upload the file
             s3Client.putObject(putObjectRequest, requestBody);
         } catch (IOException e) {
             throw CaseException.createFileNotImportable(caseName, e);
