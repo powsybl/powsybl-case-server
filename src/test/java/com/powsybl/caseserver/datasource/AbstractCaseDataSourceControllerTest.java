@@ -72,14 +72,6 @@ public abstract class AbstractCaseDataSourceControllerTest {
         return caseUUID;
     }
 
-    protected static UUID importIidmCase() throws IOException {
-        UUID caseUUID;
-        try (InputStream inputStream = S3CaseDataSourceControllerTest.class.getResourceAsStream("/" + IIDM_NAME)) {
-            caseUUID = caseService.importCase(new MockMultipartFile(IIDM_NAME, IIDM_NAME, "application/zip", inputStream.readAllBytes()), false, false);
-        }
-        return caseUUID;
-    }
-
     @Test
     public void testBaseName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/baseName", cgmesCaseUuid))

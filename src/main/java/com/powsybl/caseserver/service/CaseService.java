@@ -21,7 +21,9 @@ import com.powsybl.computation.ComputationManager;
 import com.powsybl.iidm.network.Exporter;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -46,19 +48,18 @@ public interface CaseService {
         }
     }
 
-    CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid);
+    default CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
+        return getCaseMetadataRepository().findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + NOT_FOUND));
+    }
 
     default Boolean isUploadedAsPlainFile(UUID caseUuid) {
         String name = getCaseMetaDataEntity(caseUuid).getOriginalFilename();
-        return !isCompressedCaseFile(name) && !isArchivedCaseFile(name);
+        return name != null && !isCompressedCaseFile(name) && !isArchivedCaseFile(name);
     }
 
     default CaseInfos createInfos(String fileBaseName, UUID caseUuid, String format) {
         FileNameParser parser = FileNameParsers.findParser(fileBaseName);
         String baseName = fileBaseName;
-        if (isCompressedCaseFile(fileBaseName)) {
-            baseName = removeExtension(fileBaseName, GZIP_EXTENSION);
-        }
         if (parser != null) {
             Optional<? extends FileNameInfos> fileNameInfos = parser.parse(fileBaseName);
             if (fileNameInfos.isPresent()) {

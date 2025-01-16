@@ -28,6 +28,7 @@ public final class Utils {
     public static final String GZIP_FORMAT = "gz";
     public static final List<String> COMPRESSION_FORMATS = List.of("bz2", GZIP_FORMAT, "xz", "zst");
     public static final List<String> ARCHIVE_FORMATS = List.of("zip");
+    public static final String NOT_FOUND = " not found";
 
     public static String removeExtension(String filename, String extension) {
         int index = filename.lastIndexOf(extension);

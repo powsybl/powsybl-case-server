@@ -57,7 +57,7 @@ class FsCaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTes
         }
         cgmesDataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + CGMES_ZIP_NAME).toURI()));
 
-        iidmCaseUuid = importIidmCase();
+        iidmCaseUuid = importCase(IIDM_NAME, "text/plain");
         iidmDataSource = DataSource.fromPath(Paths.get(S3CaseDataSourceControllerTest.class.getResource("/" + IIDM_NAME).toURI()));
     }
 }

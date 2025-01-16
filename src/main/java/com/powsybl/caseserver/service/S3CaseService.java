@@ -79,8 +79,6 @@ public class S3CaseService implements CaseService {
     @Value("${case-subpath}")
     private String rootDirectory;
 
-    public static final String NOT_FOUND = " not found";
-
     @Autowired
     private S3Client s3Client;
 
@@ -563,11 +561,6 @@ public class S3CaseService implements CaseService {
     @Override
     public CaseMetadataRepository getCaseMetadataRepository() {
         return caseMetadataRepository;
-    }
-
-    @Override
-    public CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
-        return caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + NOT_FOUND));
     }
 
 }

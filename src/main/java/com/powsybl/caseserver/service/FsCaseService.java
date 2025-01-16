@@ -102,6 +102,7 @@ public class FsCaseService implements CaseService {
             return walk.filter(Files::isRegularFile)
                     .map(this::getCaseInfos)
                     .filter(Objects::nonNull)
+                    .map(this::convertCaseInfosForPlainFile)
                     .toList();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -141,7 +142,8 @@ public class FsCaseService implements CaseService {
             LOGGER.error("The directory with the following uuid doesn't exist: {}", caseUuid);
             return null;
         }
-        return getCaseInfos(file);
+        CaseInfos caseInfos = getCaseInfos(file);
+        return this.convertCaseInfosForPlainFile(caseInfos);
     }
 
     public Path getCaseFile(UUID caseUuid) {
@@ -227,7 +229,11 @@ public class FsCaseService implements CaseService {
 
         String format = importer.getFormat();
         createCaseMetadataEntity(caseUuid, withExpiration, withIndexation, caseName, compressionFormat, format);
-        CaseInfos caseInfos = createInfos(caseFile.getFileName().toString(), caseUuid, format);
+        String caseInfoFileName = caseFile.getFileName().toString();
+        if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
+            caseInfoFileName = removeExtension(caseInfoFileName, GZIP_EXTENSION);
+        }
+        CaseInfos caseInfos = createInfos(caseInfoFileName, caseUuid, format);
         if (withIndexation) {
             caseInfosService.addCaseInfos(caseInfos);
         }
@@ -251,12 +257,11 @@ public class FsCaseService implements CaseService {
             Files.copy(existingCaseFile, newCaseFile, StandardCopyOption.COPY_ATTRIBUTES);
 
             CaseMetadataEntity existingCase = getCaseMetaDataEntity(sourceCaseUuid);
-            CaseInfos caseInfos = createInfos(newCaseFile, newCaseUuid);
+            CaseInfos caseInfos = createInfos(existingCase.getOriginalFilename(), newCaseUuid, existingCase.getFormat());
             if (existingCase.isIndexed()) {
                 caseInfosService.addCaseInfos(caseInfos);
             }
             createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed());
-
             notificationService.sendImportMessage(caseInfos.createMessage());
             return newCaseUuid;
 
@@ -267,11 +272,6 @@ public class FsCaseService implements CaseService {
 
     private CaseInfos createInfos(Path caseFile, UUID caseUuid) {
         return createInfos(caseFile.getFileName().toString(), caseUuid, getFormat(caseFile));
-    }
-
-    @Override
-    public CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
-        return caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
     }
 
     @Override
@@ -385,6 +385,13 @@ public class FsCaseService implements CaseService {
     @Override
     public CaseMetadataRepository getCaseMetadataRepository() {
         return caseMetadataRepository;
+    }
+
+    private CaseInfos convertCaseInfosForPlainFile(CaseInfos caseInfos) {
+        if (caseInfos != null && Boolean.TRUE.equals(isUploadedAsPlainFile(caseInfos.getUuid()))) {
+            return createInfos(removeExtension(caseInfos.getName(), GZIP_EXTENSION), caseInfos.getUuid(), caseInfos.getFormat());
+        }
+        return caseInfos;
     }
 
 }

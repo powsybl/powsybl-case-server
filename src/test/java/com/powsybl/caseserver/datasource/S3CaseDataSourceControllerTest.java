@@ -38,7 +38,7 @@ class S3CaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTes
         caseService = s3CaseService;
         cgmesCaseUuid = importCase(CGMES_ZIP_NAME, "application/zip");
         cgmesDataSource = DataSource.fromPath(Paths.get(S3CaseDataSourceControllerTest.class.getResource("/" + CGMES_ZIP_NAME).toURI()));
-        iidmCaseUuid = importIidmCase();
+        iidmCaseUuid =  importCase(IIDM_NAME, "text/plain");
         iidmDataSource = DataSource.fromPath(Paths.get(S3CaseDataSourceControllerTest.class.getResource("/" + IIDM_NAME).toURI()));
     }
 
