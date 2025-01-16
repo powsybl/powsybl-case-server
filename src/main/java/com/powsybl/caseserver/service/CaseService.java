@@ -59,14 +59,13 @@ public interface CaseService {
 
     default CaseInfos createInfos(String fileBaseName, UUID caseUuid, String format) {
         FileNameParser parser = FileNameParsers.findParser(fileBaseName);
-        String baseName = fileBaseName;
         if (parser != null) {
             Optional<? extends FileNameInfos> fileNameInfos = parser.parse(fileBaseName);
             if (fileNameInfos.isPresent()) {
-                return CaseInfos.create(baseName, caseUuid, format, fileNameInfos.get());
+                return CaseInfos.create(fileBaseName, caseUuid, format, fileNameInfos.get());
             }
         }
-        return CaseInfos.builder().name(baseName).uuid(caseUuid).format(format).build();
+        return CaseInfos.builder().name(fileBaseName).uuid(caseUuid).format(format).build();
     }
 
     default void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, boolean withIndexation, String originalFilename, String compressionFormat, String format) {

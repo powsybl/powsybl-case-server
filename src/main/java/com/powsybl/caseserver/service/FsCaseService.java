@@ -102,7 +102,7 @@ public class FsCaseService implements CaseService {
             return walk.filter(Files::isRegularFile)
                     .map(this::getCaseInfos)
                     .filter(Objects::nonNull)
-                    .map(this::convertCaseInfosForPlainFile)
+                    .map(this::removeGzipExtensionFromPlainFile)
                     .toList();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -143,7 +143,7 @@ public class FsCaseService implements CaseService {
             return null;
         }
         CaseInfos caseInfos = getCaseInfos(file);
-        return this.convertCaseInfosForPlainFile(caseInfos);
+        return this.removeGzipExtensionFromPlainFile(caseInfos);
     }
 
     public Path getCaseFile(UUID caseUuid) {
@@ -192,7 +192,6 @@ public class FsCaseService implements CaseService {
 
         String caseName = Objects.requireNonNull(mpf.getOriginalFilename()).trim();
         validateCaseName(caseName);
-        String compressionFormat = FileNameUtils.getExtension(Paths.get(caseName));
 
         if (Files.exists(uuidDirectory)) {
             throw CaseException.createDirectoryAreadyExists(uuidDirectory.toString());
@@ -228,6 +227,7 @@ public class FsCaseService implements CaseService {
         }
 
         String format = importer.getFormat();
+        String compressionFormat = FileNameUtils.getExtension(Paths.get(caseName));
         createCaseMetadataEntity(caseUuid, withExpiration, withIndexation, caseName, compressionFormat, format);
         String caseInfoFileName = caseFile.getFileName().toString();
         if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
@@ -387,7 +387,7 @@ public class FsCaseService implements CaseService {
         return caseMetadataRepository;
     }
 
-    private CaseInfos convertCaseInfosForPlainFile(CaseInfos caseInfos) {
+    private CaseInfos removeGzipExtensionFromPlainFile(CaseInfos caseInfos) {
         if (caseInfos != null && Boolean.TRUE.equals(isUploadedAsPlainFile(caseInfos.getUuid()))) {
             return createInfos(removeExtension(caseInfos.getName(), GZIP_EXTENSION), caseInfos.getUuid(), caseInfos.getFormat());
         }

@@ -258,7 +258,7 @@ public class S3CaseService implements CaseService {
             LOGGER.error(e.getMessage());
             return Optional.empty();
         } catch (IOException e) {
-            LOGGER.error("unenabled to decompress {}", caseFileKey);
+            LOGGER.error("Unable to decompress {}", caseFileKey);
             return Optional.empty();
         }
     }
