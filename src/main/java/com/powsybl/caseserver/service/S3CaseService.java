@@ -63,7 +63,7 @@ public class S3CaseService implements CaseService {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3CaseService.class);
     public static final int MAX_SIZE = 500000000;
     public static final List<String> COMPRESSION_FORMATS = List.of("bz2", "gz", "xz", "zst");
-    public static final List<String> ARCHIVE_FORMATS = List.of("zip", "tar");
+    public static final List<String> ARCHIVE_FORMATS = List.of("zip");
     public static final String DELIMITER = "/";
     public static final String GZIP_EXTENSION = ".gz";
 
