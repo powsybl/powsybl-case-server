@@ -133,7 +133,7 @@ public class S3CaseService implements CaseService {
                 try {
                     return f.apply(tempCasePath);
                 } catch (Exception e) {
-                    throw CaseException.createFileNotImportable(tempdirPath);
+                    throw CaseException.createFileNotImportable(tempdirPath.toString(), e);
                 }
             } finally {
                 try {
