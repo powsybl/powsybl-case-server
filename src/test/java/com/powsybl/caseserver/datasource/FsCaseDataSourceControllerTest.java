@@ -40,13 +40,18 @@ class FsCaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTes
     void setUp() throws URISyntaxException, IOException {
         caseService = fsCaseService;
         cgmesCaseUuid = UUID.randomUUID();
+        tarCaseUuid = UUID.randomUUID();
         Path path = fileSystem.getPath(caseService.getRootDirectory());
         if (!Files.exists(path)) {
             Files.createDirectories(path);
         }
         Path cgmesCaseDirectory = fileSystem.getPath(caseService.getRootDirectory()).resolve(cgmesCaseUuid.toString());
+        Path tarCaseDirectory = fileSystem.getPath(caseService.getRootDirectory()).resolve(tarCaseUuid.toString());
         if (!Files.exists(cgmesCaseDirectory)) {
             Files.createDirectories(cgmesCaseDirectory);
+        }
+        if (!Files.exists(tarCaseDirectory)) {
+            Files.createDirectories(tarCaseDirectory);
         }
 
         fsCaseService.setFileSystem(fileSystem);
@@ -56,5 +61,12 @@ class FsCaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTes
             Files.copy(cgmesURL, cgmesCaseDirectory.resolve(CGMES_ZIP_NAME), StandardCopyOption.REPLACE_EXISTING);
         }
         cgmesDataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + CGMES_ZIP_NAME).toURI()));
+
+        // insert tar in the FS
+        try (InputStream tarURL = getClass().getResourceAsStream("/" + IIDM_TAR_NAME);
+        ) {
+            Files.copy(tarURL, tarCaseDirectory.resolve(IIDM_TAR_NAME), StandardCopyOption.REPLACE_EXISTING);
+        }
+        tarDataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + IIDM_TAR_NAME).toURI()));
     }
 }

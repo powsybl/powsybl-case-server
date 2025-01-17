@@ -17,6 +17,8 @@ import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
 import com.powsybl.ws.commons.SecuredZipInputStream;
+import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.utils.FileNameUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -63,7 +65,7 @@ public class S3CaseService implements CaseService {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3CaseService.class);
     public static final int MAX_SIZE = 500000000;
     public static final List<String> COMPRESSION_FORMATS = List.of("bz2", "gz", "xz", "zst");
-    public static final List<String> ARCHIVE_FORMATS = List.of("zip");
+    public static final List<String> ARCHIVE_FORMATS = List.of("zip", "tar");
     public static final String DELIMITER = "/";
     public static final String GZIP_EXTENSION = ".gz";
 
@@ -312,6 +314,14 @@ public class S3CaseService implements CaseService {
         return ARCHIVE_FORMATS.stream().anyMatch(cf -> caseName.endsWith("." + cf));
     }
 
+    public static boolean isZippedFile(String caseName) {
+        return caseName.endsWith(".zip");
+    }
+
+    public static boolean isTaredFile(String caseName) {
+        return caseName.endsWith(".tar");
+    }
+
     private static String removeExtension(String filename, String extension) {
         int index = filename.lastIndexOf(extension);
         if (index == -1 || index < filename.length() - extension.length() /*extension to remove is not at the end*/) {
@@ -366,8 +376,10 @@ public class S3CaseService implements CaseService {
             //              - archive.zip
             //              - file1.xml.gz
             //              - file2.xml.gz.gz
-            if (isArchivedCaseFile(caseName)) {
+            if (isZippedFile(caseName)) {
                 importZipContent(mpf.getInputStream(), caseUuid);
+            } else if (isTaredFile(caseName)) {
+                importTarContent(mpf.getInputStream(), caseUuid);
             }
 
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
@@ -397,9 +409,21 @@ public class S3CaseService implements CaseService {
             ZipEntry entry;
             while ((entry = zipInputStream.getNextEntry()) != null) {
                 if (!entry.isDirectory()) {
-                    processEntry(caseUuid, zipInputStream, entry);
+                    processZipEntry(caseUuid, zipInputStream, entry);
                 }
                 zipInputStream.closeEntry();
+            }
+        }
+    }
+
+    private void importTarContent(InputStream inputStream, UUID caseUuid) throws IOException {
+        try (BufferedInputStream tarStream = new BufferedInputStream(inputStream);
+             TarArchiveInputStream tarInputStream = new TarArchiveInputStream(tarStream)) {
+            ArchiveEntry entry;
+            while ((entry = tarInputStream.getNextEntry()) != null) {
+                if (!entry.isDirectory()) {
+                    processTarEntry(caseUuid, tarInputStream, entry);
+                }
             }
         }
     }
@@ -412,6 +436,18 @@ public class S3CaseService implements CaseService {
                     copyEntry(sourcecaseUuid, caseUuid, entry.getName() + GZIP_EXTENSION);
                 }
                 zipInputStream.closeEntry();
+            }
+        }
+    }
+
+    private void copyTarContent(InputStream inputStream, UUID sourcecaseUuid, UUID caseUuid) throws IOException {
+        try (BufferedInputStream tarStream = new BufferedInputStream(inputStream);
+             TarArchiveInputStream tarInputStream = new TarArchiveInputStream(tarStream)) {
+            ArchiveEntry entry;
+            while ((entry = tarInputStream.getNextEntry()) != null) {
+                if (!entry.isDirectory()) {
+                    copyEntry(sourcecaseUuid, caseUuid, entry.getName() + GZIP_EXTENSION);
+                }
             }
         }
     }
@@ -431,7 +467,7 @@ public class S3CaseService implements CaseService {
         }
     }
 
-    private void processEntry(UUID caseUuid, ZipInputStream zipInputStream, ZipEntry entry) throws IOException {
+    private void processZipEntry(UUID caseUuid, ZipInputStream zipInputStream, ZipEntry entry) throws IOException {
         String fileName = entry.getName();
         String extractedKey = uuidToKeyWithFileName(caseUuid, fileName);
         byte[] fileBytes = compress(ByteStreams.toByteArray(zipInputStream));
@@ -441,6 +477,19 @@ public class S3CaseService implements CaseService {
                 .key(extractedKey + GZIP_EXTENSION)
                 .contentType(Files.probeContentType(Paths.get(fileName))) // Detect the MIME type
                 .build();
+        s3Client.putObject(extractedFileRequest, RequestBody.fromBytes(fileBytes));
+    }
+
+    private void processTarEntry(UUID caseUuid, TarArchiveInputStream tarInputStream, ArchiveEntry entry) throws IOException {
+        String fileName = entry.getName();
+        String extractedKey = uuidToKeyWithFileName(caseUuid, fileName);
+        byte[] fileBytes = compress(ByteStreams.toByteArray(tarInputStream));
+
+        PutObjectRequest extractedFileRequest = PutObjectRequest.builder()
+            .bucket(bucketName)
+            .key(extractedKey + GZIP_EXTENSION)
+            .contentType(Files.probeContentType(Paths.get(fileName))) // Detect the MIME type
+            .build();
         s3Client.putObject(extractedFileRequest, RequestBody.fromBytes(fileBytes));
     }
 
@@ -482,10 +531,18 @@ public class S3CaseService implements CaseService {
         createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed(), existingCase.getOriginalFilename(), existingCase.getCompressionFormat(), existingCase.getFormat());
         Optional<byte[]> caseBytes = getCaseBytes(newCaseUuid);
         if (caseBytes.isPresent() && isArchivedCaseFile(existingCase.getOriginalFilename())) {
-            try {
-                copyZipContent(new ByteArrayInputStream(caseBytes.get()), sourceCaseUuid, newCaseUuid);
-            } catch (Exception e) {
-                throw CaseException.createCopyZipContentError(sourceCaseUuid, e);
+            if (isZippedFile(existingCase.getOriginalFilename())) {
+                try {
+                    copyZipContent(new ByteArrayInputStream(caseBytes.get()), sourceCaseUuid, newCaseUuid);
+                } catch (Exception e) {
+                    throw CaseException.createCopyZipContentError(sourceCaseUuid, e);
+                }
+            } else if (isTaredFile(existingCase.getOriginalFilename())) {
+                try {
+                    copyTarContent(new ByteArrayInputStream(caseBytes.get()), sourceCaseUuid, newCaseUuid);
+                } catch (Exception e) {
+                    throw CaseException.createCopyZipContentError(sourceCaseUuid, e);
+                }
             }
         }
         CaseInfos existingCaseInfos = getCaseInfos(sourceCaseUuid);
