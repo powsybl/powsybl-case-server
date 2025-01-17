@@ -35,10 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.UUID;
+import java.util.*;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
 
@@ -117,7 +114,11 @@ public class CaseController {
         if (bytes == null) {
             return ResponseEntity.noContent().build();
         }
+        String name = caseService.getCaseName(caseUuid);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("caseName", name);
         return ResponseEntity.ok()
+                .headers(headers)
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(bytes);
 

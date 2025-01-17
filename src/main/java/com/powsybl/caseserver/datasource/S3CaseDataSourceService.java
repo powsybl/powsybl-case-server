@@ -19,7 +19,7 @@ import java.nio.file.Files;
 import java.util.Set;
 import java.util.UUID;
 
-import static com.powsybl.caseserver.service.S3CaseService.*;
+import static com.powsybl.caseserver.Utils.*;
 
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
@@ -53,11 +53,14 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
         String caseFileKey;
         // For archived cases (.zip, .tar, ...), individual files are gzipped in S3 server.
         // Here the requested file is decompressed and simply returned.
-        if (S3CaseService.isArchivedCaseFile(caseName)) {
+        if (isArchivedCaseFile(caseName)) {
             caseFileKey = s3CaseService.uuidToKeyWithFileName(caseUuid, fileName + GZIP_EXTENSION);
             return s3CaseService.withS3DownloadedTempPath(caseUuid, caseFileKey,
-                    file -> S3CaseService.decompress(Files.readAllBytes(file)));
+                    file -> decompress(Files.readAllBytes(file)));
         } else {
+            if (Boolean.TRUE.equals(s3CaseService.isUploadedAsPlainFile(caseUuid))) {
+                caseName += GZIP_EXTENSION;
+            }
             caseFileKey = s3CaseService.uuidToKeyWithFileName(caseUuid, caseName);
             return s3CaseService.withS3DownloadedTempPath(caseUuid, caseFileKey,
                     casePath -> IOUtils.toByteArray(DataSource.fromPath(casePath).newInputStream(fileName)));
