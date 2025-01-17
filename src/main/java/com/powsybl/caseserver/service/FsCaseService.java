@@ -257,7 +257,13 @@ public class FsCaseService implements CaseService {
             Files.copy(existingCaseFile, newCaseFile, StandardCopyOption.COPY_ATTRIBUTES);
 
             CaseMetadataEntity existingCase = getCaseMetaDataEntity(sourceCaseUuid);
-            CaseInfos caseInfos = createInfos(existingCase.getOriginalFilename(), newCaseUuid, existingCase.getFormat());
+            CaseInfos caseInfos;
+            if (existingCase.getOriginalFilename() != null) {
+                caseInfos = createInfos(existingCase.getOriginalFilename(), newCaseUuid, existingCase.getFormat());
+            } else {
+                // old cases does not have an originalFileName in their metadata
+                caseInfos = createInfos(newCaseFile, newCaseUuid);
+            }
             if (existingCase.isIndexed()) {
                 caseInfosService.addCaseInfos(caseInfos);
             }
