@@ -36,10 +36,19 @@ class S3CaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTes
     @BeforeEach
     void setUp() throws URISyntaxException, IOException {
         caseService = s3CaseService;
+
+        //insert a cgmes in the FS
         cgmesCaseUuid = importCase(CGMES_ZIP_NAME, "application/zip");
         cgmesDataSource = DataSource.fromPath(Paths.get(S3CaseDataSourceControllerTest.class.getResource("/" + CGMES_ZIP_NAME).toURI()));
+
+        // insert plain file in the FS
+        iidmCaseUuid = importCase(IIDM_FILE_NAME, "text/plain");
+        iidmDataSource = DataSource.fromPath(Paths.get(S3CaseDataSourceControllerTest.class.getResource("/" + IIDM_FILE_NAME).toURI()));
+
+        // insert tar in the FS
         tarCaseUuid = importCase(IIDM_TAR_NAME, "application/tar");
         tarDataSource = DataSource.fromPath(Paths.get(S3CaseDataSourceControllerTest.class.getResource("/" + IIDM_TAR_NAME).toURI()));
+
     }
 
 }
