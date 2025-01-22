@@ -55,6 +55,7 @@ class FsCaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTes
         }
 
         fsCaseService.setFileSystem(fileSystem);
+
         //insert a cgmes in the FS
         try (InputStream cgmesURL = getClass().getResourceAsStream("/" + CGMES_ZIP_NAME);
         ) {
@@ -66,7 +67,11 @@ class FsCaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTes
         try (InputStream tarURL = getClass().getResourceAsStream("/" + IIDM_TAR_NAME);
         ) {
             Files.copy(tarURL, tarCaseDirectory.resolve(IIDM_TAR_NAME), StandardCopyOption.REPLACE_EXISTING);
-        }
+        }..
         tarDataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + IIDM_TAR_NAME).toURI()));
+
+        // insert plain file in the FS
+        iidmCaseUuid = importCase(IIDM_FILE_NAME, "text/plain");
+        iidmDataSource = DataSource.fromPath(Paths.get(S3CaseDataSourceControllerTest.class.getResource("/" + IIDM_FILE_NAME).toURI()));
     }
 }
