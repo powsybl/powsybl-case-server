@@ -27,7 +27,7 @@ public final class Utils {
     public static final String GZIP_EXTENSION = ".gz";
     public static final String GZIP_FORMAT = "gz";
     public static final List<String> COMPRESSION_FORMATS = List.of("bz2", GZIP_FORMAT, "xz", "zst");
-    public static final List<String> ARCHIVE_FORMATS = List.of("zip");
+    public static final List<String> ARCHIVE_FORMATS = List.of("zip", "tar");
     public static final String NOT_FOUND = " not found";
 
     public static String removeExtension(String filename, String extension) {
@@ -44,6 +44,14 @@ public final class Utils {
 
     public static boolean isArchivedCaseFile(String caseName) {
         return ARCHIVE_FORMATS.stream().anyMatch(cf -> caseName.endsWith("." + cf));
+    }
+
+    public static boolean isZippedFile(String caseName) {
+        return caseName.endsWith(".zip");
+    }
+
+    public static boolean isTaredFile(String caseName) {
+        return caseName.endsWith(".tar");
     }
 
     public static byte[] decompress(byte[] data) throws IOException {

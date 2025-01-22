@@ -40,16 +40,22 @@ class FsCaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTes
     void setUp() throws URISyntaxException, IOException {
         caseService = fsCaseService;
         cgmesCaseUuid = UUID.randomUUID();
+        tarCaseUuid = UUID.randomUUID();
         Path path = fileSystem.getPath(caseService.getRootDirectory());
         if (!Files.exists(path)) {
             Files.createDirectories(path);
         }
         Path cgmesCaseDirectory = fileSystem.getPath(caseService.getRootDirectory()).resolve(cgmesCaseUuid.toString());
+        Path tarCaseDirectory = fileSystem.getPath(caseService.getRootDirectory()).resolve(tarCaseUuid.toString());
         if (!Files.exists(cgmesCaseDirectory)) {
             Files.createDirectories(cgmesCaseDirectory);
         }
+        if (!Files.exists(tarCaseDirectory)) {
+            Files.createDirectories(tarCaseDirectory);
+        }
 
         fsCaseService.setFileSystem(fileSystem);
+
         //insert a cgmes in the FS
         try (InputStream cgmesURL = getClass().getResourceAsStream("/" + CGMES_ZIP_NAME);
         ) {
@@ -57,7 +63,15 @@ class FsCaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTes
         }
         cgmesDataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + CGMES_ZIP_NAME).toURI()));
 
-        iidmCaseUuid = importCase(IIDM_NAME, "text/plain");
-        iidmDataSource = DataSource.fromPath(Paths.get(S3CaseDataSourceControllerTest.class.getResource("/" + IIDM_NAME).toURI()));
+        // insert plain file in the FS
+        iidmCaseUuid = importCase(IIDM_FILE_NAME, "text/plain");
+        iidmDataSource = DataSource.fromPath(Paths.get(S3CaseDataSourceControllerTest.class.getResource("/" + IIDM_FILE_NAME).toURI()));
+
+        // insert tar in the FS
+        try (InputStream tarURL = getClass().getResourceAsStream("/" + IIDM_TAR_NAME);
+        ) {
+            Files.copy(tarURL, tarCaseDirectory.resolve(IIDM_TAR_NAME), StandardCopyOption.REPLACE_EXISTING);
+        }
+        tarDataSource = DataSource.fromPath(Paths.get(getClass().getResource("/" + IIDM_TAR_NAME).toURI()));
     }
 }

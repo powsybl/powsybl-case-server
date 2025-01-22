@@ -58,6 +58,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ContextConfigurationWithTestChannel
 abstract class AbstractCaseControllerTest {
     private static final String TEST_CASE = "testCase.xiidm";
+    private static final String TEST_TAR_CASE = "tarCase.tar";
     private static final String TEST_CASE_FORMAT = "XIIDM";
     private static final String NOT_A_NETWORK = "notANetwork.txt";
     private static final String STILL_NOT_A_NETWORK = "stillNotANetwork.xiidm";
@@ -765,5 +766,43 @@ abstract class AbstractCaseControllerTest {
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
         assertEquals("case.v1", response);
+    }
+
+    @Test
+    public void testTar() throws Exception {
+        // create the storage dir
+        createStorageDir();
+
+        // import a case
+        UUID tarCaseUuid = importCase(TEST_TAR_CASE, false);
+
+        // list the cases and expect the one imported before
+        mvc.perform(get("/v1/cases"))
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$").isArray())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].name").value(TEST_TAR_CASE))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].format").value(TEST_CASE_FORMAT))
+                .andReturn();
+
+        // retrieve a case in XIIDM format
+        var mvcResult = mvc.perform(post(GET_CASE_URL, tarCaseUuid).param("format", "XIIDM"))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(mvcResult.getResponse().getHeader("content-disposition")).contains("attachment;");
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
+
+        //duplicate an existing case
+        MvcResult duplicateResult = mvc.perform(post("/v1/cases?duplicateFrom=" + tarCaseUuid))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String duplicateCaseUuid = duplicateResult.getResponse().getContentAsString().replace("\"", "");
+        // assert that broker message has been sent after duplication
+        Message<byte[]> messageImport = outputDestination.receive(1000, caseImportDestination);
+        assertEquals("", new String(messageImport.getPayload()));
+        MessageHeaders headersCase = messageImport.getHeaders();
+        assertEquals(UUID.fromString(duplicateCaseUuid), headersCase.get(CaseInfos.UUID_HEADER_KEY));
+        assertEquals(TEST_TAR_CASE, headersCase.get(CaseInfos.NAME_HEADER_KEY));
+        assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
     }
 }
