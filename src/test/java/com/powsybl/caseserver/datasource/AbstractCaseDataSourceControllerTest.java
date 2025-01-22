@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.caseserver.elasticsearch.DisableElasticsearch;
 import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.commons.datasource.DataSource;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -51,13 +52,19 @@ public abstract class AbstractCaseDataSourceControllerTest {
 
     static final String CGMES_FILE_NAME = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2/MicroGridTestConfiguration_BC_BE_DL_V2.xml";
 
+    static final String IIDM_NAME = "testCase.xiidm";
+
     UUID cgmesCaseUuid;
 
     protected DataSource cgmesDataSource;
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public static UUID importCase(String filename, String contentType) throws IOException {
+    UUID iidmCaseUuid;
+
+    protected DataSource iidmDataSource;
+
+    protected static UUID importCase(String filename, String contentType) throws IOException {
         UUID caseUUID;
         try (InputStream inputStream = S3CaseDataSourceControllerTest.class.getResourceAsStream("/" + filename)) {
             caseUUID = caseService.importCase(new MockMultipartFile(filename, filename, contentType, inputStream.readAllBytes()), false, false);
@@ -209,6 +216,59 @@ public abstract class AbstractCaseDataSourceControllerTest {
 
         Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
         assertEquals(cgmesDataSource.exists(suffix, ext), res);
+    }
+
+    @Test
+    void testBaseNameWithIidm() throws Exception {
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/baseName", iidmCaseUuid))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        Assertions.assertEquals(iidmDataSource.getBaseName(), mvcResult.getResponse().getContentAsString());
+    }
+
+    @Test
+    void testListNameWithIidm() throws Exception {
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/list", iidmCaseUuid)
+                .param("regex", ".*"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        Set<String> nameList = mapper.readValue(mvcResult.getResponse().getContentAsString(), Set.class);
+        Assertions.assertEquals(iidmDataSource.listNames(".*"), nameList);
+    }
+
+    @Test
+    void testExistsWithFileNameWithIidm() throws Exception {
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", iidmCaseUuid)
+                .param("fileName", IIDM_NAME))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
+        Assertions.assertEquals(iidmDataSource.exists(IIDM_NAME), res);
+
+        mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", iidmCaseUuid)
+                .param("fileName", "random"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
+        Assertions.assertEquals(iidmDataSource.exists("random"), res);
+    }
+
+    @Test
+    void testExistsWithSuffixExtWithIidm() throws Exception {
+        String suffix = "random";
+        String ext = "uct";
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", iidmCaseUuid)
+                .param("suffix", suffix)
+                .param("ext", ext))
+            .andExpect(status().isOk())
+            .andReturn();
+
+        Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
+        Assertions.assertEquals(iidmDataSource.exists(suffix, ext), res);
     }
 
 }

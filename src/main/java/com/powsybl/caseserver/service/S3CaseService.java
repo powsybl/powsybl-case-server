@@ -19,7 +19,6 @@ import com.powsybl.iidm.network.Network;
 import com.powsybl.ws.commons.SecuredZipInputStream;
 import org.apache.commons.compress.utils.FileNameUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.function.FailableConsumer;
 import org.apache.commons.lang3.function.FailableFunction;
 import org.slf4j.Logger;
@@ -47,10 +46,10 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
+import static com.powsybl.caseserver.Utils.*;
 
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
@@ -62,10 +61,7 @@ public class S3CaseService implements CaseService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(S3CaseService.class);
     public static final int MAX_SIZE = 500000000;
-    public static final List<String> COMPRESSION_FORMATS = List.of("bz2", "gz", "xz", "zst");
-    public static final List<String> ARCHIVE_FORMATS = List.of("zip");
     public static final String DELIMITER = "/";
-    public static final String GZIP_EXTENSION = ".gz";
 
     private ComputationManager computationManager = LocalComputationManager.getDefault();
 
@@ -82,8 +78,6 @@ public class S3CaseService implements CaseService {
 
     @Value("${case-subpath}")
     private String rootDirectory;
-
-    public static final String NOT_FOUND = " not found";
 
     @Autowired
     private S3Client s3Client;
@@ -200,6 +194,9 @@ public class S3CaseService implements CaseService {
     }
 
     public String uuidToKeyWithOriginalFileName(UUID caseUuid) {
+        if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
+            return uuidToKeyWithFileName(caseUuid, getOriginalFilename(caseUuid) + GZIP_EXTENSION);
+        }
         return uuidToKeyWithFileName(caseUuid, getOriginalFilename(caseUuid));
     }
 
@@ -249,12 +246,19 @@ public class S3CaseService implements CaseService {
                     .build();
 
             ResponseBytes<GetObjectResponse> objectBytes = s3Client.getObjectAsBytes(getObjectRequest);
-            return Optional.of(objectBytes.asByteArray());
+            byte[] resultBytes = objectBytes.asByteArray();
+            if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
+                resultBytes = decompress(resultBytes);
+            }
+            return Optional.of(resultBytes);
         } catch (NoSuchKeyException e) {
             LOGGER.error("The expected key does not exist in the bucket s3 : {}", caseFileKey);
             return Optional.empty();
         } catch (CaseException | ResponseStatusException e) {
             LOGGER.error(e.getMessage());
+            return Optional.empty();
+        } catch (IOException e) {
+            LOGGER.error("Unable to decompress {}", caseFileKey);
             return Optional.empty();
         }
     }
@@ -288,7 +292,7 @@ public class S3CaseService implements CaseService {
         // i.e. : Assuming test.xml.gz is stored in S3. When you request datasourceExists(randomUUID, "test.xml"), you ask to S3 API ("test.xml" + ".gz") exists ? => true
         if (isCompressedCaseFile(caseName)) {
             key = key + "." + getCompressionFormat(caseUuid);
-        } else if (isArchivedCaseFile(caseName)) {
+        } else if (isArchivedCaseFile(caseName) || Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
             key = key + GZIP_EXTENSION;
         }
 
@@ -304,28 +308,15 @@ public class S3CaseService implements CaseService {
         }
     }
 
-    public static boolean isCompressedCaseFile(String caseName) {
-        return COMPRESSION_FORMATS.stream().anyMatch(cf -> caseName.endsWith("." + cf));
-    }
-
-    public static boolean isArchivedCaseFile(String caseName) {
-        return ARCHIVE_FORMATS.stream().anyMatch(cf -> caseName.endsWith("." + cf));
-    }
-
-    private static String removeExtension(String filename, String extension) {
-        int index = filename.lastIndexOf(extension);
-        if (index == -1 || index < filename.length() - extension.length() /*extension to remove is not at the end*/) {
-            return filename;
-        }
-        return filename.substring(0, index);
-    }
-
     public Set<String> listName(UUID caseUuid, String regex) {
         List<String> filenames;
         String originalFilename = getOriginalFilename(caseUuid);
         if (isCompressedCaseFile(originalFilename)) {
             // For a compressed file basename.xml.gz, listName() should return ['basename.xml']. That's why we remove the compression extension to the filename.
             filenames = List.of(removeExtension(originalFilename, "." + getCompressionFormat(caseUuid)));
+        } else if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
+            // for files that are not compressed when imported (but are in the back)
+            filenames = List.of(removeExtension(originalFilename, GZIP_EXTENSION));
         } else {
             List<S3Object> s3Objects = getCaseS3Objects(caseUuid);
             filenames = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(rootDirectory + DELIMITER + caseUuid.toString() + DELIMITER, "")).toList();
@@ -353,8 +344,6 @@ public class S3CaseService implements CaseService {
         String compressionFormat = FileNameUtils.getExtension(Paths.get(caseName));
 
         try (InputStream inputStream = mpf.getInputStream()) {
-            String key = uuidToKeyWithFileName(caseUuid, caseName);
-
             // We store archived cases in S3 in a specific way : in the caseUuid directory, we store :
             // - the original archive
             // - the extracted files are exploded in the caseUuid directory. This allows to use HeadObjectRequest for datasource/exists,
@@ -366,18 +355,33 @@ public class S3CaseService implements CaseService {
             //              - archive.zip
             //              - file1.xml.gz
             //              - file2.xml.gz.gz
-            if (isArchivedCaseFile(caseName)) {
+            boolean isArchivedFile = isArchivedCaseFile(caseName);
+            if (isArchivedFile) {
                 importZipContent(mpf.getInputStream(), caseUuid);
             }
+            RequestBody requestBody;
+            String contentType = mpf.getContentType();
+            byte[] fileBytes = mpf.getBytes();
+            String fileName = caseName;
+            if (!isArchivedFile && !isCompressedCaseFile(caseName)) {
+                // not compressed files only
+                fileName += GZIP_EXTENSION;
+                contentType = "application/octet-stream";
+                fileBytes = compress(fileBytes);
+                requestBody = RequestBody.fromBytes(fileBytes);
 
+            } else {
+                // archived files and already compressed files
+                requestBody = RequestBody.fromInputStream(inputStream, mpf.getSize());
+            }
+            String key = uuidToKeyWithFileName(caseUuid, fileName);
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(key)
-                    .contentType(mpf.getContentType())
-                    .build();
+                .bucket(bucketName)
+                .key(key)
+                .contentType(contentType)
+                .build();
             // Use putObject to upload the file
-            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(inputStream, mpf.getSize()));
-
+            s3Client.putObject(putObjectRequest, requestBody);
         } catch (IOException e) {
             throw CaseException.createFileNotImportable(caseName, e);
         }
@@ -442,19 +446,6 @@ public class S3CaseService implements CaseService {
                 .contentType(Files.probeContentType(Paths.get(fileName))) // Detect the MIME type
                 .build();
         s3Client.putObject(extractedFileRequest, RequestBody.fromBytes(fileBytes));
-    }
-
-    private static byte[] compress(byte[] data) throws IOException {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        GZIPOutputStream gzipOutputStream = new GZIPOutputStream(outputStream);
-        gzipOutputStream.write(data, 0, data.length);
-        gzipOutputStream.close();
-        return outputStream.toByteArray();
-    }
-
-    public static byte[] decompress(byte[] data) throws IOException {
-        GZIPInputStream gzipInputStream = new GZIPInputStream(new ByteArrayInputStream(data));
-        return IOUtils.toByteArray(gzipInputStream);
     }
 
     @Override
@@ -570,10 +561,6 @@ public class S3CaseService implements CaseService {
     @Override
     public CaseMetadataRepository getCaseMetadataRepository() {
         return caseMetadataRepository;
-    }
-
-    private CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
-        return caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + NOT_FOUND));
     }
 
 }
