@@ -261,7 +261,7 @@ public class FsCaseService implements CaseService {
             if (existingCase.getOriginalFilename() != null) {
                 caseInfos = createInfos(existingCase.getOriginalFilename(), newCaseUuid, existingCase.getFormat());
             } else {
-                // old cases does not have an originalFileName in their metadata
+                // Cases imported in FS mode before the commit that compresses cases uploaded as plain files do not have an originalFileName in their metadata
                 caseInfos = createInfos(newCaseFile, newCaseUuid);
             }
             if (existingCase.isIndexed()) {
