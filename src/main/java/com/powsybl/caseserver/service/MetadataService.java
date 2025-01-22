@@ -15,7 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 
-import static com.powsybl.caseserver.service.S3CaseService.NOT_FOUND;
+import static com.powsybl.caseserver.Utils.NOT_FOUND;
 
 /**
  * @author Etienne Homer <etienne.homer at rte-france.com>

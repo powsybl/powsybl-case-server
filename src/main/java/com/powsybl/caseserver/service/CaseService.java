@@ -21,7 +21,9 @@ import com.powsybl.computation.ComputationManager;
 import com.powsybl.iidm.network.Exporter;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -33,6 +35,8 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import static com.powsybl.caseserver.Utils.*;
+
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
  */
@@ -42,6 +46,15 @@ public interface CaseService {
         if (!caseName.matches("[^<>:\"/|?*]+(\\.[\\w]+)")) {
             throw CaseException.createIllegalCaseName(caseName);
         }
+    }
+
+    default CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
+        return getCaseMetadataRepository().findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + NOT_FOUND));
+    }
+
+    default Boolean isUploadedAsPlainFile(UUID caseUuid) {
+        String name = getCaseMetaDataEntity(caseUuid).getOriginalFilename();
+        return name != null && !isCompressedCaseFile(name) && !isArchivedCaseFile(name);
     }
 
     default CaseInfos createInfos(String fileBaseName, UUID caseUuid, String format) {
