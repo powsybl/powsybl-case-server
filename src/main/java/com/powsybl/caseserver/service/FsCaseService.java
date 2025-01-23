@@ -16,6 +16,7 @@ import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
 import jakarta.annotation.PostConstruct;
+import org.apache.commons.compress.utils.FileNameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
+import static com.powsybl.caseserver.Utils.*;
 import static com.powsybl.caseserver.service.S3CaseService.DELIMITER;
 
 /**
@@ -100,6 +102,7 @@ public class FsCaseService implements CaseService {
             return walk.filter(Files::isRegularFile)
                     .map(this::getCaseInfos)
                     .filter(Objects::nonNull)
+                    .map(this::removeGzipExtensionFromPlainFile)
                     .toList();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -126,6 +129,9 @@ public class FsCaseService implements CaseService {
         if (caseInfos == null) {
             throw CaseException.createFileNameNotFound(caseUuid);
         }
+        if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
+            return removeExtension(caseInfos.getName(), GZIP_EXTENSION);
+        }
         return caseInfos.getName();
     }
 
@@ -136,7 +142,8 @@ public class FsCaseService implements CaseService {
             LOGGER.error("The directory with the following uuid doesn't exist: {}", caseUuid);
             return null;
         }
-        return getCaseInfos(file);
+        CaseInfos caseInfos = getCaseInfos(file);
+        return this.removeGzipExtensionFromPlainFile(caseInfos);
     }
 
     public Path getCaseFile(UUID caseUuid) {
@@ -192,9 +199,16 @@ public class FsCaseService implements CaseService {
 
         Path caseFile;
         try {
+            byte[] fileBytes = mpf.getBytes();
+            String fileNamePath = caseName;
+            if (!isCompressedCaseFile(caseName) && !isArchivedCaseFile(caseName)) {
+                // not compressed files only
+                fileNamePath += GZIP_EXTENSION;
+                fileBytes = compress(fileBytes);
+            }
             Files.createDirectory(uuidDirectory);
-            caseFile = uuidDirectory.resolve(caseName);
-            mpf.transferTo(caseFile);
+            caseFile = uuidDirectory.resolve(fileNamePath);
+            Files.write(caseFile, fileBytes);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -212,8 +226,14 @@ public class FsCaseService implements CaseService {
             throw e;
         }
 
-        createCaseMetadataEntity(caseUuid, withExpiration, withIndexation);
-        CaseInfos caseInfos = createInfos(caseFile.getFileName().toString(), caseUuid, importer.getFormat());
+        String format = importer.getFormat();
+        String compressionFormat = FileNameUtils.getExtension(Paths.get(caseName));
+        createCaseMetadataEntity(caseUuid, withExpiration, withIndexation, caseName, compressionFormat, format);
+        String caseInfoFileName = caseFile.getFileName().toString();
+        if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
+            caseInfoFileName = removeExtension(caseInfoFileName, GZIP_EXTENSION);
+        }
+        CaseInfos caseInfos = createInfos(caseInfoFileName, caseUuid, format);
         if (withIndexation) {
             caseInfosService.addCaseInfos(caseInfos);
         }
@@ -237,12 +257,17 @@ public class FsCaseService implements CaseService {
             Files.copy(existingCaseFile, newCaseFile, StandardCopyOption.COPY_ATTRIBUTES);
 
             CaseMetadataEntity existingCase = getCaseMetaDataEntity(sourceCaseUuid);
-            CaseInfos caseInfos = createInfos(newCaseFile, newCaseUuid);
+            CaseInfos caseInfos;
+            if (existingCase.getOriginalFilename() != null) {
+                caseInfos = createInfos(existingCase.getOriginalFilename(), newCaseUuid, existingCase.getFormat());
+            } else {
+                // Cases imported in FS mode before the commit that compresses cases uploaded as plain files do not have an originalFileName in their metadata
+                caseInfos = createInfos(newCaseFile, newCaseUuid);
+            }
             if (existingCase.isIndexed()) {
                 caseInfosService.addCaseInfos(caseInfos);
             }
             createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed());
-
             notificationService.sendImportMessage(caseInfos.createMessage());
             return newCaseUuid;
 
@@ -253,10 +278,6 @@ public class FsCaseService implements CaseService {
 
     private CaseInfos createInfos(Path caseFile, UUID caseUuid) {
         return createInfos(caseFile.getFileName().toString(), caseUuid, getFormat(caseFile));
-    }
-
-    private CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
-        return caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + " not found"));
     }
 
     @Override
@@ -353,10 +374,12 @@ public class FsCaseService implements CaseService {
         if (caseFile == null) {
             return Optional.empty();
         }
-
         if (Files.exists(caseFile) && Files.isRegularFile(caseFile)) {
             try {
                 byte[] bytes = Files.readAllBytes(caseFile);
+                if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
+                    bytes = decompress(bytes);
+                }
                 return Optional.of(bytes);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -368,6 +391,13 @@ public class FsCaseService implements CaseService {
     @Override
     public CaseMetadataRepository getCaseMetadataRepository() {
         return caseMetadataRepository;
+    }
+
+    private CaseInfos removeGzipExtensionFromPlainFile(CaseInfos caseInfos) {
+        if (caseInfos != null && Boolean.TRUE.equals(isUploadedAsPlainFile(caseInfos.getUuid()))) {
+            return createInfos(removeExtension(caseInfos.getName(), GZIP_EXTENSION), caseInfos.getUuid(), caseInfos.getFormat());
+        }
+        return caseInfos;
     }
 
 }
