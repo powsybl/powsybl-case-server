@@ -7,12 +7,8 @@
 package com.powsybl.caseserver.migration;
 
 import com.powsybl.caseserver.CaseConstants;
-import com.powsybl.caseserver.CaseController;
 import com.powsybl.caseserver.service.CaseService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,22 +32,11 @@ public class MigrationController {
     private static final Logger LOGGER = LoggerFactory.getLogger(MigrationController.class);
 
     @Autowired
-    private S3MigrationCaseService migrationCaseService;
-
-    @Autowired
     @Qualifier("storageService")
     private CaseService caseService;
 
-//    @PutMapping(value = "/toS3/{caseUuid}")
-//    @Operation(summary = "Migrate limits of a network")
-//    @ApiResponses(@ApiResponse(responseCode = "200", description = "Case successfully migrated from FS to S3"))
-//    public ResponseEntity<Void> migrateV211Limits(@Parameter(description = "Case uuid", required = true) @PathVariable("caseUuid") UUID caseUuid) throws Exception {
-//        migrationCaseService.migrateCase(caseUuid);
-//        return ResponseEntity.ok().build();
-//    }
-
     @PostMapping(value = "/cases", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "import a case")
+    @Operation(summary = "import a case with given uuid")
     @SuppressWarnings("javasecurity:S5145")
     public ResponseEntity<UUID> importCase(@RequestParam("file") MultipartFile file,
                                            @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration,

@@ -66,6 +66,7 @@ abstract class AbstractCaseControllerTest {
     private static final String GET_CASE_FORMAT_URL = "/v1/cases/{caseName}/format";
 
     private static final UUID RANDOM_UUID = UUID.fromString("3e2b6777-fea5-4e76-9b6b-b68f151373ab");
+    private static final UUID CASE_UUID_TO_IMPORT = UUID.fromString("88601ab1-530e-47d2-8881-0dedecd6e6ee");
 
     @Autowired
     protected MockMvc mvc;
@@ -804,5 +805,33 @@ abstract class AbstractCaseControllerTest {
         assertEquals(UUID.fromString(duplicateCaseUuid), headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals(TEST_TAR_CASE, headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
+    }
+
+    @Test
+    void testImportCaseWithUuid() throws Exception {
+        createStorageDir();
+
+        // import a case
+        mvc.perform(multipart("/v1/migration/cases")
+                        .file(createMockMultipartFile(TEST_CASE))
+                        .param("withIndexation", "true")
+                        .param("caseUuid", CASE_UUID_TO_IMPORT.toString()))
+
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        // assert that the broker message has been sent
+        Message<byte[]> messageImport = outputDestination.receive(1000, caseImportDestination);
+        assertEquals("", new String(messageImport.getPayload()));
+        MessageHeaders headersCase = messageImport.getHeaders();
+        assertEquals(TEST_CASE, headersCase.get(CaseInfos.NAME_HEADER_KEY));
+        assertEquals(CASE_UUID_TO_IMPORT, headersCase.get(CaseInfos.UUID_HEADER_KEY));
+        assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
+
+        // retrieve case format
+        mvc.perform(get(GET_CASE_FORMAT_URL, CASE_UUID_TO_IMPORT))
+                .andExpect(status().isOk())
+                .andExpect(content().string(TEST_CASE_FORMAT))
+                .andReturn();
     }
 }
