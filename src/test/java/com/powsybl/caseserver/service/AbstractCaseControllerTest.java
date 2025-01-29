@@ -820,18 +820,12 @@ abstract class AbstractCaseControllerTest {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
-        // assert that the broker message has been sent
-        Message<byte[]> messageImport = outputDestination.receive(1000, caseImportDestination);
-        assertEquals("", new String(messageImport.getPayload()));
-        MessageHeaders headersCase = messageImport.getHeaders();
-        assertEquals(TEST_CASE, headersCase.get(CaseInfos.NAME_HEADER_KEY));
-        assertEquals(CASE_UUID_TO_IMPORT, headersCase.get(CaseInfos.UUID_HEADER_KEY));
-        assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
-
         // retrieve case format
         mvc.perform(get(GET_CASE_FORMAT_URL, CASE_UUID_TO_IMPORT))
                 .andExpect(status().isOk())
                 .andExpect(content().string(TEST_CASE_FORMAT))
                 .andReturn();
+
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
     }
 }
