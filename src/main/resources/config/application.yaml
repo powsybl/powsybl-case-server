@@ -17,7 +17,7 @@ spring:
         profile:
           name: default
         static: test
-      bucket: bucket-gridsuite
+      bucket: my-bucket
       credentials:
         access-key: minioadmin
         secret-key: minioadmin
@@ -32,10 +32,3 @@ storage:
   type: FS  # FS or S3
 
 case-subpath: cases
-
-powsybl:
-  services:
-    -
-      name: case-server2
-      base-uri: http://case-server2/
-
