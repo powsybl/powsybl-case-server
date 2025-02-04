@@ -814,17 +814,13 @@ abstract class AbstractCaseControllerTest {
         // import a case
         mvc.perform(multipart("/v1/migration/cases")
                         .file(createMockMultipartFile(TEST_CASE))
-                        .param("withIndexation", "true")
                         .param("caseUuid", CASE_UUID_TO_IMPORT.toString()))
-
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
+                .andExpect(status().isOk());
 
         // retrieve case format
         mvc.perform(get(GET_CASE_FORMAT_URL, CASE_UUID_TO_IMPORT))
                 .andExpect(status().isOk())
-                .andExpect(content().string(TEST_CASE_FORMAT))
-                .andReturn();
+                .andExpect(content().string(TEST_CASE_FORMAT));
 
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
     }

@@ -14,10 +14,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
@@ -43,7 +45,12 @@ public class MigrationController {
                                            @RequestParam(value = "withIndexation", required = false, defaultValue = "false") boolean withIndexation,
                                            @RequestParam(value = "caseUuid") UUID caseUuid) {
         LOGGER.debug("importCase request received with file = {}", file.getName());
+        if (caseService.caseExists(caseUuid)) {
+            String errorMessage = "A case with uuid " + caseUuid + " already exists";
+            LOGGER.error(errorMessage);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, errorMessage);
+        }
         caseService.importCase(file, withExpiration, withIndexation, caseUuid);
-        return ResponseEntity.ok().body(caseUuid);
+        return ResponseEntity.ok().build();
     }
 }
