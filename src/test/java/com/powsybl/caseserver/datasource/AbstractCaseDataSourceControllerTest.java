@@ -73,11 +73,11 @@ public abstract class AbstractCaseDataSourceControllerTest {
     protected DataSource iidmDataSource;
 
     protected static UUID importCase(String filename, String contentType) throws IOException {
-        UUID caseUUID = UUID.randomUUID();
+        UUID caseUuid = UUID.randomUUID();
         try (InputStream inputStream = S3CaseDataSourceControllerTest.class.getResourceAsStream("/" + filename)) {
-            caseService.importCase(new MockMultipartFile(filename, filename, contentType, inputStream.readAllBytes()), false, false, caseUUID);
+            caseService.importCase(new MockMultipartFile(filename, filename, contentType, inputStream.readAllBytes()), false, false, caseUuid);
         }
-        return caseUUID;
+        return caseUuid;
     }
 
     @Test

@@ -41,14 +41,12 @@ public class MigrationController {
     @Operation(summary = "import a case with given uuid")
     @SuppressWarnings("javasecurity:S5145")
     public ResponseEntity<UUID> importCase(@RequestParam("file") MultipartFile file,
-                                           @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration,
-                                           @RequestParam(value = "withIndexation", required = false, defaultValue = "false") boolean withIndexation,
+                                           @RequestParam(value = "withExpiration", defaultValue = "false") boolean withExpiration,
+                                           @RequestParam(value = "withIndexation", defaultValue = "false") boolean withIndexation,
                                            @RequestParam(value = "caseUuid") UUID caseUuid) {
         LOGGER.debug("importCase request received with file = {}", file.getName());
         if (caseService.caseExists(caseUuid)) {
-            String errorMessage = "A case with uuid " + caseUuid + " already exists";
-            LOGGER.error(errorMessage);
-            throw new ResponseStatusException(HttpStatus.CONFLICT, errorMessage);
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Case with UUID " + caseUuid + " already exists");
         }
         caseService.importCase(file, withExpiration, withIndexation, caseUuid);
         return ResponseEntity.ok().build();
