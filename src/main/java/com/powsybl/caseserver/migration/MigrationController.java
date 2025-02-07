@@ -44,7 +44,7 @@ public class MigrationController {
                                            @RequestParam(value = "withExpiration", defaultValue = "false") boolean withExpiration,
                                            @RequestParam(value = "withIndexation", defaultValue = "false") boolean withIndexation,
                                            @RequestParam(value = "caseUuid") UUID caseUuid) {
-        LOGGER.debug("importCase request received with file = {}", file.getName());
+        LOGGER.debug("importCase request received with file = {}", file.getOriginalFilename());
         if (caseService.caseExists(caseUuid)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Case with UUID " + caseUuid + " already exists");
         }
