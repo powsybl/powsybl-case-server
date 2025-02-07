@@ -164,7 +164,7 @@ public class CaseController {
     public ResponseEntity<UUID> importCase(@RequestParam("file") MultipartFile file,
                                            @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration,
                                            @RequestParam(value = "withIndexation", required = false, defaultValue = "false") boolean withIndexation) {
-        LOGGER.info("importCase request received with file = {}", file.getName());
+        LOGGER.debug("importCase request received with file = {}", file.getName());
         UUID caseUuid = UUID.randomUUID();
         caseService.importCase(file, withExpiration, withIndexation, caseUuid);
         return ResponseEntity.ok().body(caseUuid);
