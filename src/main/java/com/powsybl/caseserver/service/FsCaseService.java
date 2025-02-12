@@ -184,10 +184,9 @@ public class FsCaseService implements CaseService {
     }
 
     @Override
-    public UUID importCase(MultipartFile mpf, boolean withExpiration, boolean withIndexation) {
+    public UUID importCase(MultipartFile mpf, boolean withExpiration, boolean withIndexation, UUID caseUuid) {
         checkStorageInitialization();
 
-        UUID caseUuid = UUID.randomUUID();
         Path uuidDirectory = getStorageRootDir().resolve(caseUuid.toString());
 
         String caseName = Objects.requireNonNull(mpf.getOriginalFilename()).trim();

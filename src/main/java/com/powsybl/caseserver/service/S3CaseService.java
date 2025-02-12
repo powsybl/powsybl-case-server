@@ -336,9 +336,7 @@ public class S3CaseService implements CaseService {
     }
 
     @Override
-    public UUID importCase(MultipartFile mpf, boolean withExpiration, boolean withIndexation) {
-        UUID caseUuid = UUID.randomUUID();
-
+    public UUID importCase(MultipartFile mpf, boolean withExpiration, boolean withIndexation, UUID caseUuid) {
         String caseName = Objects.requireNonNull(mpf.getOriginalFilename());
         validateCaseName(caseName);
 
