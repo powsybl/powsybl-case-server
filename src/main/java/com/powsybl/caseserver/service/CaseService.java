@@ -49,7 +49,7 @@ public interface CaseService {
     }
 
     default CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
-        return getCaseMetadataRepository().findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "case " + caseUuid + NOT_FOUND));
+        return getCaseMetadataRepository().findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Metadata of case " + caseUuid + NOT_FOUND));
     }
 
     default Boolean isUploadedAsPlainFile(UUID caseUuid) {

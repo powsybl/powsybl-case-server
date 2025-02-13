@@ -101,11 +101,20 @@ public class FsCaseService implements CaseService {
         try (Stream<Path> walk = Files.walk(getStorageRootDir())) {
             return walk.filter(Files::isRegularFile)
                     .map(this::getCaseInfos)
+                    .map(this::getCleanCaseInfos)
                     .filter(Objects::nonNull)
-                    .map(this::removeGzipExtensionFromPlainFile)
                     .toList();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        }
+    }
+
+    private CaseInfos getCleanCaseInfos (CaseInfos caseInfos) {
+        try {
+            return this.removeGzipExtensionFromPlainFile(caseInfos);
+        } catch (ResponseStatusException e) {
+            LOGGER.error("Error processing file {}: {}", caseInfos.getName(), e.getMessage(), e);
+            return null;
         }
     }
 
