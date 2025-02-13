@@ -119,7 +119,7 @@ public class FsCaseService implements CaseService {
             CaseInfos caseInfos = getCaseInfos(file);
             return Objects.nonNull(caseInfos) ? removeGzipExtensionFromPlainFile(caseInfos) : null;
         } catch (Exception e) {
-            // This method is called by getCases() that is a method for supervision and administration. We do not want the request to stop and fail on an error cases.
+            // This method is called by getCases() that is a method for supervision and administration. We do not want the request to stop and fail on error cases.
             LOGGER.error("Error processing file {}: {}", file.getFileName(), e.getMessage(), e);
             return null;
         }
