@@ -725,11 +725,11 @@ abstract class AbstractCaseControllerTest {
     void invalidFileInCaseDirectoryShouldBeIgnored() throws Exception {
         createStorageDir();
 
-        // add a random file in the storage, not store in a UUID named directory
+        // add a random file in the storage, not stored in a UUID named directory
         Path filePath = fileSystem.getPath(caseService.getRootDirectory()).resolve("randomFile.txt");
         Files.createFile(filePath);
 
-        // add a case in the storage but no metadata in the database
+        // add a case file in a UUID named directory but no metadata in the database
         Path casePath = fileSystem.getPath(caseService.getRootDirectory()).resolve(UUID.randomUUID().toString());
         Files.createDirectory(casePath);
         Files.createFile(casePath.resolve(TEST_CASE));
