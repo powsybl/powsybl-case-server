@@ -109,7 +109,6 @@ public class FsCaseService implements CaseService {
     }
 
     private CaseInfos getCaseInfos(Path file) {
-        Objects.requireNonNull(file);
         return createInfos(file, UUID.fromString(file.getParent().getFileName().toString()));
     }
 
