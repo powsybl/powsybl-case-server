@@ -100,8 +100,7 @@ public class FsCaseService implements CaseService {
     public List<CaseInfos> getCases() {
         try (Stream<Path> walk = Files.walk(getStorageRootDir())) {
             return walk.filter(Files::isRegularFile)
-                    .map(this::getCaseInfos)
-                    .map(this::getCleanCaseInfos)
+                    .map(this::getCaseInfosOrNull)
                     .filter(Objects::nonNull)
                     .toList();
         } catch (IOException e) {
@@ -109,23 +108,19 @@ public class FsCaseService implements CaseService {
         }
     }
 
-    private CaseInfos getCleanCaseInfos (CaseInfos caseInfos) {
+    private CaseInfos getCaseInfosOrNull(Path file) {
         try {
-            return this.removeGzipExtensionFromPlainFile(caseInfos);
-        } catch (ResponseStatusException e) {
-            LOGGER.error("Error processing file {}: {}", caseInfos.getName(), e.getMessage(), e);
+            return removeGzipExtensionFromPlainFile(getCaseInfos(file));
+        } catch (Exception e) {
+            // This method is called by getCases() that is a method for supervision and administration. We do not want the request to stop and fail on an error cases.
+            LOGGER.error("Error processing file {}: {}", file.getFileName(), e.getMessage(), e);
             return null;
         }
     }
 
     private CaseInfos getCaseInfos(Path file) {
         Objects.requireNonNull(file);
-        try {
-            return createInfos(file, UUID.fromString(file.getParent().getFileName().toString()));
-        } catch (Exception e) {
-            LOGGER.error("Error processing file {}: {}", file.getFileName(), e.getMessage(), e);
-            return null;
-        }
+        return createInfos(file, UUID.fromString(file.getParent().getFileName().toString()));
     }
 
     @Override
