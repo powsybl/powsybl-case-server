@@ -114,6 +114,7 @@ public class FsCaseService implements CaseService {
     }
 
     private CaseInfos getCaseInfosOrNull(Path file) {
+        Objects.requireNonNull(file);
         try {
             CaseInfos caseInfos = getCaseInfos(file);
             return Objects.nonNull(caseInfos) ? removeGzipExtensionFromPlainFile(caseInfos) : null;
