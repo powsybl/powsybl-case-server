@@ -108,19 +108,20 @@ public class FsCaseService implements CaseService {
         }
     }
 
+    private CaseInfos getCaseInfos(Path file) {
+        Objects.requireNonNull(file);
+        return createInfos(file, UUID.fromString(file.getParent().getFileName().toString()));
+    }
+
     private CaseInfos getCaseInfosOrNull(Path file) {
         try {
-            return removeGzipExtensionFromPlainFile(getCaseInfos(file));
+            CaseInfos caseInfos = getCaseInfos(file);
+            return Objects.nonNull(caseInfos) ? removeGzipExtensionFromPlainFile(caseInfos) : null;
         } catch (Exception e) {
             // This method is called by getCases() that is a method for supervision and administration. We do not want the request to stop and fail on an error cases.
             LOGGER.error("Error processing file {}: {}", file.getFileName(), e.getMessage(), e);
             return null;
         }
-    }
-
-    private CaseInfos getCaseInfos(Path file) {
-        Objects.requireNonNull(file);
-        return createInfos(file, UUID.fromString(file.getParent().getFileName().toString()));
     }
 
     @Override
