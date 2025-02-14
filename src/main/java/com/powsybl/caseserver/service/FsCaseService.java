@@ -100,7 +100,7 @@ public class FsCaseService implements CaseService {
     public List<CaseInfos> getCases() {
         try (Stream<Path> walk = Files.walk(getStorageRootDir())) {
             return walk.filter(Files::isRegularFile)
-                    .map(this::getCaseInfosOrNull)
+                    .map(this::getCaseInfoSafely)
                     .filter(Objects::nonNull)
                     .toList();
         } catch (IOException e) {
@@ -113,7 +113,7 @@ public class FsCaseService implements CaseService {
         return removeGzipExtensionFromPlainFile(caseInfos);
     }
 
-    private CaseInfos getCaseInfosOrNull(Path file) {
+    private CaseInfos getCaseInfoSafely(Path file) {
         Objects.requireNonNull(file);
         try {
             return getCaseInfos(file);
