@@ -732,8 +732,9 @@ abstract class AbstractCaseControllerTest {
         // add a case file in a UUID named directory but no metadata in the database
         Path casePath = fileSystem.getPath(caseService.getRootDirectory()).resolve(UUID.randomUUID().toString());
         Files.createDirectory(casePath);
-        Files.createFile(casePath.resolve(TEST_CASE));
+        Files.write(casePath.resolve(TEST_CASE), AbstractCaseControllerTest.class.getResourceAsStream("/" + TEST_CASE).readAllBytes());
 
+        // import case properly
         importCase(TEST_CASE, false);
 
         MvcResult mvcResult = mvc.perform(get("/v1/cases"))
