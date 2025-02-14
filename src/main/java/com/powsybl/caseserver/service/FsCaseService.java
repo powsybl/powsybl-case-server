@@ -100,9 +100,8 @@ public class FsCaseService implements CaseService {
     public List<CaseInfos> getCases() {
         try (Stream<Path> walk = Files.walk(getStorageRootDir())) {
             return walk.filter(Files::isRegularFile)
-                    .map(this::getCaseInfos)
+                    .map(this::getCaseInfoSafely)
                     .filter(Objects::nonNull)
-                    .map(this::removeGzipExtensionFromPlainFile)
                     .toList();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -110,10 +109,16 @@ public class FsCaseService implements CaseService {
     }
 
     private CaseInfos getCaseInfos(Path file) {
+        CaseInfos caseInfos = createInfos(file, UUID.fromString(file.getParent().getFileName().toString()));
+        return removeGzipExtensionFromPlainFile(caseInfos);
+    }
+
+    private CaseInfos getCaseInfoSafely(Path file) {
         Objects.requireNonNull(file);
         try {
-            return createInfos(file, UUID.fromString(file.getParent().getFileName().toString()));
+            return getCaseInfos(file);
         } catch (Exception e) {
+            // This method is called by getCases() that is a method for supervision and administration. We do not want the request to stop and fail on error cases.
             LOGGER.error("Error processing file {}: {}", file.getFileName(), e.getMessage(), e);
             return null;
         }
@@ -129,9 +134,6 @@ public class FsCaseService implements CaseService {
         if (caseInfos == null) {
             throw CaseException.createFileNameNotFound(caseUuid);
         }
-        if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
-            return removeExtension(caseInfos.getName(), GZIP_EXTENSION);
-        }
         return caseInfos.getName();
     }
 
@@ -142,8 +144,7 @@ public class FsCaseService implements CaseService {
             LOGGER.error("The directory with the following uuid doesn't exist: {}", caseUuid);
             return null;
         }
-        CaseInfos caseInfos = getCaseInfos(file);
-        return this.removeGzipExtensionFromPlainFile(caseInfos);
+        return getCaseInfos(file);
     }
 
     public Path getCaseFile(UUID caseUuid) {

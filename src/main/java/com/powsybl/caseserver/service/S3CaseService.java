@@ -270,12 +270,23 @@ public class S3CaseService implements CaseService {
         List<CaseInfos> caseInfosList = new ArrayList<>();
         CaseInfos caseInfos;
         for (S3Object o : getCaseS3Objects(rootDirectory + DELIMITER)) {
-            caseInfos = getCaseInfos(parseUuidFromKey(o.key()));
+            caseInfos = getCaseInfoSafely(parseUuidFromKey(o.key()));
             if (Objects.nonNull(caseInfos)) {
                 caseInfosList.add(caseInfos);
             }
         }
         return caseInfosList;
+    }
+
+    private CaseInfos getCaseInfoSafely(UUID uuid) {
+        Objects.requireNonNull(uuid);
+        try {
+            return getCaseInfos(uuid);
+        } catch (Exception e) {
+            // This method is called by getCases() that is a method for supervision and administration. We do not want the request to stop and fail on error cases.
+            LOGGER.error("Error processing case with uuid {}: {}", uuid, e.getMessage(), e);
+            return null;
+        }
     }
 
     @Override
