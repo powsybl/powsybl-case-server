@@ -109,7 +109,7 @@ public class FsCaseService implements CaseService {
     }
 
     private CaseInfos getCaseInfos(Path file) {
-        CaseInfos caseInfos =  createInfos(file, UUID.fromString(file.getParent().getFileName().toString()));
+        CaseInfos caseInfos = createInfos(file, UUID.fromString(file.getParent().getFileName().toString()));
         return removeGzipExtensionFromPlainFile(caseInfos);
     }
 
