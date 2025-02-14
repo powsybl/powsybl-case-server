@@ -15,6 +15,8 @@ import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.caseserver.utils.TestUtils;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,8 +31,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -724,8 +725,17 @@ abstract class AbstractCaseControllerTest {
     @Test
     void invalidFileInCaseDirectoryShouldBeIgnored() throws Exception {
         createStorageDir();
+
+        // add a random file in the storage, not stored in a UUID named directory
         Path filePath = fileSystem.getPath(caseService.getRootDirectory()).resolve("randomFile.txt");
         Files.createFile(filePath);
+
+        // add a case file in a UUID named directory but no metadata in the database
+        Path casePath = fileSystem.getPath(caseService.getRootDirectory()).resolve(UUID.randomUUID().toString());
+        Files.createDirectory(casePath);
+        Files.write(casePath.resolve(TEST_CASE), AbstractCaseControllerTest.class.getResourceAsStream("/" + TEST_CASE).readAllBytes());
+
+        // import case properly
         importCase(TEST_CASE, false);
 
         MvcResult mvcResult = mvc.perform(get("/v1/cases"))
