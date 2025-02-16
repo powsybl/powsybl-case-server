@@ -732,6 +732,7 @@ abstract class AbstractCaseControllerTest {
 
         // import a case properly
         importCase(TEST_CASE, false);
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
         MvcResult mvcResult = mvc.perform(get("/v1/cases"))
                 .andExpect(status().isOk())
@@ -744,7 +745,6 @@ abstract class AbstractCaseControllerTest {
         caseService.deleteCase(caseUuid);
         mvc.perform(delete("/v1/cases"))
                 .andExpect(status().isOk());
-        assertNotNull(outputDestination.receive(1000, caseImportDestination));
     }
 
     @Test
