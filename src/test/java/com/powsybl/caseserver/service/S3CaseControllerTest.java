@@ -16,7 +16,7 @@ import org.springframework.test.context.TestPropertySource;
 
 import java.util.UUID;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
