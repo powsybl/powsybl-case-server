@@ -14,6 +14,10 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
  */
@@ -30,5 +34,13 @@ class S3CaseControllerTest extends AbstractCaseControllerTest implements MinioCo
         caseService.setComputationManager(Mockito.mock(ComputationManager.class));
         caseService.deleteAllCases();
         outputDestination.clear();
+    }
+
+    @Override
+    UUID addCaseWithoutMetadata() throws Exception {
+        UUID caseUuid = importCase(TEST_CASE, false);
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
+        caseMetadataRepository.deleteById(caseUuid);
+        return caseUuid;
     }
 }
