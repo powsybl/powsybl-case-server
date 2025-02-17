@@ -62,7 +62,7 @@ class S3CaseControllerTest extends AbstractCaseControllerTest implements MinioCo
     }
 
     @Override
-    void removeRandomFile() throws IOException {
+    void removeRandomFile() {
         List<ObjectIdentifier> objectsToDelete = s3CaseService.getS3Client().listObjectsV2(builder -> builder.bucket(s3CaseService.getBucketName()).prefix(s3CaseService.getRootDirectory() + "/randomFile.txt"))
                 .contents()
                 .stream()
