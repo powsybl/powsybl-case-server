@@ -369,7 +369,7 @@ abstract class AbstractCaseControllerTest {
 
         //duplicate an existing case withExpiration
         MvcResult duplicateResult2 = mvc.perform(post("/v1/cases?duplicateFrom=" + caseUuid)
-                        .param("withExpiration", "true"))
+                .param("withExpiration", "true"))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -471,15 +471,15 @@ abstract class AbstractCaseControllerTest {
         String importedCase;
         if (withExpiration) {
             importedCase = mvc.perform(multipart("/v1/cases")
-                            .file(createMockMultipartFile(testCase))
-                            .param("withExpiration", withExpiration.toString())
-                            .param("withIndexation", "true"))
+                    .file(createMockMultipartFile(testCase))
+                    .param("withExpiration", withExpiration.toString())
+                    .param("withIndexation", "true"))
                     .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
         } else {
             importedCase = mvc.perform(multipart("/v1/cases")
-                            .file(createMockMultipartFile(testCase))
-                            .param("withIndexation", "true"))
+                    .file(createMockMultipartFile(testCase))
+                    .param("withIndexation", "true"))
                     .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
         }
@@ -497,7 +497,7 @@ abstract class AbstractCaseControllerTest {
 
         // import IIDM test case
         String aCase = mvc.perform(multipart("/v1/cases")
-                        .file(createMockMultipartFile("testCase.xiidm"))
+                .file(createMockMultipartFile("testCase.xiidm"))
                         .param("withIndexation", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -514,8 +514,8 @@ abstract class AbstractCaseControllerTest {
 
         // import CGMES french file
         aCase = mvc.perform(multipart("/v1/cases")
-                        .file(createMockMultipartFile("20200424T1330Z_2D_RTEFRANCE_001.zip"))
-                        .param("withIndexation", "true"))
+                .file(createMockMultipartFile("20200424T1330Z_2D_RTEFRANCE_001.zip"))
+                    .param("withIndexation", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -548,7 +548,7 @@ abstract class AbstractCaseControllerTest {
 
         // import UCTE german file
         aCase = mvc.perform(multipart("/v1/cases")
-                        .file(createMockMultipartFile("20200103_0915_SN5_D80.UCT"))
+                .file(createMockMultipartFile("20200103_0915_SN5_D80.UCT"))
                         .param("withIndexation", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -565,7 +565,7 @@ abstract class AbstractCaseControllerTest {
 
         // import UCTE swiss file
         aCase = mvc.perform(multipart("/v1/cases")
-                        .file(createMockMultipartFile("20200103_0915_135_CH2.UCT"))
+                .file(createMockMultipartFile("20200103_0915_135_CH2.UCT"))
                         .param("withIndexation", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -595,7 +595,7 @@ abstract class AbstractCaseControllerTest {
 
         // search the cases
         mvcResult = mvc.perform(get("/v1/cases/search")
-                        .param("q", "*"))
+                .param("q", "*"))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
@@ -606,7 +606,7 @@ abstract class AbstractCaseControllerTest {
         assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                        .param("q", getDateSearchTerm("20200103_0915")))
+                .param("q", getDateSearchTerm("20200103_0915")))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
@@ -617,7 +617,7 @@ abstract class AbstractCaseControllerTest {
         assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                        .param("q", "geographicalCode:(FR) OR tso:(RTEFRANCE)"))
+                .param("q", "geographicalCode:(FR) OR tso:(RTEFRANCE)"))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
@@ -628,25 +628,25 @@ abstract class AbstractCaseControllerTest {
         assertFalse(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                        .param("q", getDateSearchTerm("20140116_0830") + " AND geographicalCode:(ES)"))
+                .param("q", getDateSearchTerm("20140116_0830") + " AND geographicalCode:(ES)"))
                 .andExpect(status().isOk())
                 .andReturn();
         assertEquals("[]", mvcResult.getResponse().getContentAsString());
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                        .param("q", getDateSearchTerm("20140116_0830") + " AND geographicalCode:(FR)"))
+                .param("q", getDateSearchTerm("20140116_0830") + " AND geographicalCode:(FR)"))
                 .andExpect(status().isOk())
                 .andReturn();
         assertEquals("[]", mvcResult.getResponse().getContentAsString());
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                        .param("q", getDateSearchTerm("20200212_1030") + " AND geographicalCode:(PT)"))
+                .param("q", getDateSearchTerm("20200212_1030") + " AND geographicalCode:(PT)"))
                 .andExpect(status().isOk())
                 .andReturn();
         assertEquals("[]", mvcResult.getResponse().getContentAsString());
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                        .param("q", getDateSearchTerm("20200212_1030") + " AND geographicalCode:(FR)"))
+                .param("q", getDateSearchTerm("20200212_1030") + " AND geographicalCode:(FR)"))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
@@ -656,7 +656,7 @@ abstract class AbstractCaseControllerTest {
         assertFalse(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                        .param("q", getDateSearchTerm("20200103_0915") + " AND geographicalCode:(CH)"))
+                .param("q", getDateSearchTerm("20200103_0915") + " AND geographicalCode:(CH)"))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
@@ -666,7 +666,7 @@ abstract class AbstractCaseControllerTest {
         assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                        .param("q", getDateSearchTerm("20200103_0915") + " AND geographicalCode:(FR OR CH OR D8)"))
+                .param("q", getDateSearchTerm("20200103_0915") + " AND geographicalCode:(FR OR CH OR D8)"))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
@@ -676,7 +676,7 @@ abstract class AbstractCaseControllerTest {
         assertFalse(response.contains("\"name\":\"20200424T1330Z_2D_RTEFRANCE_001.zip\""));
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                        .param("q", "tso:(RTEFRANCE) AND businessProcess:(2D) AND format:(CGMES)"))
+                .param("q", "tso:(RTEFRANCE) AND businessProcess:(2D) AND format:(CGMES)"))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
