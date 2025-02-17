@@ -168,7 +168,7 @@ public interface CaseService {
 
     Optional<byte[]> getCaseBytes(UUID caseUuid);
 
-    UUID importCase(MultipartFile file, boolean withExpiration, boolean withIndexation);
+    UUID importCase(MultipartFile file, boolean withExpiration, boolean withIndexation, UUID caseUuid);
 
     UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration);
 

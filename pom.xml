@@ -13,7 +13,7 @@
     <parent>
         <groupId>com.powsybl</groupId>
         <artifactId>powsybl-parent-ws</artifactId>
-        <version>20</version>
+        <version>21</version>
         <relativePath/>
     </parent>
 
@@ -45,7 +45,7 @@
 
     <properties>
         <liquibase-hibernate-package>com.powsybl.caseserver.repository</liquibase-hibernate-package>
-        <powsybl-ws-dependencies.version>2.18.0</powsybl-ws-dependencies.version>
+        <powsybl-ws-dependencies.version>2.19.0</powsybl-ws-dependencies.version>
         <spring-cloud-aws-starter-s3>3.2.0</spring-cloud-aws-starter-s3>
     </properties>
 
