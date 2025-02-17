@@ -721,8 +721,6 @@ abstract class AbstractCaseControllerTest {
         return "date:\"" + utcFormattedDate + "\"";
     }
 
-    abstract UUID addCaseWithoutMetadata() throws Exception;
-
     abstract void addRandomFile() throws IOException;
 
     abstract void removeRandomFile() throws IOException;
@@ -756,7 +754,9 @@ abstract class AbstractCaseControllerTest {
         createStorageDir();
 
         // add a case file in a UUID named directory but no metadata in the database
-        UUID caseUuid = addCaseWithoutMetadata();
+        UUID caseUuid = importCase(TEST_CASE, false);
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
+        caseMetadataRepository.deleteById(caseUuid);
 
         // import a case properly
         importCase(TEST_CASE, false);

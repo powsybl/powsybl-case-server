@@ -42,14 +42,6 @@ class S3CaseControllerTest extends AbstractCaseControllerTest implements MinioCo
     }
 
     @Override
-    UUID addCaseWithoutMetadata() throws Exception {
-        UUID caseUuid = importCase(TEST_CASE, false);
-        assertNotNull(outputDestination.receive(1000, caseImportDestination));
-        caseMetadataRepository.deleteById(caseUuid);
-        return caseUuid;
-    }
-
-    @Override
     void addRandomFile() {
         RequestBody requestBody = RequestBody.fromString("");
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()

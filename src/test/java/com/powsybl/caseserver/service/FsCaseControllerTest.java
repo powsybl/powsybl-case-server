@@ -58,13 +58,4 @@ class FsCaseControllerTest extends AbstractCaseControllerTest {
     void removeRandomFile() throws IOException {
         Files.delete(fileSystem.getPath(caseService.getRootDirectory()).resolve("randomFile.txt"));
     }
-
-    @Override
-    UUID addCaseWithoutMetadata() throws Exception {
-        UUID caseUuid = UUID.randomUUID();
-        Path casePath = fileSystem.getPath(caseService.getRootDirectory()).resolve(caseUuid.toString());
-        Files.createDirectory(casePath);
-        Files.write(casePath.resolve(TEST_CASE), AbstractCaseControllerTest.class.getResourceAsStream("/" + TEST_CASE).readAllBytes());
-        return caseUuid;
-    }
 }
