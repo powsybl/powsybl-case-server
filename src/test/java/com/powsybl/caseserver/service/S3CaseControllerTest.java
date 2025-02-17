@@ -19,9 +19,6 @@ import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.util.List;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
