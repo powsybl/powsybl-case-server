@@ -29,7 +29,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -56,7 +57,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ContextConfigurationWithTestChannel
 abstract class AbstractCaseControllerTest {
-    private static final String TEST_CASE = "testCase.xiidm";
+    static final String TEST_CASE = "testCase.xiidm";
     private static final String TEST_TAR_CASE = "tarCase.tar";
     private static final String TEST_CASE_FORMAT = "XIIDM";
     private static final String NOT_A_NETWORK = "notANetwork.txt";
@@ -79,11 +80,11 @@ abstract class AbstractCaseControllerTest {
     OutputDestination outputDestination;
 
     @Autowired
-    private ObjectMapper mapper;
+    ObjectMapper mapper;
 
     FileSystem fileSystem;
 
-    private final String caseImportDestination = "case.import.destination";
+    final String caseImportDestination = "case.import.destination";
 
     @AfterEach
     public void tearDown() throws Exception {
@@ -92,7 +93,7 @@ abstract class AbstractCaseControllerTest {
         TestUtils.assertQueuesEmptyThenClear(destinations, outputDestination);
     }
 
-    private void createStorageDir() throws IOException {
+    void createStorageDir() throws IOException {
         Path path = fileSystem.getPath(caseService.getRootDirectory());
         if (!Files.exists(path)) {
             Files.createDirectories(path);
@@ -368,7 +369,7 @@ abstract class AbstractCaseControllerTest {
 
         //duplicate an existing case withExpiration
         MvcResult duplicateResult2 = mvc.perform(post("/v1/cases?duplicateFrom=" + caseUuid)
-                .param("withExpiration", "true"))
+                        .param("withExpiration", "true"))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -466,19 +467,19 @@ abstract class AbstractCaseControllerTest {
         assertFalse(caseMetadataRepository.findById(duplicateCaseUuid).get().isIndexed());
     }
 
-    private UUID importCase(String testCase, Boolean withExpiration) throws Exception {
+    UUID importCase(String testCase, Boolean withExpiration) throws Exception {
         String importedCase;
         if (withExpiration) {
             importedCase = mvc.perform(multipart("/v1/cases")
-                    .file(createMockMultipartFile(testCase))
-                    .param("withExpiration", withExpiration.toString())
-                    .param("withIndexation", "true"))
+                            .file(createMockMultipartFile(testCase))
+                            .param("withExpiration", withExpiration.toString())
+                            .param("withIndexation", "true"))
                     .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
         } else {
             importedCase = mvc.perform(multipart("/v1/cases")
-                    .file(createMockMultipartFile(testCase))
-                    .param("withIndexation", "true"))
+                            .file(createMockMultipartFile(testCase))
+                            .param("withIndexation", "true"))
                     .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
         }
@@ -496,7 +497,7 @@ abstract class AbstractCaseControllerTest {
 
         // import IIDM test case
         String aCase = mvc.perform(multipart("/v1/cases")
-                .file(createMockMultipartFile("testCase.xiidm"))
+                        .file(createMockMultipartFile("testCase.xiidm"))
                         .param("withIndexation", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -513,7 +514,7 @@ abstract class AbstractCaseControllerTest {
 
         // import CGMES french file
         aCase = mvc.perform(multipart("/v1/cases")
-                .file(createMockMultipartFile("20200424T1330Z_2D_RTEFRANCE_001.zip"))
+                        .file(createMockMultipartFile("20200424T1330Z_2D_RTEFRANCE_001.zip"))
                         .param("withIndexation", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -530,7 +531,7 @@ abstract class AbstractCaseControllerTest {
 
         // import UCTE french file
         aCase = mvc.perform(multipart("/v1/cases")
-                .file(createMockMultipartFile("20200103_0915_FO5_FR0.UCT"))
+                        .file(createMockMultipartFile("20200103_0915_FO5_FR0.UCT"))
                         .param("withIndexation", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -547,7 +548,7 @@ abstract class AbstractCaseControllerTest {
 
         // import UCTE german file
         aCase = mvc.perform(multipart("/v1/cases")
-                .file(createMockMultipartFile("20200103_0915_SN5_D80.UCT"))
+                        .file(createMockMultipartFile("20200103_0915_SN5_D80.UCT"))
                         .param("withIndexation", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -564,7 +565,7 @@ abstract class AbstractCaseControllerTest {
 
         // import UCTE swiss file
         aCase = mvc.perform(multipart("/v1/cases")
-                .file(createMockMultipartFile("20200103_0915_135_CH2.UCT"))
+                        .file(createMockMultipartFile("20200103_0915_135_CH2.UCT"))
                         .param("withIndexation", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -594,7 +595,7 @@ abstract class AbstractCaseControllerTest {
 
         // search the cases
         mvcResult = mvc.perform(get("/v1/cases/search")
-                .param("q", "*"))
+                        .param("q", "*"))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
@@ -605,7 +606,7 @@ abstract class AbstractCaseControllerTest {
         assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                .param("q", getDateSearchTerm("20200103_0915")))
+                        .param("q", getDateSearchTerm("20200103_0915")))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
@@ -616,7 +617,7 @@ abstract class AbstractCaseControllerTest {
         assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                .param("q", "geographicalCode:(FR) OR tso:(RTEFRANCE)"))
+                        .param("q", "geographicalCode:(FR) OR tso:(RTEFRANCE)"))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
@@ -627,25 +628,25 @@ abstract class AbstractCaseControllerTest {
         assertFalse(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                .param("q", getDateSearchTerm("20140116_0830") + " AND geographicalCode:(ES)"))
+                        .param("q", getDateSearchTerm("20140116_0830") + " AND geographicalCode:(ES)"))
                 .andExpect(status().isOk())
                 .andReturn();
         assertEquals("[]", mvcResult.getResponse().getContentAsString());
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                .param("q", getDateSearchTerm("20140116_0830") + " AND geographicalCode:(FR)"))
+                        .param("q", getDateSearchTerm("20140116_0830") + " AND geographicalCode:(FR)"))
                 .andExpect(status().isOk())
                 .andReturn();
         assertEquals("[]", mvcResult.getResponse().getContentAsString());
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                .param("q", getDateSearchTerm("20200212_1030") + " AND geographicalCode:(PT)"))
+                        .param("q", getDateSearchTerm("20200212_1030") + " AND geographicalCode:(PT)"))
                 .andExpect(status().isOk())
                 .andReturn();
         assertEquals("[]", mvcResult.getResponse().getContentAsString());
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                .param("q", getDateSearchTerm("20200212_1030") + " AND geographicalCode:(FR)"))
+                        .param("q", getDateSearchTerm("20200212_1030") + " AND geographicalCode:(FR)"))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
@@ -655,7 +656,7 @@ abstract class AbstractCaseControllerTest {
         assertFalse(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                .param("q", getDateSearchTerm("20200103_0915") + " AND geographicalCode:(CH)"))
+                        .param("q", getDateSearchTerm("20200103_0915") + " AND geographicalCode:(CH)"))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
@@ -665,7 +666,7 @@ abstract class AbstractCaseControllerTest {
         assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                .param("q", getDateSearchTerm("20200103_0915") + " AND geographicalCode:(FR OR CH OR D8)"))
+                        .param("q", getDateSearchTerm("20200103_0915") + " AND geographicalCode:(FR OR CH OR D8)"))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
@@ -675,7 +676,7 @@ abstract class AbstractCaseControllerTest {
         assertFalse(response.contains("\"name\":\"20200424T1330Z_2D_RTEFRANCE_001.zip\""));
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                .param("q", "tso:(RTEFRANCE) AND businessProcess:(2D) AND format:(CGMES)"))
+                        .param("q", "tso:(RTEFRANCE) AND businessProcess:(2D) AND format:(CGMES)"))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
@@ -687,10 +688,10 @@ abstract class AbstractCaseControllerTest {
 
         // reindex all cases
         mvc.perform(post("/v1/supervision/cases/reindex"))
-            .andExpect(status().isOk());
+                .andExpect(status().isOk());
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                .param("q", "*"))
+                        .param("q", "*"))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
@@ -705,7 +706,7 @@ abstract class AbstractCaseControllerTest {
                 .andExpect(status().isOk());
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                .param("q", getDateSearchTerm("20200103_0915") + " AND geographicalCode:(FR OR CH OR D8)"))
+                        .param("q", getDateSearchTerm("20200103_0915") + " AND geographicalCode:(FR OR CH OR D8)"))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
@@ -720,21 +721,18 @@ abstract class AbstractCaseControllerTest {
         return "date:\"" + utcFormattedDate + "\"";
     }
 
+    abstract UUID addCaseWithoutMetadata() throws Exception;
+
     @Test
-    void invalidFileInCaseDirectoryShouldBeIgnored() throws Exception {
+    void casesWithoutMetadataShouldBeIgnored() throws Exception {
         createStorageDir();
 
-        // add a random file in the storage, not stored in a UUID named directory
-        Path filePath = fileSystem.getPath(caseService.getRootDirectory()).resolve("randomFile.txt");
-        Files.createFile(filePath);
-
         // add a case file in a UUID named directory but no metadata in the database
-        Path casePath = fileSystem.getPath(caseService.getRootDirectory()).resolve(UUID.randomUUID().toString());
-        Files.createDirectory(casePath);
-        Files.write(casePath.resolve(TEST_CASE), AbstractCaseControllerTest.class.getResourceAsStream("/" + TEST_CASE).readAllBytes());
+        UUID caseUuid = addCaseWithoutMetadata();
 
-        // import case properly
+        // import a case properly
         importCase(TEST_CASE, false);
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
         MvcResult mvcResult = mvc.perform(get("/v1/cases"))
                 .andExpect(status().isOk())
@@ -744,10 +742,9 @@ abstract class AbstractCaseControllerTest {
         assertEquals(1, caseInfos.size());
         assertEquals(TEST_CASE, caseInfos.get(0).getName());
 
-        Files.delete(filePath);
+        caseService.deleteCase(caseUuid);
         mvc.perform(delete("/v1/cases"))
                 .andExpect(status().isOk());
-        assertNotNull(outputDestination.receive(1000, caseImportDestination));
     }
 
     @Test
