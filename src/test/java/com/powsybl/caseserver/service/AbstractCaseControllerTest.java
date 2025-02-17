@@ -531,7 +531,7 @@ abstract class AbstractCaseControllerTest {
 
         // import UCTE french file
         aCase = mvc.perform(multipart("/v1/cases")
-                    .file(createMockMultipartFile("20200103_0915_FO5_FR0.UCT"))
+                .file(createMockMultipartFile("20200103_0915_FO5_FR0.UCT"))
                         .param("withIndexation", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
