@@ -7,6 +7,7 @@
 package com.powsybl.caseserver.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,7 +42,7 @@ class FsCaseControllerTest extends AbstractCaseControllerTest {
     @BeforeEach
     void setUp() {
         caseService = fsCaseService;
-        fileSystem = Jimfs.newFileSystem();
+        fileSystem = Jimfs.newFileSystem(Configuration.unix());
         ((FsCaseService) caseService).setFileSystem(fileSystem);
         caseService.setComputationManager(Mockito.mock(ComputationManager.class));
         caseMetadataRepository.deleteAll();
