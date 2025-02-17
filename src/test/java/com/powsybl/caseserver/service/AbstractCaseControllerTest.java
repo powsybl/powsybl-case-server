@@ -515,7 +515,7 @@ abstract class AbstractCaseControllerTest {
         // import CGMES french file
         aCase = mvc.perform(multipart("/v1/cases")
                 .file(createMockMultipartFile("20200424T1330Z_2D_RTEFRANCE_001.zip"))
-                .param("withIndexation", "true"))
+                        .param("withIndexation", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
