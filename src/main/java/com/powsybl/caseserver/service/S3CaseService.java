@@ -292,7 +292,7 @@ public class S3CaseService implements CaseService {
             return getCaseInfos(parseUuidFromKey(key));
         } catch (Exception e) {
             // This method is called by getCases() that is a method for supervision and administration. We do not want the request to stop and fail on error cases.
-            LOGGER.error("Error processing case {}: {}", key, e.getMessage(), e);
+            LOGGER.error("Error processing file {}: {}", key, e.getMessage(), e);
             return null;
         }
     }
