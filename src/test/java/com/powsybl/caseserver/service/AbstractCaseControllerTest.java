@@ -723,6 +723,10 @@ abstract class AbstractCaseControllerTest {
 
     abstract UUID addCaseWithoutMetadata() throws Exception;
 
+    abstract void addRandomFile() throws IOException;
+
+    abstract void removeRandomFile() throws IOException;
+
     @Test
     void casesWithoutMetadataShouldBeIgnored() throws Exception {
         createStorageDir();

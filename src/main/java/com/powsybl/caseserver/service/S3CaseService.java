@@ -93,6 +93,14 @@ public class S3CaseService implements CaseService {
         return rootDirectory;
     }
 
+    public S3Client getS3Client() {
+        return s3Client;
+    }
+
+    public String getBucketName() {
+        return bucketName;
+    }
+
     String getFormat(Path caseFile) {
         Importer importer = getImporterOrThrowsException(caseFile);
         return importer.getFormat();

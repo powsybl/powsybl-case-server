@@ -24,7 +24,10 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MvcResult;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -38,6 +41,8 @@ class FsCaseControllerTest extends AbstractCaseControllerTest {
 
     @Autowired
     private FsCaseService fsCaseService;
+
+    private Path randomFilePath = fileSystem.getPath(caseService.getRootDirectory()).resolve("randomFile.txt");
 
     @BeforeEach
     void setUp() {
@@ -55,13 +60,22 @@ class FsCaseControllerTest extends AbstractCaseControllerTest {
         mvc.perform(delete("/v1/cases")).andExpect(status().isUnprocessableEntity());
     }
 
+    @Override
+    void addRandomFile() throws IOException {
+        Files.createFile(randomFilePath);
+    }
+
+    @Override
+    void removeRandomFile() throws IOException {
+        Files.delete(randomFilePath);
+    }
+
     @Test
     void invalidFileInCaseDirectoryShouldBeIgnored() throws Exception {
         createStorageDir();
 
         // add a random file in the storage, not stored in a UUID named directory
-        Path filePath = fileSystem.getPath(caseService.getRootDirectory()).resolve("randomFile.txt");
-        Files.createFile(filePath);
+        addRandomFile();
 
         // import a case properly
         importCase(TEST_CASE, false);
