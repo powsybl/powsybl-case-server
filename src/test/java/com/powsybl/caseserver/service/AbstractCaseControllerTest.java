@@ -515,7 +515,7 @@ abstract class AbstractCaseControllerTest {
         // import CGMES french file
         aCase = mvc.perform(multipart("/v1/cases")
                 .file(createMockMultipartFile("20200424T1330Z_2D_RTEFRANCE_001.zip"))
-                    .param("withIndexation", "true"))
+                .param("withIndexation", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -531,7 +531,7 @@ abstract class AbstractCaseControllerTest {
 
         // import UCTE french file
         aCase = mvc.perform(multipart("/v1/cases")
-                        .file(createMockMultipartFile("20200103_0915_FO5_FR0.UCT"))
+                    .file(createMockMultipartFile("20200103_0915_FO5_FR0.UCT"))
                         .param("withIndexation", "true"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -688,10 +688,10 @@ abstract class AbstractCaseControllerTest {
 
         // reindex all cases
         mvc.perform(post("/v1/supervision/cases/reindex"))
-                .andExpect(status().isOk());
+            .andExpect(status().isOk());
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                        .param("q", "*"))
+                .param("q", "*"))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
@@ -706,7 +706,7 @@ abstract class AbstractCaseControllerTest {
                 .andExpect(status().isOk());
 
         mvcResult = mvc.perform(get("/v1/cases/search")
-                        .param("q", getDateSearchTerm("20200103_0915") + " AND geographicalCode:(FR OR CH OR D8)"))
+                .param("q", getDateSearchTerm("20200103_0915") + " AND geographicalCode:(FR OR CH OR D8)"))
                 .andExpect(status().isOk())
                 .andReturn();
         response = mvcResult.getResponse().getContentAsString();
