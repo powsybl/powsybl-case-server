@@ -28,7 +28,6 @@ import org.springframework.test.web.servlet.MvcResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
@@ -78,14 +77,5 @@ class FsCaseControllerTest extends AbstractCaseControllerTest {
         mvc.perform(delete("/v1/cases"))
                 .andExpect(status().isOk());
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
-    }
-
-    @Override
-    UUID addCaseWithoutMetadata() throws Exception {
-        UUID caseUuid = UUID.randomUUID();
-        Path casePath = fileSystem.getPath(caseService.getRootDirectory()).resolve(caseUuid.toString());
-        Files.createDirectory(casePath);
-        Files.write(casePath.resolve(TEST_CASE), AbstractCaseControllerTest.class.getResourceAsStream("/" + TEST_CASE).readAllBytes());
-        return caseUuid;
     }
 }
