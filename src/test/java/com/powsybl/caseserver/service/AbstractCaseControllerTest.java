@@ -57,7 +57,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ContextConfigurationWithTestChannel
 abstract class AbstractCaseControllerTest {
-    private static final String TEST_CASE = "testCase.xiidm";
+    static final String TEST_CASE = "testCase.xiidm";
     private static final String TEST_TAR_CASE = "tarCase.tar";
     private static final String TEST_CASE_FORMAT = "XIIDM";
     private static final String NOT_A_NETWORK = "notANetwork.txt";
@@ -80,11 +80,11 @@ abstract class AbstractCaseControllerTest {
     OutputDestination outputDestination;
 
     @Autowired
-    private ObjectMapper mapper;
+    ObjectMapper mapper;
 
     FileSystem fileSystem;
 
-    private final String caseImportDestination = "case.import.destination";
+    final String caseImportDestination = "case.import.destination";
 
     @AfterEach
     public void tearDown() throws Exception {
@@ -93,7 +93,7 @@ abstract class AbstractCaseControllerTest {
         TestUtils.assertQueuesEmptyThenClear(destinations, outputDestination);
     }
 
-    private void createStorageDir() throws IOException {
+    void createStorageDir() throws IOException {
         Path path = fileSystem.getPath(caseService.getRootDirectory());
         if (!Files.exists(path)) {
             Files.createDirectories(path);
@@ -467,7 +467,7 @@ abstract class AbstractCaseControllerTest {
         assertFalse(caseMetadataRepository.findById(duplicateCaseUuid).get().isIndexed());
     }
 
-    private UUID importCase(String testCase, Boolean withExpiration) throws Exception {
+    UUID importCase(String testCase, Boolean withExpiration) throws Exception {
         String importedCase;
         if (withExpiration) {
             importedCase = mvc.perform(multipart("/v1/cases")
@@ -722,11 +722,17 @@ abstract class AbstractCaseControllerTest {
     }
 
     @Test
-    void invalidFileInCaseDirectoryShouldBeIgnored() throws Exception {
+    void casesWithoutMetadataShouldBeIgnored() throws Exception {
         createStorageDir();
-        Path filePath = fileSystem.getPath(caseService.getRootDirectory()).resolve("randomFile.txt");
-        Files.createFile(filePath);
+
+        // add a case file in a UUID named directory but no metadata in the database
+        UUID caseUuid = importCase(TEST_CASE, false);
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
+        caseMetadataRepository.deleteById(caseUuid);
+
+        // import a case properly
         importCase(TEST_CASE, false);
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
         MvcResult mvcResult = mvc.perform(get("/v1/cases"))
                 .andExpect(status().isOk())
@@ -736,10 +742,9 @@ abstract class AbstractCaseControllerTest {
         assertEquals(1, caseInfos.size());
         assertEquals(TEST_CASE, caseInfos.get(0).getName());
 
-        Files.delete(filePath);
+        caseService.deleteCase(caseUuid);
         mvc.perform(delete("/v1/cases"))
                 .andExpect(status().isOk());
-        assertNotNull(outputDestination.receive(1000, caseImportDestination));
     }
 
     @Test
