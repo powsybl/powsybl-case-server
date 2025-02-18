@@ -6,28 +6,21 @@
  */
 package com.powsybl.caseserver.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.computation.ComputationManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.web.servlet.MvcResult;
 
+import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
 
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
@@ -54,28 +47,13 @@ class FsCaseControllerTest extends AbstractCaseControllerTest {
         mvc.perform(delete("/v1/cases")).andExpect(status().isUnprocessableEntity());
     }
 
-    @Test
-    void invalidFileInCaseDirectoryShouldBeIgnored() throws Exception {
-        createStorageDir();
+    @Override
+    void addRandomFile() throws IOException {
+        Files.createFile(fileSystem.getPath(caseService.getRootDirectory()).resolve("randomFile.txt"));
+    }
 
-        // add a random file in the storage, not stored in a UUID named directory
-        Path filePath = fileSystem.getPath(caseService.getRootDirectory()).resolve("randomFile.txt");
-        Files.createFile(filePath);
-
-        // import a case properly
-        importCase(TEST_CASE, false);
-
-        MvcResult mvcResult = mvc.perform(get("/v1/cases"))
-                .andExpect(status().isOk())
-                .andReturn();
-        String resultAsString = mvcResult.getResponse().getContentAsString();
-        List<CaseInfos> caseInfos = mapper.readValue(resultAsString, new TypeReference<>() { });
-        assertEquals(1, caseInfos.size());
-        assertEquals(TEST_CASE, caseInfos.get(0).getName());
-
-        Files.delete(filePath);
-        mvc.perform(delete("/v1/cases"))
-                .andExpect(status().isOk());
-        assertNotNull(outputDestination.receive(1000, caseImportDestination));
+    @Override
+    void removeRandomFile() throws IOException {
+        Files.delete(fileSystem.getPath(caseService.getRootDirectory()).resolve("randomFile.txt"));
     }
 }

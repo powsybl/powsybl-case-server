@@ -93,6 +93,14 @@ public class S3CaseService implements CaseService {
         return rootDirectory;
     }
 
+    public S3Client getS3Client() {
+        return s3Client;
+    }
+
+    public String getBucketName() {
+        return bucketName;
+    }
+
     String getFormat(Path caseFile) {
         Importer importer = getImporterOrThrowsException(caseFile);
         return importer.getFormat();
@@ -270,7 +278,7 @@ public class S3CaseService implements CaseService {
         List<CaseInfos> caseInfosList = new ArrayList<>();
         CaseInfos caseInfos;
         for (S3Object o : getCaseS3Objects(rootDirectory + DELIMITER)) {
-            caseInfos = getCaseInfoSafely(parseUuidFromKey(o.key()));
+            caseInfos = getCaseInfoSafely(o.key());
             if (Objects.nonNull(caseInfos)) {
                 caseInfosList.add(caseInfos);
             }
@@ -278,13 +286,13 @@ public class S3CaseService implements CaseService {
         return caseInfosList;
     }
 
-    private CaseInfos getCaseInfoSafely(UUID uuid) {
-        Objects.requireNonNull(uuid);
+    private CaseInfos getCaseInfoSafely(String key) {
+        Objects.requireNonNull(key);
         try {
-            return getCaseInfos(uuid);
+            return getCaseInfos(parseUuidFromKey(key));
         } catch (Exception e) {
             // This method is called by getCases() that is a method for supervision and administration. We do not want the request to stop and fail on error cases.
-            LOGGER.error("Error processing case with uuid {}: {}", uuid, e.getMessage(), e);
+            LOGGER.error("Error processing file {}: {}", key, e.getMessage(), e);
             return null;
         }
     }

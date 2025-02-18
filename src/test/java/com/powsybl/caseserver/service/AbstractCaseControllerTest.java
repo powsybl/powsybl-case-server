@@ -721,6 +721,34 @@ abstract class AbstractCaseControllerTest {
         return "date:\"" + utcFormattedDate + "\"";
     }
 
+    abstract void addRandomFile() throws IOException;
+
+    abstract void removeRandomFile() throws IOException;
+
+    @Test
+    void invalidFileInCaseDirectoryShouldBeIgnored() throws Exception {
+        createStorageDir();
+
+        // add a random file in the storage, not stored in a UUID named directory
+        addRandomFile();
+
+        // import a case properly
+        importCase(TEST_CASE, false);
+
+        MvcResult mvcResult = mvc.perform(get("/v1/cases"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String resultAsString = mvcResult.getResponse().getContentAsString();
+        List<CaseInfos> caseInfos = mapper.readValue(resultAsString, new TypeReference<>() { });
+        assertEquals(1, caseInfos.size());
+        assertEquals(TEST_CASE, caseInfos.get(0).getName());
+
+        removeRandomFile();
+        mvc.perform(delete("/v1/cases"))
+                .andExpect(status().isOk());
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
+    }
+
     @Test
     void casesWithoutMetadataShouldBeIgnored() throws Exception {
         createStorageDir();
