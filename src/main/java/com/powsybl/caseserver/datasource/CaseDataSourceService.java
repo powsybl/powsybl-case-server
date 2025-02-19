@@ -6,6 +6,8 @@
  */
 package com.powsybl.caseserver.datasource;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Set;
 import java.util.UUID;
 
@@ -19,9 +21,9 @@ public interface CaseDataSourceService {
 
     Boolean datasourceExists(UUID caseUuid, String fileName);
 
-    byte[] getInputStream(UUID caseUuid, String suffix, String ext);
+    InputStream getInputStream(UUID caseUuid, String suffix, String ext) throws IOException;
 
-    byte[] getInputStream(UUID caseUuid, String fileName);
+    InputStream getInputStream(UUID caseUuid, String fileName) throws IOException;
 
     Set<String> listName(UUID caseUuid, String regex);
 

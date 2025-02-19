@@ -12,10 +12,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.UUID;
@@ -61,19 +64,27 @@ public class CaseDataSourceController {
 
     @GetMapping(value = "/cases/{caseUuid}/datasource", params = {"suffix", "ext"})
     @Operation(summary = "Get an input stream")
-    public ResponseEntity<byte[]> getFileData(@PathVariable("caseUuid") UUID caseUuid,
-                                                      @RequestParam(value = "suffix") String suffix,
-                                                      @RequestParam(value = "ext") String ext) {
-        byte[] byteArray = caseDataSourceService.getInputStream(caseUuid, suffix, ext);
-        return ResponseEntity.ok().contentType(new MediaType("text", "plain", StandardCharsets.UTF_8)).body(byteArray);
+    public ResponseEntity<InputStreamResource> getFileData(@PathVariable("caseUuid") UUID caseUuid,
+                                                           @RequestParam(value = "suffix") String suffix,
+                                                           @RequestParam(value = "ext") String ext) {
+        try {
+            InputStream byteArray = caseDataSourceService.getInputStream(caseUuid, suffix, ext);
+            return ResponseEntity.ok().contentType(new MediaType("text", "plain", StandardCharsets.UTF_8)).body(new InputStreamResource(byteArray));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @GetMapping(value = "/cases/{caseUuid}/datasource", params = "fileName")
     @Operation(summary = "Get an input stream")
-    public ResponseEntity<byte[]> getFileData(@PathVariable("caseUuid") UUID caseUuid,
+    public ResponseEntity<InputStreamResource> getFileData(@PathVariable("caseUuid") UUID caseUuid,
                                                              @RequestParam(value = "fileName") String fileName) {
-        byte[] byteArray = caseDataSourceService.getInputStream(caseUuid, fileName);
-        return ResponseEntity.ok().contentType(new MediaType("text", "plain", StandardCharsets.UTF_8)).body(byteArray);
+        try {
+            InputStream byteArray = caseDataSourceService.getInputStream(caseUuid, fileName);
+            return ResponseEntity.ok().contentType(new MediaType("text", "plain", StandardCharsets.UTF_8)).body(new InputStreamResource(byteArray));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @GetMapping(value = "/cases/{caseUuid}/datasource/list")

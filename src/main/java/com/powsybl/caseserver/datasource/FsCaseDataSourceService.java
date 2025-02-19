@@ -9,7 +9,6 @@ package com.powsybl.caseserver.datasource;
 import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.caseserver.service.FsCaseService;
 import com.powsybl.commons.datasource.DataSource;
-import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Service;
@@ -61,23 +60,15 @@ public class FsCaseDataSourceService implements CaseDataSourceService {
     }
 
     @Override
-    public byte[] getInputStream(UUID caseUuid, String fileName) {
+    public InputStream getInputStream(UUID caseUuid, String fileName) throws IOException {
         DataSource dataSource = getDatasource(caseUuid);
-        try (InputStream inputStream = dataSource.newInputStream(fileName)) {
-            return IOUtils.toByteArray(inputStream);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return dataSource.newInputStream(fileName);
     }
 
     @Override
-    public byte[] getInputStream(UUID caseUuid, String suffix, String ext) {
+    public InputStream getInputStream(UUID caseUuid, String suffix, String ext) throws IOException {
         DataSource dataSource = getDatasource(caseUuid);
-        try (InputStream inputStream = dataSource.newInputStream(suffix, ext)) {
-            return IOUtils.toByteArray(inputStream);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return dataSource.newInputStream(suffix, ext);
     }
 
     @Override
