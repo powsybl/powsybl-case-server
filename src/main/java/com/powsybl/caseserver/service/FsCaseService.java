@@ -28,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.*;
 import java.util.List;
@@ -35,6 +36,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
 import static com.powsybl.caseserver.Utils.*;
@@ -386,6 +388,25 @@ public class FsCaseService implements CaseService {
             }
         }
         return Optional.empty();
+    }
+
+    public Optional<InputStream> getCaseBytesStream(UUID caseUuid) {
+        checkStorageInitialization();
+        Path caseFile = getCaseFile(caseUuid);
+        if (caseFile == null || !Files.exists(caseFile) || !Files.isRegularFile(caseFile)) {
+            return Optional.empty();
+        }
+
+        try {
+            InputStream fileStream = Files.newInputStream(caseFile);
+            if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
+                return Optional.of(new GZIPInputStream(fileStream));
+            } else {
+                return Optional.of(fileStream);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override
