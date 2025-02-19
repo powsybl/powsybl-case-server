@@ -19,6 +19,9 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 
+import java.io.IOException;
+import java.nio.file.Files;
+
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
  */
@@ -44,4 +47,13 @@ class FsCaseControllerTest extends AbstractCaseControllerTest {
         mvc.perform(delete("/v1/cases")).andExpect(status().isUnprocessableEntity());
     }
 
+    @Override
+    void addRandomFile() throws IOException {
+        Files.createFile(fileSystem.getPath(caseService.getRootDirectory()).resolve("randomFile.txt"));
+    }
+
+    @Override
+    void removeRandomFile() throws IOException {
+        Files.delete(fileSystem.getPath(caseService.getRootDirectory()).resolve("randomFile.txt"));
+    }
 }
