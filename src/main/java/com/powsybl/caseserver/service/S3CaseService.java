@@ -43,6 +43,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -50,6 +52,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import static com.powsybl.caseserver.Utils.*;
+import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM_VALUE;
 
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
@@ -375,19 +378,15 @@ public class S3CaseService implements CaseService {
             } else if (isTaredFile(caseName)) {
                 importTarContent(mpf.getInputStream(), caseUuid);
             }
-            String contentType = mpf.getContentType();
-            String fileName = caseName;
             if (!isArchivedCaseFile(caseName) && !isCompressedCaseFile(caseName)) {
                 // plain files only
-                fileName += GZIP_EXTENSION;
-                contentType = "application/octet-stream";
-                Path tempFile = writeGzipTmpFileOnFileSystem(inputStream, "plain-file-", ".tmp");
-                uploadToS3(uuidToKeyWithFileName(caseUuid, fileName), contentType, RequestBody.fromFile(tempFile));
-                Files.deleteIfExists(tempFile);
+                compressAndUploadToS3(uuidToKeyWithFileName(caseUuid, caseName + GZIP_EXTENSION), APPLICATION_OCTET_STREAM_VALUE, inputStream);
             } else {
                 // archived files and already compressed files
-                RequestBody requestBody = RequestBody.fromInputStream(inputStream, mpf.getSize());
-                uploadToS3(uuidToKeyWithFileName(caseUuid, fileName), contentType, requestBody);
+                uploadToS3(
+                        uuidToKeyWithFileName(caseUuid, caseName),
+                        mpf.getContentType(),
+                        RequestBody.fromInputStream(inputStream, mpf.getSize()));
             }
         } catch (IOException e) {
             throw CaseException.createFileNotImportable(caseName, e);
@@ -403,6 +402,38 @@ public class S3CaseService implements CaseService {
         return caseUuid;
     }
 
+    private void compressAndUploadToS3(String key, String contentType, InputStream inputStream) {
+        try (PipedInputStream in = new PipedInputStream();
+             PipedOutputStream out = new PipedOutputStream(in)) {
+             CompletableFuture<Void> compressionFuture = CompletableFuture.runAsync(() -> {
+                try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(out)) {
+                    inputStream.transferTo(gzipOutputStream);
+                } catch (IOException e) {
+                    throw new UncheckedIOException("Failed to compress data", e);
+                }
+            });
+            innerUploadCompressedToS3(key, contentType, in, compressionFuture);
+        } catch (IOException e) {
+            throw CaseException.createFileNotImportable(key, e);
+        }
+    }
+
+    private void innerUploadCompressedToS3(String key, String contentType, PipedInputStream in, CompletableFuture<Void> compressionFuture) throws IOException {
+        try {
+            uploadToS3(
+                    key,
+                    contentType,
+                    RequestBody.fromInputStream(in, in.available())
+            );
+            compressionFuture.join();
+        } catch (CompletionException e) {
+            if (e.getCause() instanceof UncheckedIOException) {
+                throw new IOException("Compression failed", e.getCause());
+            }
+            throw e;
+        }
+    }
+
     private void uploadToS3(String key, String contentType, RequestBody requestBody) {
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
@@ -412,21 +443,12 @@ public class S3CaseService implements CaseService {
         s3Client.putObject(putObjectRequest, requestBody);
     }
 
-    private Path writeGzipTmpFileOnFileSystem(InputStream inputStream, String prefix, String suffix) throws IOException {
-        Path tempFile = Files.createTempFile(prefix, suffix, getRwxAttribute());
-        try (OutputStream fileOutputStream = Files.newOutputStream(tempFile);
-             GZIPOutputStream gzipOutputStream = new GZIPOutputStream(fileOutputStream)) {
-            inputStream.transferTo(gzipOutputStream);
-        }
-        return tempFile;
-    }
-
     private void importZipContent(InputStream inputStream, UUID caseUuid) throws IOException {
         try (ZipInputStream zipInputStream = new SecuredZipInputStream(inputStream, 1000, MAX_SIZE)) {
             ZipEntry entry;
             while ((entry = zipInputStream.getNextEntry()) != null) {
                 if (!entry.isDirectory()) {
-                    processZipEntry(caseUuid, zipInputStream, entry);
+                    processCompressedEntry(caseUuid, zipInputStream, entry.getName());
                 }
                 zipInputStream.closeEntry();
             }
@@ -439,7 +461,7 @@ public class S3CaseService implements CaseService {
             ArchiveEntry entry;
             while ((entry = tarInputStream.getNextEntry()) != null) {
                 if (!entry.isDirectory()) {
-                    processTarEntry(caseUuid, tarInputStream, entry);
+                    processCompressedEntry(caseUuid, tarInputStream, entry.getName());
                 }
             }
         }
@@ -484,20 +506,9 @@ public class S3CaseService implements CaseService {
         }
     }
 
-    private void processZipEntry(UUID caseUuid, ZipInputStream zipInputStream, ZipEntry entry) throws IOException {
-        String fileName = entry.getName();
+    private <T extends InputStream> void  processCompressedEntry(UUID caseUuid, T compressedInputStream, String fileName) throws IOException {
         String extractedKey = uuidToKeyWithFileName(caseUuid, fileName);
-        Path tempFile = writeGzipTmpFileOnFileSystem(zipInputStream, "compressed-zip-", ".gz");
-        uploadToS3(extractedKey + GZIP_EXTENSION, Files.probeContentType(Paths.get(fileName)), RequestBody.fromFile(tempFile));
-        Files.deleteIfExists(tempFile);
-    }
-
-    private void processTarEntry(UUID caseUuid, TarArchiveInputStream tarInputStream, ArchiveEntry entry) throws IOException {
-        String fileName = entry.getName();
-        String extractedKey = uuidToKeyWithFileName(caseUuid, fileName);
-        Path tempFile = writeGzipTmpFileOnFileSystem(tarInputStream, "compressed-tar-", ".gz");
-        uploadToS3(extractedKey + GZIP_EXTENSION, Files.probeContentType(Paths.get(fileName)), RequestBody.fromFile(tempFile));
-        Files.deleteIfExists(tempFile);
+        compressAndUploadToS3(extractedKey + GZIP_EXTENSION, Files.probeContentType(Paths.get(fileName)), compressedInputStream);
     }
 
     @Override
