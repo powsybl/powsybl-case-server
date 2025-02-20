@@ -33,6 +33,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import org.springframework.web.server.ResponseStatusException;
 import software.amazon.awssdk.core.ResponseBytes;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
@@ -47,6 +48,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -275,8 +277,30 @@ public class S3CaseService implements CaseService {
 
     @Override
     public Optional<InputStream> getCaseBytesStream(UUID caseUuid) {
-        //FIXME: stream for S3
-        return getCaseBytes(caseUuid).map(ByteArrayInputStream::new);
+        String caseFileKey = null;
+        try {
+            caseFileKey = uuidToKeyWithOriginalFileName(caseUuid);
+            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(caseFileKey)
+                    .build();
+
+            ResponseInputStream responseInputStream = s3Client.getObject(getObjectRequest);
+
+            if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
+                return Optional.of(new GZIPInputStream(responseInputStream));
+            }
+            return Optional.of(responseInputStream);
+        } catch (NoSuchKeyException e) {
+            LOGGER.error("The expected key does not exist in the bucket s3 : {}", caseFileKey);
+            return Optional.empty();
+        } catch (CaseException | ResponseStatusException e) {
+            LOGGER.error(e.getMessage());
+            return Optional.empty();
+        } catch (IOException e) {
+            LOGGER.error("Unable to decompress {}", caseFileKey);
+            return Optional.empty();
+        }
     }
 
     @Override
