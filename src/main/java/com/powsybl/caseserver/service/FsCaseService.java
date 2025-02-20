@@ -368,29 +368,7 @@ public class FsCaseService implements CaseService {
         return computationManager;
     }
 
-    @Override
-    public Optional<byte[]> getCaseBytes(UUID caseUuid) {
-        checkStorageInitialization();
-
-        Path caseFile = getCaseFile(caseUuid);
-        if (caseFile == null) {
-            return Optional.empty();
-        }
-        if (Files.exists(caseFile) && Files.isRegularFile(caseFile)) {
-            try {
-                byte[] bytes = Files.readAllBytes(caseFile);
-                if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
-                    bytes = decompress(bytes);
-                }
-                return Optional.of(bytes);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-        return Optional.empty();
-    }
-
-    public Optional<InputStream> getCaseBytesStream(UUID caseUuid) {
+    public Optional<InputStream> getCaseStream(UUID caseUuid) {
         checkStorageInitialization();
         Path caseFile = getCaseFile(caseUuid);
         if (caseFile == null || !Files.exists(caseFile) || !Files.isRegularFile(caseFile)) {

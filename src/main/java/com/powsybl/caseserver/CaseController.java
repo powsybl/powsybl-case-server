@@ -112,7 +112,7 @@ public class CaseController {
     @Operation(summary = "Download a case")
     public ResponseEntity<StreamingResponseBody> downloadCase(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("getCase request received with parameter caseUuid = {}", caseUuid);
-        Optional<InputStream> caseStreamOpt = caseService.getCaseBytesStream(caseUuid);
+        Optional<InputStream> caseStreamOpt = caseService.getCaseStream(caseUuid);
         if (caseStreamOpt.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
