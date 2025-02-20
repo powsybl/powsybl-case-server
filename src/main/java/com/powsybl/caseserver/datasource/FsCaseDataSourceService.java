@@ -60,15 +60,23 @@ public class FsCaseDataSourceService implements CaseDataSourceService {
     }
 
     @Override
-    public InputStream getInputStream(UUID caseUuid, String fileName) throws IOException {
+    public InputStream getInputStream(UUID caseUuid, String fileName) {
         DataSource dataSource = getDatasource(caseUuid);
-        return dataSource.newInputStream(fileName);
+        try {
+            return dataSource.newInputStream(fileName);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override
-    public InputStream getInputStream(UUID caseUuid, String suffix, String ext) throws IOException {
+    public InputStream getInputStream(UUID caseUuid, String suffix, String ext) {
         DataSource dataSource = getDatasource(caseUuid);
-        return dataSource.newInputStream(suffix, ext);
+        try {
+            return dataSource.newInputStream(suffix, ext);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override

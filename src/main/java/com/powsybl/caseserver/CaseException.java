@@ -50,7 +50,7 @@ public final class CaseException extends RuntimeException {
         return type;
     }
 
-    public static CaseException createDirectoryAreadyExists(String directory) {
+    public static CaseException createDirectoryAlreadyExists(String directory) {
         Objects.requireNonNull(directory);
         return new CaseException(Type.DIRECTORY_ALREADY_EXISTS, "A directory with the same name already exists: " + directory);
     }
@@ -100,7 +100,7 @@ public final class CaseException extends RuntimeException {
         return new CaseException(Type.TEMP_DIRECTORY_CREATION, "Error creating temporary directory: " + uuid, e);
     }
 
-    public static CaseException createUInitTempFileError(UUID uuid, Throwable e) {
+    public static CaseException createInitTempFileError(UUID uuid, Throwable e) {
         Objects.requireNonNull(uuid);
         return new CaseException(Type.TEMP_FILE_INIT, "Error initializing temporary case file: " + uuid, e);
     }

@@ -17,7 +17,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
@@ -65,26 +64,18 @@ public class CaseDataSourceController {
     @GetMapping(value = "/cases/{caseUuid}/datasource", params = {"suffix", "ext"})
     @Operation(summary = "Get an input stream")
     public ResponseEntity<InputStreamResource> getFileData(@PathVariable("caseUuid") UUID caseUuid,
-                                                           @RequestParam(value = "suffix") String suffix,
-                                                           @RequestParam(value = "ext") String ext) {
-        try {
-            InputStream byteArray = caseDataSourceService.getInputStream(caseUuid, suffix, ext);
-            return ResponseEntity.ok().contentType(new MediaType("text", "plain", StandardCharsets.UTF_8)).body(new InputStreamResource(byteArray));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+                                                      @RequestParam(value = "suffix") String suffix,
+                                                      @RequestParam(value = "ext") String ext) {
+        InputStream inputStream = caseDataSourceService.getInputStream(caseUuid, suffix, ext);
+        return ResponseEntity.ok().contentType(new MediaType("text", "plain", StandardCharsets.UTF_8)).body(new InputStreamResource(inputStream));
     }
 
     @GetMapping(value = "/cases/{caseUuid}/datasource", params = "fileName")
     @Operation(summary = "Get an input stream")
     public ResponseEntity<InputStreamResource> getFileData(@PathVariable("caseUuid") UUID caseUuid,
                                                              @RequestParam(value = "fileName") String fileName) {
-        try {
-            InputStream byteArray = caseDataSourceService.getInputStream(caseUuid, fileName);
-            return ResponseEntity.ok().contentType(new MediaType("text", "plain", StandardCharsets.UTF_8)).body(new InputStreamResource(byteArray));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        InputStream inputStream = caseDataSourceService.getInputStream(caseUuid, fileName);
+        return ResponseEntity.ok().contentType(new MediaType("text", "plain", StandardCharsets.UTF_8)).body(new InputStreamResource(inputStream));
     }
 
     @GetMapping(value = "/cases/{caseUuid}/datasource/list")

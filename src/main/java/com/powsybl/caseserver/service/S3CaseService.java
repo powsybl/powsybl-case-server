@@ -130,7 +130,7 @@ public class S3CaseService implements CaseService {
             try {
                 contentInitializer.accept(tempCasePath);
             } catch (Exception e) {
-                throw CaseException.createUInitTempFileError(caseUuid, e);
+                throw CaseException.createInitTempFileError(caseUuid, e);
             }
             // after this line, need to cleanup the file
             try {

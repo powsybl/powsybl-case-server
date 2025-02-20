@@ -194,7 +194,7 @@ public class FsCaseService implements CaseService {
         validateCaseName(caseName);
 
         if (Files.exists(uuidDirectory)) {
-            throw CaseException.createDirectoryAreadyExists(uuidDirectory.toString());
+            throw CaseException.createDirectoryAlreadyExists(uuidDirectory.toString());
         }
 
         Path caseFile;

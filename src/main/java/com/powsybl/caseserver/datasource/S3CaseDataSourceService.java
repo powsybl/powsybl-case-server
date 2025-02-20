@@ -10,16 +10,15 @@ import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.caseserver.service.S3CaseService;
 import com.powsybl.commons.datasource.DataSource;
 import com.powsybl.commons.datasource.DataSourceUtil;
-import org.apache.commons.compress.utils.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.Set;
 import java.util.UUID;
+import java.util.zip.GZIPInputStream;
 
 import static com.powsybl.caseserver.Utils.*;
 
@@ -51,8 +50,22 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
 
     @Override
     public InputStream getInputStream(UUID caseUuid, String fileName) {
-        //FIXME: to do for S3
-        return null;
+        String caseName = s3CaseService.getCaseName(caseUuid);
+        String caseFileKey;
+        // For archived cases (.zip, .tar, ...), individual files are gzipped in S3 server.
+        // Here the requested file is decompressed and simply returned.
+        if (isArchivedCaseFile(caseName)) {
+            caseFileKey = s3CaseService.uuidToKeyWithFileName(caseUuid, fileName + GZIP_EXTENSION);
+            return s3CaseService.withS3DownloadedTempPath(caseUuid, caseFileKey,
+                    file -> new GZIPInputStream(Files.newInputStream(file)));
+        } else {
+            if (Boolean.TRUE.equals(s3CaseService.isUploadedAsPlainFile(caseUuid))) {
+                caseName += GZIP_EXTENSION;
+            }
+            caseFileKey = s3CaseService.uuidToKeyWithFileName(caseUuid, caseName);
+            return s3CaseService.withS3DownloadedTempPath(caseUuid, caseFileKey,
+                    casePath -> DataSource.fromPath(casePath).newInputStream(fileName));
+        }
     }
 
     @Override
