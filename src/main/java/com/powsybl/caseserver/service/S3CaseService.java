@@ -256,7 +256,7 @@ public class S3CaseService implements CaseService {
                     .key(caseFileKey)
                     .build();
 
-            ResponseInputStream responseInputStream = s3Client.getObject(getObjectRequest);
+            ResponseInputStream<GetObjectResponse> responseInputStream = s3Client.getObject(getObjectRequest);
 
             if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
                 return Optional.of(new GZIPInputStream(responseInputStream));
