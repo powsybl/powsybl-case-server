@@ -407,7 +407,7 @@ public class S3CaseService implements CaseService {
     private void compressAndUploadToS3(UUID caseUuid, String fileName, String contentType, InputStream inputStream) {
         withTempCopy(
                 caseUuid,
-                fileName,
+                "tmp-" + caseUuid + ".gz",
                 tempCasePath -> {
                     try {
                         writeGzTmpFileOnFileSystem(inputStream, tempCasePath);
