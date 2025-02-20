@@ -375,7 +375,6 @@ public class S3CaseService implements CaseService {
             } else if (isTaredFile(caseName)) {
                 importTarContent(mpf.getInputStream(), caseUuid);
             }
-            RequestBody requestBody;
             String contentType = mpf.getContentType();
             String fileName = caseName;
             if (!isArchivedCaseFile(caseName) && !isCompressedCaseFile(caseName)) {
@@ -387,7 +386,7 @@ public class S3CaseService implements CaseService {
                 Files.deleteIfExists(tempFile);
             } else {
                 // archived files and already compressed files
-                requestBody = RequestBody.fromInputStream(inputStream, mpf.getSize());
+                RequestBody requestBody = RequestBody.fromInputStream(inputStream, mpf.getSize());
                 uploadToS3(uuidToKeyWithFileName(caseUuid, fileName), contentType, requestBody);
             }
         } catch (IOException e) {
