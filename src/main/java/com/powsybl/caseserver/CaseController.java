@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,7 +34,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -110,7 +110,7 @@ public class CaseController {
 
     @GetMapping(value = "/cases/{caseUuid}")
     @Operation(summary = "Download a case")
-    public ResponseEntity<StreamingResponseBody> downloadCase(@PathVariable("caseUuid") UUID caseUuid) {
+    public ResponseEntity<InputStreamResource> downloadCase(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("getCase request received with parameter caseUuid = {}", caseUuid);
         Optional<InputStream> caseStreamOpt = caseService.getCaseStream(caseUuid);
         if (caseStreamOpt.isEmpty()) {
@@ -119,21 +119,10 @@ public class CaseController {
         String name = caseService.getCaseName(caseUuid);
         HttpHeaders headers = new HttpHeaders();
         headers.add("caseName", name);
-
-        StreamingResponseBody responseBody = outputStream -> {
-            try (InputStream inputStream = caseStreamOpt.get()) {
-                byte[] buffer = new byte[8192];
-                int bytesRead;
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, bytesRead);
-                }
-            }
-        };
-
         return ResponseEntity.ok()
                 .headers(headers)
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(responseBody);
+                .body(new InputStreamResource(caseStreamOpt.get()));
     }
 
     @PostMapping(value = "/cases/{caseUuid}", consumes = "application/json")

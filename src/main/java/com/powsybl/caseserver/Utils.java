@@ -9,7 +9,6 @@ package com.powsybl.caseserver;
 import org.apache.commons.io.IOUtils;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
@@ -17,7 +16,6 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * @author Etienne Lesot <etienne.lesot at rte-france.com>
@@ -61,14 +59,6 @@ public final class Utils {
     public static byte[] decompress(byte[] data) throws IOException {
         GZIPInputStream gzipInputStream = new GZIPInputStream(new ByteArrayInputStream(data));
         return IOUtils.toByteArray(gzipInputStream);
-    }
-
-    public static byte[] compress(byte[] data) throws IOException {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        GZIPOutputStream gzipOutputStream = new GZIPOutputStream(outputStream);
-        gzipOutputStream.write(data, 0, data.length);
-        gzipOutputStream.close();
-        return outputStream.toByteArray();
     }
 
     public static FileAttribute<Set<PosixFilePermission>> getRwxAttribute() {

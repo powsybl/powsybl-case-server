@@ -27,9 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.nio.file.*;
 import java.util.List;
 import java.util.Objects;
@@ -37,6 +35,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
 import static com.powsybl.caseserver.Utils.*;
@@ -195,22 +194,19 @@ public class FsCaseService implements CaseService {
         String caseName = Objects.requireNonNull(mpf.getOriginalFilename()).trim();
         validateCaseName(caseName);
 
-        if (Files.exists(uuidDirectory)) {
-            throw CaseException.createDirectoryAreadyExists(uuidDirectory.toString());
-        }
+        createDirectory(uuidDirectory);
 
-        Path caseFile;
-        try {
-            byte[] fileBytes = mpf.getBytes();
-            String fileNamePath = caseName;
-            if (!isCompressedCaseFile(caseName) && !isArchivedCaseFile(caseName)) {
-                // not compressed files only
-                fileNamePath += GZIP_EXTENSION;
-                fileBytes = compress(fileBytes);
+        boolean shouldCompress = !isCompressedCaseFile(caseName) && !isArchivedCaseFile(caseName);
+        Path caseFile = getCasePath(caseName, shouldCompress, uuidDirectory);
+        try (InputStream inputStream = mpf.getInputStream();
+             OutputStream fileOutputStream = Files.newOutputStream(caseFile);
+             OutputStream outputStream = shouldCompress ? new GZIPOutputStream(fileOutputStream) : fileOutputStream;
+             BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(outputStream)) {
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                bufferedOutputStream.write(buffer, 0, bytesRead);
             }
-            Files.createDirectory(uuidDirectory);
-            caseFile = uuidDirectory.resolve(fileNamePath);
-            Files.write(caseFile, fileBytes);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -241,6 +237,25 @@ public class FsCaseService implements CaseService {
         }
         notificationService.sendImportMessage(caseInfos.createMessage());
         return caseUuid;
+    }
+
+    private static void createDirectory(Path uuidDirectory) {
+        if (Files.exists(uuidDirectory)) {
+            throw CaseException.createDirectoryAreadyExists(uuidDirectory.toString());
+        }
+        try {
+            Files.createDirectory(uuidDirectory);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static Path getCasePath(String caseName, boolean shouldCompress, Path uuidDirectory) {
+        String fileNamePath = caseName;
+        if (shouldCompress) {
+            fileNamePath += GZIP_EXTENSION;
+        }
+        return uuidDirectory.resolve(fileNamePath);
     }
 
     @Override
@@ -368,6 +383,7 @@ public class FsCaseService implements CaseService {
         return computationManager;
     }
 
+    @Override
     public Optional<InputStream> getCaseStream(UUID caseUuid) {
         checkStorageInitialization();
         Path caseFile = getCaseFile(caseUuid);
