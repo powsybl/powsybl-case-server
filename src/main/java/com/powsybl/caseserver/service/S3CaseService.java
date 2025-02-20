@@ -107,6 +107,10 @@ public class S3CaseService implements CaseService {
         return importer.getFormat();
     }
 
+    FileAttribute<Set<PosixFilePermission>> getRwxAttribute() {
+        return PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
+    }
+
     // creates a directory, and then in this directory, initializes a file with content.
     // After applying f to the file, deletes the file and the directory.
     private <R, T1 extends Exception, T2 extends Exception> R withTempCopy(UUID caseUuid, String filename,
@@ -114,13 +118,12 @@ public class S3CaseService implements CaseService {
         Path tempdirPath;
         Path tempCasePath;
         try {
-            FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
-            tempdirPath = Files.createTempDirectory(caseUuid.toString(), attr);
+            tempdirPath = Files.createTempDirectory(caseUuid.toString(), getRwxAttribute());
 
             // Create parent directory if necessary
             Path parentPath = Paths.get(filename).getParent();
             if (parentPath != null) {
-                Files.createDirectory(tempdirPath.resolve(parentPath), attr);
+                Files.createDirectory(tempdirPath.resolve(parentPath), getRwxAttribute());
             }
             // after this line, need to cleanup the dir
         } catch (IOException e) {
@@ -386,7 +389,11 @@ public class S3CaseService implements CaseService {
             Path tempFile = null;
             if (!isArchivedCaseFile(caseName) && !isCompressedCaseFile(caseName)) {
                 // plain files only
-                tempFile = Files.createTempFile("plain-file-", ".tmp");
+                try {
+                    tempFile = Files.createTempFile("plain-file-", ".tmp", getRwxAttribute());
+                } catch (IOException e) {
+                    throw CaseException.createTempDirectory(caseUuid, e);
+                }
                 fileName += GZIP_EXTENSION;
                 contentType = "application/octet-stream";
                 writeTmpFileOnFileSystem(inputStream, tempFile);
@@ -508,7 +515,12 @@ public class S3CaseService implements CaseService {
     private void processZipEntry(UUID caseUuid, ZipInputStream zipInputStream, ZipEntry entry) throws IOException {
         String fileName = entry.getName();
         String extractedKey = uuidToKeyWithFileName(caseUuid, fileName);
-        Path tempFile = Files.createTempFile("compressed-zip-", ".gz");
+        Path tempFile;
+        try {
+            tempFile = Files.createTempFile("compressed-zip-", ".gz", getRwxAttribute());
+        } catch (IOException e) {
+            throw CaseException.createTempDirectory(caseUuid, e);
+        }
         writeTmpFileOnFileSystem(zipInputStream, tempFile);
 
         PutObjectRequest extractedFileRequest = PutObjectRequest.builder()
@@ -523,7 +535,12 @@ public class S3CaseService implements CaseService {
     private void processTarEntry(UUID caseUuid, TarArchiveInputStream tarInputStream, ArchiveEntry entry) throws IOException {
         String fileName = entry.getName();
         String extractedKey = uuidToKeyWithFileName(caseUuid, fileName);
-        Path tempFile = Files.createTempFile("compressed-tar-", ".gz");
+        Path tempFile;
+        try {
+            tempFile = Files.createTempFile("compressed-tar-", ".gz", getRwxAttribute());
+        } catch (IOException e) {
+            throw CaseException.createTempDirectory(caseUuid, e);
+        }
         writeTmpFileOnFileSystem(tarInputStream, tempFile);
 
         PutObjectRequest extractedFileRequest = PutObjectRequest.builder()
