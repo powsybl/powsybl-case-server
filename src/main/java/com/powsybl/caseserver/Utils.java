@@ -10,11 +10,7 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
-import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -59,9 +55,5 @@ public final class Utils {
     public static byte[] decompress(byte[] data) throws IOException {
         GZIPInputStream gzipInputStream = new GZIPInputStream(new ByteArrayInputStream(data));
         return IOUtils.toByteArray(gzipInputStream);
-    }
-
-    public static FileAttribute<Set<PosixFilePermission>> getRwxAttribute() {
-        return PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
     }
 }

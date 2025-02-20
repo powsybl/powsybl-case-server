@@ -42,6 +42,9 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
@@ -112,12 +115,13 @@ public class S3CaseService implements CaseService {
         Path tempdirPath;
         Path tempCasePath;
         try {
-            tempdirPath = Files.createTempDirectory(caseUuid.toString(), getRwxAttribute());
+            FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
+            tempdirPath = Files.createTempDirectory(caseUuid.toString(), attr);
 
             // Create parent directory if necessary
             Path parentPath = Paths.get(filename).getParent();
             if (parentPath != null) {
-                Files.createDirectory(tempdirPath.resolve(parentPath), getRwxAttribute());
+                Files.createDirectory(tempdirPath.resolve(parentPath), attr);
             }
             // after this line, need to cleanup the dir
         } catch (IOException e) {
