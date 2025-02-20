@@ -383,10 +383,7 @@ public class S3CaseService implements CaseService {
                 fileName += GZIP_EXTENSION;
                 contentType = "application/octet-stream";
                 Path tempFile = writeGzipTmpFileOnFileSystem(inputStream, "plain-file-", ".tmp");
-                try (InputStream fileInputStream = Files.newInputStream(tempFile)) {
-                    requestBody = RequestBody.fromInputStream(fileInputStream, Files.size(tempFile));
-                    uploadToS3(uuidToKeyWithFileName(caseUuid, fileName), contentType, requestBody);
-                }
+                uploadToS3(uuidToKeyWithFileName(caseUuid, fileName), contentType, RequestBody.fromFile(tempFile));
                 Files.deleteIfExists(tempFile);
             } else {
                 // archived files and already compressed files
