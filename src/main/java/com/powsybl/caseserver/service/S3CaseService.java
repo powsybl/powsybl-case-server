@@ -42,9 +42,6 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
@@ -105,10 +102,6 @@ public class S3CaseService implements CaseService {
     String getFormat(Path caseFile) {
         Importer importer = getImporterOrThrowsException(caseFile);
         return importer.getFormat();
-    }
-
-    FileAttribute<Set<PosixFilePermission>> getRwxAttribute() {
-        return PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
     }
 
     // creates a directory, and then in this directory, initializes a file with content.

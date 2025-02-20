@@ -11,7 +11,11 @@ import org.apache.commons.io.IOUtils;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
+import java.util.Set;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -65,5 +69,9 @@ public final class Utils {
         gzipOutputStream.write(data, 0, data.length);
         gzipOutputStream.close();
         return outputStream.toByteArray();
+    }
+
+    public static FileAttribute<Set<PosixFilePermission>> getRwxAttribute() {
+        return PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
     }
 }
