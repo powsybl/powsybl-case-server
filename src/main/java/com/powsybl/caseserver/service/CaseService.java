@@ -167,9 +167,7 @@ public interface CaseService {
 
     Optional<Network> loadNetwork(UUID caseUuid);
 
-    Optional<byte[]> getCaseBytes(UUID caseUuid);
-
-    Optional<InputStream> getCaseBytesStream(UUID caseUuid);
+    Optional<InputStream> getCaseStream(UUID caseUuid);
 
     UUID importCase(MultipartFile file, boolean withExpiration, boolean withIndexation, UUID caseUuid);
 

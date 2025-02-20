@@ -32,7 +32,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import org.springframework.web.server.ResponseStatusException;
-import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -248,35 +247,7 @@ public class S3CaseService implements CaseService {
     }
 
     @Override
-    public Optional<byte[]> getCaseBytes(UUID caseUuid) {
-        String caseFileKey = null;
-        try {
-            caseFileKey = uuidToKeyWithOriginalFileName(caseUuid);
-            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(caseFileKey)
-                    .build();
-
-            ResponseBytes<GetObjectResponse> objectBytes = s3Client.getObjectAsBytes(getObjectRequest);
-            byte[] resultBytes = objectBytes.asByteArray();
-            if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
-                resultBytes = decompress(resultBytes);
-            }
-            return Optional.of(resultBytes);
-        } catch (NoSuchKeyException e) {
-            LOGGER.error("The expected key does not exist in the bucket s3 : {}", caseFileKey);
-            return Optional.empty();
-        } catch (CaseException | ResponseStatusException e) {
-            LOGGER.error(e.getMessage());
-            return Optional.empty();
-        } catch (IOException e) {
-            LOGGER.error("Unable to decompress {}", caseFileKey);
-            return Optional.empty();
-        }
-    }
-
-    @Override
-    public Optional<InputStream> getCaseBytesStream(UUID caseUuid) {
+    public Optional<InputStream> getCaseStream(UUID caseUuid) {
         String caseFileKey = null;
         try {
             caseFileKey = uuidToKeyWithOriginalFileName(caseUuid);
@@ -418,15 +389,8 @@ public class S3CaseService implements CaseService {
                 tempFile = Files.createTempFile("plain-file-", ".tmp");
                 fileName += GZIP_EXTENSION;
                 contentType = "application/octet-stream";
+                writeTmpFileOnFileSystem(inputStream, tempFile);
 
-                try (OutputStream fileOutputStream = Files.newOutputStream(tempFile);
-                     GZIPOutputStream gzipOutputStream = new GZIPOutputStream(fileOutputStream)) {
-                    byte[] buffer = new byte[8192];
-                    int bytesRead;
-                    while ((bytesRead = inputStream.read(buffer)) != -1) {
-                        gzipOutputStream.write(buffer, 0, bytesRead);
-                    }
-                }
                 try (InputStream fileInputStream = Files.newInputStream(tempFile)) {
                     requestBody = RequestBody.fromInputStream(fileInputStream, Files.size(tempFile));
                     String key = uuidToKeyWithFileName(caseUuid, fileName);
@@ -465,6 +429,17 @@ public class S3CaseService implements CaseService {
         notificationService.sendImportMessage(caseInfos.createMessage());
 
         return caseUuid;
+    }
+
+    private void writeTmpFileOnFileSystem(InputStream inputStream, Path tempFile) throws IOException {
+        try (OutputStream fileOutputStream = Files.newOutputStream(tempFile);
+             GZIPOutputStream gzipOutputStream = new GZIPOutputStream(fileOutputStream)) {
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                gzipOutputStream.write(buffer, 0, bytesRead);
+            }
+        }
     }
 
     private void importZipContent(InputStream inputStream, UUID caseUuid) throws IOException {
@@ -534,14 +509,8 @@ public class S3CaseService implements CaseService {
         String fileName = entry.getName();
         String extractedKey = uuidToKeyWithFileName(caseUuid, fileName);
         Path tempFile = Files.createTempFile("compressed-zip-", ".gz");
-        try (OutputStream fileOutputStream = Files.newOutputStream(tempFile);
-             GZIPOutputStream gzipOutputStream = new GZIPOutputStream(fileOutputStream)) {
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = zipInputStream.read(buffer)) != -1) {
-                gzipOutputStream.write(buffer, 0, bytesRead);
-            }
-        }
+        writeTmpFileOnFileSystem(zipInputStream, tempFile);
+
         PutObjectRequest extractedFileRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
                 .key(extractedKey + GZIP_EXTENSION)
@@ -555,14 +524,8 @@ public class S3CaseService implements CaseService {
         String fileName = entry.getName();
         String extractedKey = uuidToKeyWithFileName(caseUuid, fileName);
         Path tempFile = Files.createTempFile("compressed-tar-", ".gz");
-        try (OutputStream fileOutputStream = Files.newOutputStream(tempFile);
-             GZIPOutputStream gzipOutputStream = new GZIPOutputStream(fileOutputStream)) {
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = tarInputStream.read(buffer)) != -1) {
-                gzipOutputStream.write(buffer, 0, bytesRead);
-            }
-        }
+        writeTmpFileOnFileSystem(tarInputStream, tempFile);
+
         PutObjectRequest extractedFileRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
                 .key(extractedKey + GZIP_EXTENSION)
@@ -595,17 +558,17 @@ public class S3CaseService implements CaseService {
         }
         CaseMetadataEntity existingCase = getCaseMetaDataEntity(sourceCaseUuid);
         createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed(), existingCase.getOriginalFilename(), existingCase.getCompressionFormat(), existingCase.getFormat());
-        Optional<byte[]> caseBytes = getCaseBytes(newCaseUuid);
-        if (caseBytes.isPresent() && isArchivedCaseFile(existingCase.getOriginalFilename())) {
+        Optional<InputStream> caseStream = getCaseStream(newCaseUuid);
+        if (caseStream.isPresent() && isArchivedCaseFile(existingCase.getOriginalFilename())) {
             if (isZippedFile(existingCase.getOriginalFilename())) {
                 try {
-                    copyZipContent(new ByteArrayInputStream(caseBytes.get()), sourceCaseUuid, newCaseUuid);
+                    copyZipContent(caseStream.get(), sourceCaseUuid, newCaseUuid);
                 } catch (Exception e) {
                     throw CaseException.createCopyZipContentError(sourceCaseUuid, e);
                 }
             } else if (isTaredFile(existingCase.getOriginalFilename())) {
                 try {
-                    copyTarContent(new ByteArrayInputStream(caseBytes.get()), sourceCaseUuid, newCaseUuid);
+                    copyTarContent(caseStream.get(), sourceCaseUuid, newCaseUuid);
                 } catch (Exception e) {
                     throw CaseException.createCopyZipContentError(sourceCaseUuid, e);
                 }
