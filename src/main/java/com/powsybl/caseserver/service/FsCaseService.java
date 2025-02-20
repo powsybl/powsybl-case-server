@@ -200,13 +200,8 @@ public class FsCaseService implements CaseService {
         Path caseFile = getCasePath(caseName, shouldCompress, uuidDirectory);
         try (InputStream inputStream = mpf.getInputStream();
              OutputStream fileOutputStream = Files.newOutputStream(caseFile);
-             OutputStream outputStream = shouldCompress ? new GZIPOutputStream(fileOutputStream) : fileOutputStream;
-             BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(outputStream)) {
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                bufferedOutputStream.write(buffer, 0, bytesRead);
-            }
+             OutputStream outputStream = shouldCompress ? new GZIPOutputStream(fileOutputStream) : new BufferedOutputStream(fileOutputStream)) {
+            inputStream.transferTo(outputStream);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

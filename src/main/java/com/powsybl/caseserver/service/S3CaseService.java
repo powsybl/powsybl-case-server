@@ -417,11 +417,7 @@ public class S3CaseService implements CaseService {
         Path tempFile = Files.createTempFile(prefix, suffix, getRwxAttribute());
         try (OutputStream fileOutputStream = Files.newOutputStream(tempFile);
              GZIPOutputStream gzipOutputStream = new GZIPOutputStream(fileOutputStream)) {
-            byte[] buffer = new byte[8192];
-            int bytesRead;
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                gzipOutputStream.write(buffer, 0, bytesRead);
-            }
+            inputStream.transferTo(gzipOutputStream);
         }
         return tempFile;
     }
