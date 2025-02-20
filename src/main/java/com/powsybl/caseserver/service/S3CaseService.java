@@ -404,8 +404,10 @@ public class S3CaseService implements CaseService {
         return caseUuid;
     }
 
-    private void compressAndUploadToS3(UUID caseUuid, String filename, String contentType, InputStream inputStream) {
-        withTempCopy(caseUuid, filename,
+    private void compressAndUploadToS3(UUID caseUuid, String fileName, String contentType, InputStream inputStream) {
+        withTempCopy(
+                caseUuid,
+                fileName,
                 tempCasePath -> {
                     try {
                         writeGzTmpFileOnFileSystem(inputStream, tempCasePath);
@@ -415,7 +417,7 @@ public class S3CaseService implements CaseService {
                 },
                 tempCasePath -> {
                     uploadToS3(
-                            uuidToKeyWithFileName(caseUuid, filename),
+                            uuidToKeyWithFileName(caseUuid, fileName),
                             contentType,
                             RequestBody.fromFile(tempCasePath)
                     );
@@ -505,7 +507,11 @@ public class S3CaseService implements CaseService {
     }
 
     private <T extends InputStream> void processCompressedEntry(UUID caseUuid, T compressedInputStream, String fileName) throws IOException {
-        compressAndUploadToS3(caseUuid, fileName + GZIP_EXTENSION, Files.probeContentType(Paths.get(fileName)), compressedInputStream);
+        compressAndUploadToS3(
+                caseUuid,
+                fileName + GZIP_EXTENSION,
+                Files.probeContentType(Paths.get(fileName)), // Detect the MIME type
+                compressedInputStream);
     }
 
     @Override
