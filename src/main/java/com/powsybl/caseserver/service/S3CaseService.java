@@ -500,18 +500,17 @@ public class S3CaseService implements CaseService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Source case " + sourceCaseUuid + NOT_FOUND);
         }
 
-        String sourceKey = uuidToKeyWithOriginalFileName(sourceCaseUuid);
         UUID newCaseUuid = UUID.randomUUID();
-
         ListObjectsResponse sourceCaseObjects = s3Client.listObjects(ListObjectsRequest.builder()
                 .bucket(bucketName)
-                .prefix(rootDirectory + DELIMITER + sourceCaseUuid)
+                .prefix(uuidToKeyPrefix(sourceCaseUuid))
                 .build()
         );
-
         // To optimize copy, cases to copy are not downloaded on the case-server. They are directly copied on the S3 server.
         for (S3Object object : sourceCaseObjects.contents()) {
-            String targetKey = uuidToKeyWithFileName(newCaseUuid, parseFilenameFromKey(object.key()));
+            String filename = parseFilenameFromKey(object.key());
+            String sourceKey = uuidToKeyWithFileName(sourceCaseUuid, filename);
+            String targetKey = uuidToKeyWithFileName(newCaseUuid, filename);
             CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
                     .sourceBucket(bucketName)
                     .sourceKey(sourceKey)
@@ -524,7 +523,6 @@ public class S3CaseService implements CaseService {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "source case " + sourceCaseUuid + NOT_FOUND, e);
             }
         }
-
         CaseMetadataEntity existingCase = getCaseMetaDataEntity(sourceCaseUuid);
         createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed(), existingCase.getOriginalFilename(), existingCase.getCompressionFormat(), existingCase.getFormat());
         CaseInfos existingCaseInfos = getCaseInfos(sourceCaseUuid);
