@@ -510,7 +510,7 @@ public class S3CaseService implements CaseService {
         );
 
         // To optimize copy, cases to copy are not downloaded on the case-server. They are directly copied on the S3 server.
-        for(S3Object object: sourceCaseObjects.contents()){
+        for (S3Object object : sourceCaseObjects.contents()) {
             String targetKey = uuidToKeyWithFileName(newCaseUuid, parseFilenameFromKey(object.key()));
             CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
                     .sourceBucket(bucketName)
