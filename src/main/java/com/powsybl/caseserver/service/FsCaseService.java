@@ -27,14 +27,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.nio.file.*;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
 import static com.powsybl.caseserver.Utils.*;
@@ -193,22 +194,14 @@ public class FsCaseService implements CaseService {
         String caseName = Objects.requireNonNull(mpf.getOriginalFilename()).trim();
         validateCaseName(caseName);
 
-        if (Files.exists(uuidDirectory)) {
-            throw CaseException.createDirectoryAreadyExists(uuidDirectory.toString());
-        }
+        createDirectory(uuidDirectory);
 
-        Path caseFile;
-        try {
-            byte[] fileBytes = mpf.getBytes();
-            String fileNamePath = caseName;
-            if (!isCompressedCaseFile(caseName) && !isArchivedCaseFile(caseName)) {
-                // not compressed files only
-                fileNamePath += GZIP_EXTENSION;
-                fileBytes = compress(fileBytes);
-            }
-            Files.createDirectory(uuidDirectory);
-            caseFile = uuidDirectory.resolve(fileNamePath);
-            Files.write(caseFile, fileBytes);
+        boolean shouldCompress = !isCompressedCaseFile(caseName) && !isArchivedCaseFile(caseName);
+        Path caseFile = getCasePath(caseName, shouldCompress, uuidDirectory);
+        try (InputStream inputStream = mpf.getInputStream();
+             OutputStream fileOutputStream = Files.newOutputStream(caseFile);
+             OutputStream outputStream = shouldCompress ? new GZIPOutputStream(fileOutputStream) : new BufferedOutputStream(fileOutputStream)) {
+            inputStream.transferTo(outputStream);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -239,6 +232,25 @@ public class FsCaseService implements CaseService {
         }
         notificationService.sendImportMessage(caseInfos.createMessage());
         return caseUuid;
+    }
+
+    private static void createDirectory(Path uuidDirectory) {
+        if (Files.exists(uuidDirectory)) {
+            throw CaseException.createDirectoryAreadyExists(uuidDirectory.toString());
+        }
+        try {
+            Files.createDirectory(uuidDirectory);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static Path getCasePath(String caseName, boolean shouldCompress, Path uuidDirectory) {
+        String fileNamePath = caseName;
+        if (shouldCompress) {
+            fileNamePath += GZIP_EXTENSION;
+        }
+        return uuidDirectory.resolve(fileNamePath);
     }
 
     @Override
@@ -367,25 +379,23 @@ public class FsCaseService implements CaseService {
     }
 
     @Override
-    public Optional<byte[]> getCaseBytes(UUID caseUuid) {
+    public Optional<InputStream> getCaseStream(UUID caseUuid) {
         checkStorageInitialization();
-
         Path caseFile = getCaseFile(caseUuid);
-        if (caseFile == null) {
+        if (caseFile == null || !Files.exists(caseFile) || !Files.isRegularFile(caseFile)) {
             return Optional.empty();
         }
-        if (Files.exists(caseFile) && Files.isRegularFile(caseFile)) {
-            try {
-                byte[] bytes = Files.readAllBytes(caseFile);
-                if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
-                    bytes = decompress(bytes);
-                }
-                return Optional.of(bytes);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+
+        try {
+            InputStream fileStream = new BufferedInputStream(Files.newInputStream(caseFile));
+            if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
+                return Optional.of(new GZIPInputStream(fileStream));
+            } else {
+                return Optional.of(fileStream);
             }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
-        return Optional.empty();
     }
 
     @Override
