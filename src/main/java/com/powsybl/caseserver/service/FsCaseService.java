@@ -387,7 +387,7 @@ public class FsCaseService implements CaseService {
         }
 
         try {
-            InputStream fileStream = Files.newInputStream(caseFile);
+            InputStream fileStream = new BufferedInputStream(Files.newInputStream(caseFile));
             if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
                 return Optional.of(new GZIPInputStream(fileStream));
             } else {

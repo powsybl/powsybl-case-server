@@ -355,6 +355,27 @@ public class S3CaseService implements CaseService {
         return filenames.stream().filter(n -> n.matches(regex)).collect(Collectors.toSet());
     }
 
+    /**
+     * We store archived cases in S3 in a specific way: within the caseUuid directory, we store:
+     * <ul>
+     *     <li>The original archive.</li>
+     *     <li>The extracted files, which are placed directly in the caseUuid directory.</li>
+     * </ul>
+     *
+     * This allows us to use {@code HeadObjectRequest} to check if a datasource exists,
+     * download subfiles separately, or respond to {@code datasource/list} using {@code ListObjectV2}.
+     * However, this unarchived storage could significantly increase disk space usage.
+     * To mitigate this, each extracted file is gzipped, regardless of whether it was already compressed.
+     * Compression is applied uniformly: even if a subfile is already compressed, it will still be gzipped in storage.
+     *
+     * <p><b>Example:</b></p>
+     * archive.zip containing [file1.xml, file2.xml.gz] will be stored as:
+     * <ul>
+     *     <li>archive.zip</li>
+     *     <li>file1.xml.gz</li>
+     *     <li>file2.xml.gz.gz</li>
+     * </ul>
+     */
     @Override
     public UUID importCase(MultipartFile mpf, boolean withExpiration, boolean withIndexation, UUID caseUuid) {
         String caseName = Objects.requireNonNull(mpf.getOriginalFilename());
@@ -363,28 +384,26 @@ public class S3CaseService implements CaseService {
         String format = withTempCopy(caseUuid, caseName, mpf::transferTo, this::getFormat);
         String compressionFormat = FileNameUtils.getExtension(Paths.get(caseName));
 
-        try (InputStream inputStream = mpf.getInputStream()) {
-            // We store archived cases in S3 in a specific way : in the caseUuid directory, we store :
-            // - the original archive
-            // - the extracted files are exploded in the caseUuid directory. This allows to use HeadObjectRequest for datasource/exists,
-            // to download subfiles separately, or to anwser to datasource/list with ListObjectV2.
-            // But this unarchived storage could increase tenfold used disk space: so each extracted file is gzipped to avoid increasing it.
-            // Compression of subfiles is done in a simple way: no matter if the subfile is compressed or not, it will be gzipped in the storage.
-            // example : archive.zip containing [file1.xml, file2.xml.gz]
-            //           will be stored as :
-            //              - archive.zip
-            //              - file1.xml.gz
-            //              - file2.xml.gz.gz
-            if (isZippedFile(caseName)) {
-                importZipContent(mpf.getInputStream(), caseUuid);
-            } else if (isTaredFile(caseName)) {
-                importTarContent(mpf.getInputStream(), caseUuid);
+        // Process and store GZ compressed files extracted from archive file
+        if (isArchivedCaseFile(caseName)) {
+            try (InputStream inputStream = mpf.getInputStream()) {
+                if (isZippedFile(caseName)) {
+                    importZipContent(inputStream, caseUuid);
+                } else if (isTaredFile(caseName)) {
+                    importTarContent(mpf.getInputStream(), caseUuid);
+                }
+            } catch (IOException e) {
+                throw CaseException.createFileNotImportable(caseName, e);
             }
+        }
+
+        // Store the original file
+        try (InputStream inputStream = mpf.getInputStream()) {
             if (!isArchivedCaseFile(caseName) && !isCompressedCaseFile(caseName)) {
-                // plain files only
+                // If it's a plain file, compress it before storing
                 compressAndUploadToS3(caseUuid, caseName + GZIP_EXTENSION, APPLICATION_OCTET_STREAM_VALUE, inputStream);
             } else {
-                // archived files and already compressed files
+                // If the file is an archive or already compressed, store it as-is
                 uploadToS3(
                         uuidToKeyWithFileName(caseUuid, caseName),
                         mpf.getContentType(),
@@ -540,14 +559,14 @@ public class S3CaseService implements CaseService {
         Optional<InputStream> caseStream = getCaseStream(newCaseUuid);
         if (caseStream.isPresent() && isArchivedCaseFile(existingCase.getOriginalFilename())) {
             if (isZippedFile(existingCase.getOriginalFilename())) {
-                try {
-                    copyZipContent(caseStream.get(), sourceCaseUuid, newCaseUuid);
+                try (InputStream inputStream = caseStream.get()) {
+                    copyZipContent(inputStream, sourceCaseUuid, newCaseUuid);
                 } catch (Exception e) {
                     throw CaseException.createCopyZipContentError(sourceCaseUuid, e);
                 }
             } else if (isTaredFile(existingCase.getOriginalFilename())) {
-                try {
-                    copyTarContent(caseStream.get(), sourceCaseUuid, newCaseUuid);
+                try (InputStream inputStream = caseStream.get()) {
+                    copyTarContent(inputStream, sourceCaseUuid, newCaseUuid);
                 } catch (Exception e) {
                     throw CaseException.createCopyZipContentError(sourceCaseUuid, e);
                 }
