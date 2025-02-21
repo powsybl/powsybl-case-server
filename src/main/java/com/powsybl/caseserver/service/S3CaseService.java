@@ -390,7 +390,7 @@ public class S3CaseService implements CaseService {
                 if (isZippedFile(caseName)) {
                     importZipContent(inputStream, caseUuid);
                 } else if (isTaredFile(caseName)) {
-                    importTarContent(mpf.getInputStream(), caseUuid);
+                    importTarContent(inputStream, caseUuid);
                 }
             } catch (IOException e) {
                 throw CaseException.createFileNotImportable(caseName, e);
