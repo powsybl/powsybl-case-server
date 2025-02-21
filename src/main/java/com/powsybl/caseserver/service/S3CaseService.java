@@ -341,7 +341,7 @@ public class S3CaseService implements CaseService {
             filenames = List.of(removeExtension(originalFilename, GZIP_EXTENSION));
         } else {
             List<S3Object> s3Objects = getCaseS3Objects(caseUuid);
-            filenames = s3Objects.stream().map(obj -> Paths.get(obj.key()).toString().replace(rootDirectory + DELIMITER + caseUuid.toString() + DELIMITER, "")).toList();
+            filenames = s3Objects.stream().map(obj -> parseFilenameFromKey(obj.key())).toList();
             // For archived cases :
             if (isArchivedCaseFile(originalFilename)) {
                 filenames = filenames.stream()
@@ -486,45 +486,6 @@ public class S3CaseService implements CaseService {
         }
     }
 
-    private void copyZipContent(InputStream inputStream, UUID sourcecaseUuid, UUID caseUuid) throws IOException {
-        try (ZipInputStream zipInputStream = new SecuredZipInputStream(inputStream, 1000, MAX_SIZE)) {
-            ZipEntry entry;
-            while ((entry = zipInputStream.getNextEntry()) != null) {
-                if (!entry.isDirectory()) {
-                    copyEntry(sourcecaseUuid, caseUuid, entry.getName() + GZIP_EXTENSION);
-                }
-                zipInputStream.closeEntry();
-            }
-        }
-    }
-
-    private void copyTarContent(InputStream inputStream, UUID sourcecaseUuid, UUID caseUuid) throws IOException {
-        try (BufferedInputStream tarStream = new BufferedInputStream(inputStream);
-             TarArchiveInputStream tarInputStream = new TarArchiveInputStream(tarStream)) {
-            ArchiveEntry entry;
-            while ((entry = tarInputStream.getNextEntry()) != null) {
-                if (!entry.isDirectory()) {
-                    copyEntry(sourcecaseUuid, caseUuid, entry.getName() + GZIP_EXTENSION);
-                }
-            }
-        }
-    }
-
-    private void copyEntry(UUID sourcecaseUuid, UUID caseUuid, String fileName) {
-        // To optimize copy, files to copy are not downloaded on the case-server. They are directly copied on the S3 server.
-        CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
-                .sourceBucket(bucketName)
-                .sourceKey(rootDirectory + DELIMITER + sourcecaseUuid + DELIMITER + fileName)
-                .destinationBucket(bucketName)
-                .destinationKey(rootDirectory + DELIMITER + caseUuid + DELIMITER + fileName)
-                .build();
-        try {
-            s3Client.copyObject(copyObjectRequest);
-        } catch (S3Exception e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Source file " + caseUuid + DELIMITER + fileName + NOT_FOUND);
-        }
-    }
-
     private <T extends InputStream> void processCompressedEntry(UUID caseUuid, T compressedInputStream, String fileName) throws IOException {
         compressAndUploadToS3(
                 caseUuid,
@@ -541,37 +502,31 @@ public class S3CaseService implements CaseService {
 
         String sourceKey = uuidToKeyWithOriginalFileName(sourceCaseUuid);
         UUID newCaseUuid = UUID.randomUUID();
-        String targetKey = uuidToKeyWithFileName(newCaseUuid, parseFilenameFromKey(sourceKey));
+
+        ListObjectsResponse sourceCaseObjects = s3Client.listObjects(ListObjectsRequest.builder()
+                .bucket(bucketName)
+                .prefix(rootDirectory + DELIMITER + sourceCaseUuid)
+                .build()
+        );
+
         // To optimize copy, cases to copy are not downloaded on the case-server. They are directly copied on the S3 server.
-        CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
-                .sourceBucket(bucketName)
-                .sourceKey(sourceKey)
-                .destinationBucket(bucketName)
-                .destinationKey(targetKey)
-                .build();
-        try {
-            s3Client.copyObject(copyObjectRequest);
-        } catch (S3Exception e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "source case " + sourceCaseUuid + NOT_FOUND);
-        }
-        CaseMetadataEntity existingCase = getCaseMetaDataEntity(sourceCaseUuid);
-        createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed(), existingCase.getOriginalFilename(), existingCase.getCompressionFormat(), existingCase.getFormat());
-        Optional<InputStream> caseStream = getCaseStream(newCaseUuid);
-        if (caseStream.isPresent() && isArchivedCaseFile(existingCase.getOriginalFilename())) {
-            if (isZippedFile(existingCase.getOriginalFilename())) {
-                try (InputStream inputStream = caseStream.get()) {
-                    copyZipContent(inputStream, sourceCaseUuid, newCaseUuid);
-                } catch (Exception e) {
-                    throw CaseException.createCopyZipContentError(sourceCaseUuid, e);
-                }
-            } else if (isTaredFile(existingCase.getOriginalFilename())) {
-                try (InputStream inputStream = caseStream.get()) {
-                    copyTarContent(inputStream, sourceCaseUuid, newCaseUuid);
-                } catch (Exception e) {
-                    throw CaseException.createCopyZipContentError(sourceCaseUuid, e);
-                }
+        for(S3Object object: sourceCaseObjects.contents()){
+            String targetKey = uuidToKeyWithFileName(newCaseUuid, parseFilenameFromKey(object.key()));
+            CopyObjectRequest copyObjectRequest = CopyObjectRequest.builder()
+                    .sourceBucket(bucketName)
+                    .sourceKey(sourceKey)
+                    .destinationBucket(bucketName)
+                    .destinationKey(targetKey)
+                    .build();
+            try {
+                s3Client.copyObject(copyObjectRequest);
+            } catch (S3Exception e) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "source case " + sourceCaseUuid + NOT_FOUND, e);
             }
         }
+
+        CaseMetadataEntity existingCase = getCaseMetaDataEntity(sourceCaseUuid);
+        createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed(), existingCase.getOriginalFilename(), existingCase.getCompressionFormat(), existingCase.getFormat());
         CaseInfos existingCaseInfos = getCaseInfos(sourceCaseUuid);
         CaseInfos caseInfos = createInfos(existingCaseInfos.getName(), newCaseUuid, existingCaseInfos.getFormat());
         if (existingCase.isIndexed()) {
