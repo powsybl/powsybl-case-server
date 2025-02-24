@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,6 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
@@ -108,10 +110,10 @@ public class CaseController {
 
     @GetMapping(value = "/cases/{caseUuid}")
     @Operation(summary = "Download a case")
-    public ResponseEntity<byte[]> downloadCase(@PathVariable("caseUuid") UUID caseUuid) {
+    public ResponseEntity<InputStreamResource> downloadCase(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("getCase request received with parameter caseUuid = {}", caseUuid);
-        byte[] bytes = caseService.getCaseBytes(caseUuid).orElse(null);
-        if (bytes == null) {
+        Optional<InputStream> caseStreamOpt = caseService.getCaseStream(caseUuid);
+        if (caseStreamOpt.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
         String name = caseService.getCaseName(caseUuid);
@@ -120,8 +122,7 @@ public class CaseController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(bytes);
-
+                .body(new InputStreamResource(caseStreamOpt.get()));
     }
 
     @PostMapping(value = "/cases/{caseUuid}", consumes = "application/json")
