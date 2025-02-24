@@ -11,14 +11,22 @@ import com.powsybl.caseserver.service.MinioContainerConfig;
 import com.powsybl.caseserver.service.S3CaseService;
 import com.powsybl.commons.datasource.DataSource;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.io.*;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import java.util.UUID;
+
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
@@ -51,4 +59,18 @@ class S3CaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTes
 
     }
 
+    @Test
+    void testExistsPlainWithExtraFolder() throws IOException {
+        UUID caseUuid = importCase(IIDM_FILE_NAME, "text/plain");
+
+        // Some implementations create an entry for the directory, mimic this behavior
+        // minio doesn't do this so we do it manually
+        S3Client s3client = s3CaseService.getS3Client();
+        s3client.putObject(PutObjectRequest.builder()
+                .bucket(s3CaseService.getBucketName())
+                .key(s3CaseService.uuidToKeyPrefix(caseUuid))
+                .build(), RequestBody.empty());
+
+        assertTrue(s3CaseService.datasourceExists(caseUuid, IIDM_FILE_NAME), "datasourceExist should return true for a plain file even if there is a empty key for the directory");
+    }
 }
