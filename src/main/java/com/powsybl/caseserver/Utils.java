@@ -6,12 +6,7 @@
  */
 package com.powsybl.caseserver;
 
-import org.apache.commons.io.IOUtils;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.List;
-import java.util.zip.GZIPInputStream;
 
 /**
  * @author Etienne Lesot <etienne.lesot at rte-france.com>
@@ -50,10 +45,5 @@ public final class Utils {
 
     public static boolean isTaredFile(String caseName) {
         return caseName.endsWith(".tar");
-    }
-
-    public static byte[] decompress(byte[] data) throws IOException {
-        GZIPInputStream gzipInputStream = new GZIPInputStream(new ByteArrayInputStream(data));
-        return IOUtils.toByteArray(gzipInputStream);
     }
 }

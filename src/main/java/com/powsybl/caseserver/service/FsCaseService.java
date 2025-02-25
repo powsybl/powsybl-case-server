@@ -236,7 +236,7 @@ public class FsCaseService implements CaseService {
 
     private static void createDirectory(Path uuidDirectory) {
         if (Files.exists(uuidDirectory)) {
-            throw CaseException.createDirectoryAreadyExists(uuidDirectory.toString());
+            throw CaseException.createDirectoryAlreadyExists(uuidDirectory.toString());
         }
         try {
             Files.createDirectory(uuidDirectory);
