@@ -304,16 +304,15 @@ public class S3CaseService implements CaseService {
     }
 
     public Boolean datasourceExists(UUID caseUuid, String fileName) {
-        if (getCaseS3Objects(caseUuid).size() > 1 && fileName.equals(getCaseName(caseUuid))) {
-            return Boolean.FALSE;
-        }
-
         String key = uuidToKeyWithFileName(caseUuid, fileName);
         String caseName = getCaseName(caseUuid);
         // For compressed cases, we append the compression extension to the case name as only the compressed file is stored in S3.
         // i.e. : Assuming test.xml.gz is stored in S3. When you request datasourceExists(randomUUID, "test.xml"), you ask to S3 API ("test.xml" + ".gz") exists ? => true
         if (isCompressedCaseFile(caseName)) {
             key = key + "." + getCompressionFormat(caseUuid);
+        } else if (isArchivedCaseFile(caseName) && fileName.equals(getCaseName(caseUuid))) {
+            // We store the archive in addition to its content files, so exists when matching the archive name should return false
+            return Boolean.FALSE;
         } else if (isArchivedCaseFile(caseName) || Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
             key = key + GZIP_EXTENSION;
         }

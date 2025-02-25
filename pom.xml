@@ -45,7 +45,7 @@
 
     <properties>
         <liquibase-hibernate-package>com.powsybl.caseserver.repository</liquibase-hibernate-package>
-        <powsybl-ws-dependencies.version>2.19.0</powsybl-ws-dependencies.version>
+        <powsybl-ws-dependencies.version>2.20.0</powsybl-ws-dependencies.version>
         <spring-cloud-aws-starter-s3>3.2.0</spring-cloud-aws-starter-s3>
     </properties>
 
@@ -121,7 +121,6 @@
         <dependency>
             <groupId>com.powsybl</groupId>
             <artifactId>powsybl-ws-commons</artifactId>
-            <version>1.18.0</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
