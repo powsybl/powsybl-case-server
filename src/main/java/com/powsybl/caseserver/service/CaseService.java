@@ -27,6 +27,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -166,7 +167,7 @@ public interface CaseService {
 
     Optional<Network> loadNetwork(UUID caseUuid);
 
-    Optional<byte[]> getCaseBytes(UUID caseUuid);
+    Optional<InputStream> getCaseStream(UUID caseUuid);
 
     UUID importCase(MultipartFile file, boolean withExpiration, boolean withIndexation, UUID caseUuid);
 
