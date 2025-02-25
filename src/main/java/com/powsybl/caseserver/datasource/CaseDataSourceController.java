@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -63,16 +64,16 @@ public class CaseDataSourceController {
 
     @GetMapping(value = "/cases/{caseUuid}/datasource", params = {"suffix", "ext"})
     @Operation(summary = "Get an input stream")
-    public ResponseEntity<InputStreamResource> getFileData(@PathVariable("caseUuid") UUID caseUuid,
-                                                      @RequestParam(value = "suffix") String suffix,
-                                                      @RequestParam(value = "ext") String ext) {
+    public ResponseEntity<Resource> getFileData(@PathVariable("caseUuid") UUID caseUuid,
+                                                @RequestParam(value = "suffix") String suffix,
+                                                @RequestParam(value = "ext") String ext) {
         InputStream inputStream = caseDataSourceService.getInputStream(caseUuid, suffix, ext);
         return ResponseEntity.ok().contentType(new MediaType("text", "plain", StandardCharsets.UTF_8)).body(new InputStreamResource(inputStream));
     }
 
     @GetMapping(value = "/cases/{caseUuid}/datasource", params = "fileName")
     @Operation(summary = "Get an input stream")
-    public ResponseEntity<InputStreamResource> getFileData(@PathVariable("caseUuid") UUID caseUuid,
+    public ResponseEntity<Resource> getFileData(@PathVariable("caseUuid") UUID caseUuid,
                                                              @RequestParam(value = "fileName") String fileName) {
         InputStream inputStream = caseDataSourceService.getInputStream(caseUuid, fileName);
         return ResponseEntity.ok().contentType(new MediaType("text", "plain", StandardCharsets.UTF_8)).body(new InputStreamResource(inputStream));
