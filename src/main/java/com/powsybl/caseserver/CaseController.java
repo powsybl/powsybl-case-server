@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -110,7 +111,7 @@ public class CaseController {
 
     @GetMapping(value = "/cases/{caseUuid}")
     @Operation(summary = "Download a case")
-    public ResponseEntity<InputStreamResource> downloadCase(@PathVariable("caseUuid") UUID caseUuid) {
+    public ResponseEntity<Resource> downloadCase(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("getCase request received with parameter caseUuid = {}", caseUuid);
         Optional<InputStream> caseStreamOpt = caseService.getCaseStream(caseUuid);
         if (caseStreamOpt.isEmpty()) {
