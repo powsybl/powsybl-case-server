@@ -379,7 +379,7 @@ public class S3CaseService implements CaseService {
      * - The system would behave differently when the original archive is missing making the datasource unusable in this case,
      *   whereas in other cases, the archive is only needed for re-downloading.
      * - Alternative solutions (e.g., storing the filename in Postgres or as S3 metadata) would further increase system complexity
-     *   by requiring a database query or an S3 metadata retrieval instead of a simple HEAD request.
+     *   by requiring a database query or an S3 metadata retrieval instead of a simple HEAD request which could behave (in particular in case of failures) differently.
      * Since performance is currently acceptable, we haven't implemented this optimization yet.
      * </p>
      *
