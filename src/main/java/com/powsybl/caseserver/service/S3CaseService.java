@@ -16,7 +16,7 @@ import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
 import com.powsybl.ws.commons.SecuredZipInputStream;
-import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.utils.FileNameUtils;
 import org.apache.commons.io.FileUtils;
@@ -47,14 +47,16 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import java.util.zip.*;
 
 import static com.powsybl.caseserver.Utils.*;
 import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM_VALUE;
-
+//does not seems ok to have a tar or zip with != file name inside does it work in FS? same for ZIP
+// we can't import zip or tar if they contain only one file that is different from archive name (importer == null) and throws exception
+// another way to do that is then to persist the info to know if it was uploaded with only one file in the archive and derivate some
+// logic from that similar to what's done with plain file.
+// I think the metadata implemented here is more generic
+// what i like too is that we don't store any extra files
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
  * @author Etienne Homer <etienne.homer at rte-france.com>
@@ -66,6 +68,8 @@ public class S3CaseService implements CaseService {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3CaseService.class);
     public static final int MAX_SIZE = 500000000;
     public static final String DELIMITER = "/";
+    public static final String METADATA_FILENAMES = "filenames";
+    public static final String METADATA_FILE_NAME_DELIMITER = ",";
 
     private ComputationManager computationManager = LocalComputationManager.getDefault();
 
@@ -300,6 +304,7 @@ public class S3CaseService implements CaseService {
 
     @Override
     public boolean caseExists(UUID uuid) {
+        //why not head to know if case exist?
         return !getCaseS3Objects(uuid).isEmpty();
     }
 
@@ -312,23 +317,45 @@ public class S3CaseService implements CaseService {
             key = key + "." + getCompressionFormat(caseUuid);
         } else if (isArchivedCaseFile(caseName) && fileName.equals(getCaseName(caseUuid))) {
             // We store the archive in addition to its content files, so exists when matching the archive name should return false
+            // can this happen ?
             return Boolean.FALSE;
-        } else if (isArchivedCaseFile(caseName) || Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
+        } else if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
             key = key + GZIP_EXTENSION;
+        } else if (isArchivedCaseFile(caseName)) {
+            // For archive, we check in the metadata of the archive the files it contains
+            key = uuidToKeyWithFileName(caseUuid, caseName);
         }
 
+        if (!isArchivedCaseFile(caseName)) {
+            HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(key)
+                    .build();
+            try {
+                s3Client.headObject(headObjectRequest);
+                return Boolean.TRUE;
+            } catch (NoSuchKeyException e) {
+                return Boolean.FALSE;
+            }
+        } else {
+            return getFileNamesFromS3Metadata(s3Client, bucketName, key).contains(fileName);
+        }
+    }
+
+    private List<String> getFileNamesFromS3Metadata(S3Client s3Client, String bucketName, String key) {
+        // this throws if case does not exist we can catch it
         HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
                 .bucket(bucketName)
                 .key(key)
                 .build();
-        try {
-            s3Client.headObject(headObjectRequest);
-            return Boolean.TRUE;
-        } catch (NoSuchKeyException e) {
-            return Boolean.FALSE;
-        }
+
+        HeadObjectResponse headObjectResponse = s3Client.headObject(headObjectRequest);
+
+        String fileNames = headObjectResponse.metadata().get(METADATA_FILENAMES);
+        return fileNames != null ? Arrays.asList(fileNames.split(METADATA_FILE_NAME_DELIMITER)) : Collections.emptyList();
     }
 
+    //FIXED: issue when there is a zipped CGMES with nested files it worked in FS but not anymore in S3
     public Set<String> listName(UUID caseUuid, String regex) {
         List<String> filenames;
         String originalFilename = getOriginalFilename(caseUuid);
@@ -337,19 +364,13 @@ public class S3CaseService implements CaseService {
             filenames = List.of(removeExtension(originalFilename, "." + getCompressionFormat(caseUuid)));
         } else if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
             // for files that are not compressed when imported (but are in the back)
-            filenames = List.of(removeExtension(originalFilename, GZIP_EXTENSION));
-        } else {
+            // but if they are not compressed originalFilename does not have any extension? why remove gzip_extension ?
+            filenames = List.of(originalFilename);
+        } else if (isArchivedCaseFile(originalFilename)) {
+            filenames = getFileNamesFromS3Metadata(s3Client, bucketName, uuidToKeyWithFileName(caseUuid, originalFilename));
+        } else { // what's this case? to remove ?
             List<S3Object> s3Objects = getCaseS3Objects(caseUuid);
             filenames = s3Objects.stream().map(obj -> parseFilenameFromKey(obj.key())).toList();
-            // For archived cases :
-            if (isArchivedCaseFile(originalFilename)) {
-                filenames = filenames.stream()
-                        // the original archive name has to be filtered.
-                        .filter(name -> !name.equals(originalFilename))
-                        // each subfile hase been gzipped -> we have to remove the gz extension (only one, the one we added).
-                        .map(name -> removeExtension(name, GZIP_EXTENSION))
-                        .collect(Collectors.toList());
-            }
         }
         return filenames.stream().filter(n -> n.matches(regex)).collect(Collectors.toSet());
     }
@@ -383,26 +404,21 @@ public class S3CaseService implements CaseService {
         String format = withTempCopy(caseUuid, caseName, mpf::transferTo, this::getFormat);
         String compressionFormat = FileNameUtils.getExtension(Paths.get(caseName));
 
-        // Process and store GZ compressed files extracted from archive file
-        if (isArchivedCaseFile(caseName)) {
-            try (InputStream inputStream = mpf.getInputStream()) {
-                if (isZippedFile(caseName)) {
-                    importZipContent(inputStream, caseUuid);
-                } else if (isTaredFile(caseName)) {
-                    importTarContent(inputStream, caseUuid);
-                }
-            } catch (IOException e) {
-                throw CaseException.createFileNotImportable(caseName, e);
-            }
-        }
-
         // Store the original file
         try (InputStream inputStream = mpf.getInputStream()) {
-            if (!isArchivedCaseFile(caseName) && !isCompressedCaseFile(caseName)) {
+            if (isArchivedCaseFile(caseName)) {
+                // If it's an archive, store it with the file it contains in metadata
+                List<String> fileNames = extractFilenamesFromArchive(mpf, caseName);
+                uploadToS3WithMetadata(
+                        uuidToKeyWithFileName(caseUuid, caseName),
+                        mpf.getContentType(),
+                        RequestBody.fromInputStream(inputStream, mpf.getSize()),
+                        fileNames);
+            } else if (!isCompressedCaseFile(caseName)) {
                 // If it's a plain file, compress it before storing
                 compressAndUploadToS3(caseUuid, caseName + GZIP_EXTENSION, APPLICATION_OCTET_STREAM_VALUE, inputStream);
             } else {
-                // If the file is an archive or already compressed, store it as-is
+                // If the file is already compressed, store it as-is
                 uploadToS3(
                         uuidToKeyWithFileName(caseUuid, caseName),
                         mpf.getContentType(),
@@ -420,6 +436,63 @@ public class S3CaseService implements CaseService {
         notificationService.sendImportMessage(caseInfos.createMessage());
 
         return caseUuid;
+    }
+
+    private List<String> extractFilenamesFromArchive(MultipartFile mpf, String caseName) {
+        try (InputStream inputStream = mpf.getInputStream()) {
+            // Directly assume the file is an archive (ZIP or TAR)
+            if (isZippedFile(caseName)) {
+                return extractFilenamesFromZip(inputStream);
+            } else if (isTaredFile(caseName)) {
+                return extractFilenamesFromTar(inputStream);
+            } else {
+                //TODO: better exception
+                throw CaseException.createIllegalCaseName(caseName);
+            }
+        } catch (IOException e) {
+            throw CaseException.createFileNotImportable(caseName, e);
+        }
+    }
+
+    private void uploadToS3WithMetadata(String key, String contentType, RequestBody requestBody, List<String> fileNames) {
+        //Use json array instead?
+        String fileNamesStr = String.join(METADATA_FILE_NAME_DELIMITER, fileNames);
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .metadata(Map.of(METADATA_FILENAMES, fileNamesStr))
+                .contentType(contentType)
+                .build();
+        s3Client.putObject(putObjectRequest, requestBody);
+    }
+
+    private List<String> extractFilenamesFromZip(InputStream zipStream) throws IOException {
+        List<String> filenames = new ArrayList<>();
+        try (ZipInputStream zipInputStream = new SecuredZipInputStream(zipStream, 1000, MAX_SIZE)) {
+            ZipEntry entry;
+            while ((entry = zipInputStream.getNextEntry()) != null) {
+                if (!entry.isDirectory()) {
+                    filenames.add(entry.getName());
+                }
+                zipInputStream.closeEntry();
+            }
+        }
+        return filenames;
+    }
+
+    private List<String> extractFilenamesFromTar(InputStream tarStream) throws IOException {
+        List<String> filenames = new ArrayList<>();
+        //TODO: use secured input stream to avoid archive bomb
+        try (TarArchiveInputStream tarInputStream = new TarArchiveInputStream(tarStream)) {
+            TarArchiveEntry entry;
+            while ((entry = tarInputStream.getNextEntry()) != null) {
+                if (!entry.isDirectory()) {
+                    filenames.add(entry.getName());
+                }
+            }
+        }
+
+        return filenames;
     }
 
     private void compressAndUploadToS3(UUID caseUuid, String fileName, String contentType, InputStream inputStream) {
@@ -459,38 +532,6 @@ public class S3CaseService implements CaseService {
              GZIPOutputStream gzipOutputStream = new GZIPOutputStream(fileOutputStream)) {
             inputStream.transferTo(gzipOutputStream);
         }
-    }
-
-    private void importZipContent(InputStream inputStream, UUID caseUuid) throws IOException {
-        try (ZipInputStream zipInputStream = new SecuredZipInputStream(inputStream, 1000, MAX_SIZE)) {
-            ZipEntry entry;
-            while ((entry = zipInputStream.getNextEntry()) != null) {
-                if (!entry.isDirectory()) {
-                    processCompressedEntry(caseUuid, zipInputStream, entry.getName());
-                }
-                zipInputStream.closeEntry();
-            }
-        }
-    }
-
-    private void importTarContent(InputStream inputStream, UUID caseUuid) throws IOException {
-        try (BufferedInputStream tarStream = new BufferedInputStream(inputStream);
-            TarArchiveInputStream tarInputStream = new TarArchiveInputStream(tarStream)) {
-            ArchiveEntry entry;
-            while ((entry = tarInputStream.getNextEntry()) != null) {
-                if (!entry.isDirectory()) {
-                    processCompressedEntry(caseUuid, tarInputStream, entry.getName());
-                }
-            }
-        }
-    }
-
-    private <T extends InputStream> void processCompressedEntry(UUID caseUuid, T compressedInputStream, String fileName) throws IOException {
-        compressAndUploadToS3(
-                caseUuid,
-                fileName + GZIP_EXTENSION,
-                Files.probeContentType(Paths.get(fileName)), // Detect the MIME type
-                compressedInputStream);
     }
 
     @Override
