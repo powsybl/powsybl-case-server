@@ -361,11 +361,21 @@ public class S3CaseService implements CaseService {
      *     <li>The extracted files, which are placed directly in the caseUuid directory.</li>
      * </ul>
      *
+     * <p>
      * This allows us to use {@code HeadObjectRequest} to check if a datasource exists,
      * download subfiles separately, or respond to {@code datasource/list} using {@code ListObjectV2}.
      * However, this unarchived storage could significantly increase disk space usage.
      * To mitigate this, each extracted file is gzipped, regardless of whether it was already compressed.
      * Compression is applied uniformly: even if a subfile is already compressed, it will still be gzipped in storage.
+     * </p>
+     *
+     * <p>
+     * Currently, there is no optimization for archives (zip or tar) containing a single file. In this case, we unnecessarily decompress and recompress
+     * the file contained in the archive as gzip, which impacts performance. To optimize this, we can store an empty file in S3 with the name of the
+     * file contained in the archive, along with a boolean flag in Postgres. This would allow us to continue using the HEAD request to check
+     * for existence and directly read the original archive input stream when needed. However, we haven't implemented this yet,
+     * as the current performance is acceptable and the added complexity may not be justified for the moment.
+     * </p>
      *
      * <p><b>Example:</b></p>
      * archive.zip containing [file1.xml, file2.xml.gz] will be stored as:
