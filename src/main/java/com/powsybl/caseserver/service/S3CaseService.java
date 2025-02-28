@@ -370,11 +370,17 @@ public class S3CaseService implements CaseService {
      * </p>
      *
      * <p>
-     * Currently, there is no optimization for archives (zip or tar) containing a single file. In this case, we unnecessarily decompress and recompress
-     * the file contained in the archive as gzip, which impacts performance. To optimize this, we can store an empty file in S3 with the name of the
-     * file contained in the archive, along with a boolean flag in Postgres. This would allow us to continue using the HEAD request to check
-     * for existence and directly read the original archive input stream when needed. However, we haven't implemented this yet,
-     * as the current performance is acceptable and the added complexity may not be justified for the moment.
+     * Currently, there is no optimization for archives (ZIP or TAR) containing a single file.
+     * In this case, we unnecessarily decompress and recompress the file as GZIP, impacting import performance.
+     * To optimize this, we could store an empty file in S3 with the name of the file inside the archive,
+     * along with a boolean flag in Postgres. This would allow us to use a HEAD request to check for existence
+     * and directly read the original archive stream when needed.
+     * However, this approach introduces complexity:
+     * - The system would behave differently when the original archive is missing making the datasource unusable in this case,
+     *   whereas in other cases, the archive is only needed for re-downloading.
+     * - Alternative solutions (e.g., storing the filename in Postgres or as S3 metadata) would further increase system complexity
+     *   by requiring a database query or an S3 metadata retrieval instead of a simple HEAD request.
+     * Since performance is currently acceptable, we haven't implemented this optimization yet.
      * </p>
      *
      * <p><b>Example:</b></p>
