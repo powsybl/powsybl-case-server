@@ -19,4 +19,4 @@ powsybl-ws:
   database:
     host: localhost
 
-cleaning-cases-cron: 0 * 2 * * ?
+cleaning-cases-cron: 0 0 2 * * ?
