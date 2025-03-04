@@ -26,7 +26,7 @@ powsybl-ws:
   database:
     name: case_metadata
 
-cleaning-cases-cron: 0 * 2 * * ?
+cleaning-cases-cron: 0 0 2 * * ?
 
 storage:
   type: FS  # FS or S3
