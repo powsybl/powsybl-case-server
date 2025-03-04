@@ -12,6 +12,7 @@ import com.powsybl.caseserver.elasticsearch.DisableElasticsearch;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -45,8 +46,13 @@ class ScheduledCaseCleanerTest {
     @MockBean
     private CaseService caseService;
 
+    @BeforeEach
+    void cleanDBBeforeEach() {
+        caseMetadataRepository.deleteAll();
+    }
+
     @AfterEach
-    void cleanDB() {
+    void cleanDBAfterEach() {
         caseMetadataRepository.deleteAll();
     }
 
