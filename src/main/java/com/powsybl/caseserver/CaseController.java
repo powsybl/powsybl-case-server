@@ -119,7 +119,7 @@ public class CaseController {
         }
         String name = caseService.getCaseName(caseUuid);
         String baseName = DataSourceUtil.getBaseName(name);
-        String extension = name.replace(baseName + ".", "");
+        String extension = name.replaceFirst(baseName + ".", "");
         HttpHeaders headers = new HttpHeaders();
         headers.add("extension", extension);
         return ResponseEntity.ok()
