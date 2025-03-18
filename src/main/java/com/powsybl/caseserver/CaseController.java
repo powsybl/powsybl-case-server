@@ -118,8 +118,10 @@ public class CaseController {
             return ResponseEntity.noContent().build();
         }
         String name = caseService.getCaseName(caseUuid);
+        String baseName = DataSourceUtil.getBaseName(name);
+        String extension = name.replaceFirst(baseName + ".", "");
         HttpHeaders headers = new HttpHeaders();
-        headers.add("caseName", name);
+        headers.add("extension", extension);
         return ResponseEntity.ok()
                 .headers(headers)
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
