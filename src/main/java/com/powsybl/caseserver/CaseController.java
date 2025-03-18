@@ -119,9 +119,8 @@ public class CaseController {
         }
         String name = caseService.getCaseName(caseUuid);
         String baseName = DataSourceUtil.getBaseName(name);
-        String extension = name.replace(baseName, "");
+        String extension = name.replace(baseName + ".", "");
         HttpHeaders headers = new HttpHeaders();
-        headers.add("caseName", name);
         headers.add("extension", extension);
         return ResponseEntity.ok()
                 .headers(headers)
