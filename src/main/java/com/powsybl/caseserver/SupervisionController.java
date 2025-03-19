@@ -68,11 +68,15 @@ public class SupervisionController {
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping(value = "/cases/indexation")
-    @Operation(summary = "delete indexed cases")
-    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "all indexed cases have been deleted")})
-    public ResponseEntity<String> deleteIndexedCases() {
-        return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(Long.toString(supervisionService.deleteIndexedCases()));
+    @PostMapping(value = "/cases/index/recreate")
+    @Operation(summary = "Recreate Elasticsearch index")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Elasticsearch index recreated successfully"),
+        @ApiResponse(responseCode = "500", description = "Failed to recreate Elasticsearch index")
+    })
+    public ResponseEntity<Void> recreateESIndex() {
+        supervisionService.recreateIndex();
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping(value = "/cases/indexation-count")
