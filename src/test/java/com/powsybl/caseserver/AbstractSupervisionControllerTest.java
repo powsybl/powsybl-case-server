@@ -64,7 +64,7 @@ abstract class AbstractSupervisionControllerTest {
         importCase(false);
 
         // recreate the index
-        mockMvc.perform(post("/v1/supervision/cases/index/recreate"))
+        mockMvc.perform(post("/v1/supervision/cases/index"))
                 .andExpect(status().isOk());
 
         assertEquals(0, supervisionService.getIndexedCasesCount());
