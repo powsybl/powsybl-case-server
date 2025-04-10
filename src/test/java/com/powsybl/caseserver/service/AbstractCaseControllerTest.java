@@ -29,8 +29,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -40,6 +39,8 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -271,11 +272,17 @@ abstract class AbstractCaseControllerTest {
         assertThat(mvcResult.getResponse().getHeader("content-disposition")).contains("attachment;");
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
-        // download a case
-        mvc.perform(get(GET_CASE_URL, firstCaseUuid))
-                .andExpect(status().isOk())
-                .andExpect(content().xml(testCaseContent))
-                .andReturn();
+        try (InputStream inputStream = getClass().getResourceAsStream("/" + TEST_CASE)) {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(byteArrayOutputStream)) {
+                inputStream.transferTo(gzipOutputStream);
+            }
+            byte[] expectedGzippedBytes = byteArrayOutputStream.toByteArray();
+            mvc.perform(get(GET_CASE_URL, firstCaseUuid))
+                    .andExpect(status().isOk())
+                    .andExpect(content().bytes(expectedGzippedBytes))
+                    .andReturn();
+        }
 
         // export a case in CGMES format
         mvcResult = mvc.perform(post(GET_CASE_URL, firstCaseUuid).param("format", "CGMES"))

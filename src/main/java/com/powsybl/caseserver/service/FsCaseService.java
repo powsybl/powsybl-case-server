@@ -200,7 +200,8 @@ public class FsCaseService implements CaseService {
         Path caseFile = getCasePath(caseName, shouldCompress, uuidDirectory);
         try (InputStream inputStream = mpf.getInputStream();
              OutputStream fileOutputStream = Files.newOutputStream(caseFile);
-             OutputStream outputStream = shouldCompress ? new GZIPOutputStream(fileOutputStream) : new BufferedOutputStream(fileOutputStream)) {
+             OutputStream outputStream = shouldCompress ? new GZIPOutputStream(fileOutputStream) : new BufferedOutputStream(fileOutputStream))
+        {
             inputStream.transferTo(outputStream);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -388,11 +389,7 @@ public class FsCaseService implements CaseService {
 
         try {
             InputStream fileStream = new BufferedInputStream(Files.newInputStream(caseFile));
-            if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
-                return Optional.of(new GZIPInputStream(fileStream));
-            } else {
-                return Optional.of(fileStream);
-            }
+            return Optional.of(fileStream);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

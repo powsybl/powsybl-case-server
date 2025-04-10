@@ -8,6 +8,7 @@ package com.powsybl.caseserver;
 
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
+import com.powsybl.caseserver.repository.StorageConfig;
 import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.caseserver.service.MetadataService;
 import com.powsybl.commons.datasource.DataSourceUtil;
@@ -122,6 +123,10 @@ public class CaseController {
         String extension = name.replaceFirst(baseName + ".", "");
         HttpHeaders headers = new HttpHeaders();
         headers.add("extension", extension);
+        if (caseService.isUploadedAsPlainFile(caseUuid)) {
+            headers.add("Content-Encoding", "gzip");
+        }
+
         return ResponseEntity.ok()
                 .headers(headers)
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)

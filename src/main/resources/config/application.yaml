@@ -32,9 +32,3 @@ storage:
   type: FS  # FS or S3
 
 case-subpath: cases
-
-server:
-  compression:
-    enabled: true
-    min-response-size: 1MB
-    mime-types: application/octet-stream
