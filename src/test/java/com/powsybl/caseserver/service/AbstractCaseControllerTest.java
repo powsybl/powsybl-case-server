@@ -39,7 +39,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
-import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import static org.assertj.core.api.Assertions.assertThat;

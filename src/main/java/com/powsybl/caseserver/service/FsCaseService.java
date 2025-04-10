@@ -200,8 +200,7 @@ public class FsCaseService implements CaseService {
         Path caseFile = getCasePath(caseName, shouldCompress, uuidDirectory);
         try (InputStream inputStream = mpf.getInputStream();
              OutputStream fileOutputStream = Files.newOutputStream(caseFile);
-             OutputStream outputStream = shouldCompress ? new GZIPOutputStream(fileOutputStream) : new BufferedOutputStream(fileOutputStream))
-        {
+             OutputStream outputStream = shouldCompress ? new GZIPOutputStream(fileOutputStream) : new BufferedOutputStream(fileOutputStream)) {
             inputStream.transferTo(outputStream);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
