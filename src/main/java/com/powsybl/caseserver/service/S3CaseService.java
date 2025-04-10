@@ -120,7 +120,7 @@ public class S3CaseService implements CaseService {
             // Create parent directory if necessary
             Path parentPath = Paths.get(filename).getParent();
             if (parentPath != null) {
-                Files.createDirectory(tempdirPath.resolve(parentPath), attr);
+                Files.createDirectories(tempdirPath.resolve(parentPath), attr);
             }
             // after this line, need to cleanup the dir
         } catch (IOException e) {
