@@ -34,7 +34,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
-import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
@@ -388,11 +387,7 @@ public class FsCaseService implements CaseService {
 
         try {
             InputStream fileStream = new BufferedInputStream(Files.newInputStream(caseFile));
-            if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
-                return Optional.of(new GZIPInputStream(fileStream));
-            } else {
-                return Optional.of(fileStream);
-            }
+            return Optional.of(fileStream);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

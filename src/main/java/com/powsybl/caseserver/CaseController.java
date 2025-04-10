@@ -122,6 +122,10 @@ public class CaseController {
         String extension = name.replaceFirst(baseName + ".", "");
         HttpHeaders headers = new HttpHeaders();
         headers.add("extension", extension);
+        if (Boolean.TRUE.equals(caseService.isUploadedAsPlainFile(caseUuid))) {
+            headers.add("Content-Encoding", "gzip");
+        }
+
         return ResponseEntity.ok()
                 .headers(headers)
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
