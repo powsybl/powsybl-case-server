@@ -21,7 +21,6 @@ import com.powsybl.computation.ComputationManager;
 import com.powsybl.iidm.network.Exporter;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.iidm.network.Network;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
