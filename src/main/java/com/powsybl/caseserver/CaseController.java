@@ -122,7 +122,7 @@ public class CaseController {
         String extension = name.replaceFirst(baseName + ".", "");
         HttpHeaders headers = new HttpHeaders();
         headers.add("extension", extension);
-        if (caseService.isUploadedAsPlainFile(caseUuid)) {
+        if (Boolean.TRUE.equals(caseService.isUploadedAsPlainFile(caseUuid))) {
             headers.add("Content-Encoding", "gzip");
         }
 

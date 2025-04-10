@@ -58,6 +58,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ContextConfigurationWithTestChannel
 abstract class AbstractCaseControllerTest {
     static final String TEST_CASE = "testCase.xiidm";
+    static final String TEST_GZIP_CASE = "LF.xml.gz";
     private static final String TEST_TAR_CASE = "tarCase.tar";
     private static final String TEST_CASE_FORMAT = "XIIDM";
     private static final String NOT_A_NETWORK = "notANetwork.txt";
@@ -271,6 +272,7 @@ abstract class AbstractCaseControllerTest {
         assertThat(mvcResult.getResponse().getHeader("content-disposition")).contains("attachment;");
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
+        // download a plain file case
         try (InputStream inputStream = getClass().getResourceAsStream("/" + TEST_CASE)) {
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(byteArrayOutputStream)) {
@@ -282,6 +284,13 @@ abstract class AbstractCaseControllerTest {
                     .andExpect(content().bytes(expectedGzippedBytes))
                     .andReturn();
         }
+
+        UUID gzipCaseUuid = importCase(TEST_GZIP_CASE, false);
+        mvc.perform(get(GET_CASE_URL, gzipCaseUuid))
+                .andExpect(status().isOk())
+                .andExpect(content().bytes(getClass().getResourceAsStream("/" + TEST_GZIP_CASE).readAllBytes()))
+                .andReturn();
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
         // export a case in CGMES format
         mvcResult = mvc.perform(post(GET_CASE_URL, firstCaseUuid).param("format", "CGMES"))
