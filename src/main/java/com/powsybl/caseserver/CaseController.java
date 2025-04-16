@@ -41,6 +41,7 @@ import java.io.InputStream;
 import java.util.*;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
+import static com.powsybl.caseserver.Utils.buildHeaders;
 
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
@@ -118,14 +119,8 @@ public class CaseController {
             return ResponseEntity.noContent().build();
         }
         String name = caseService.getCaseName(caseUuid);
-        String baseName = DataSourceUtil.getBaseName(name);
-        String extension = name.replaceFirst(baseName + ".", "");
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("extension", extension);
-        if (Boolean.TRUE.equals(caseService.isUploadedAsPlainFile(caseUuid))) {
-            headers.add("Content-Encoding", "gzip");
-        }
-
+        Boolean isUploadedAsPlainFile = caseService.isUploadedAsPlainFile(caseUuid);
+        HttpHeaders headers = buildHeaders(name, isUploadedAsPlainFile);
         return ResponseEntity.ok()
                 .headers(headers)
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
