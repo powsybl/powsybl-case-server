@@ -14,7 +14,6 @@ import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.computation.ComputationManager;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
-import com.powsybl.iidm.network.Network;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.compress.utils.FileNameUtils;
 import org.slf4j.Logger;
@@ -29,6 +28,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.io.*;
 import java.nio.file.*;
+import java.nio.file.FileSystem;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -101,9 +101,9 @@ public class FsCaseService implements CaseService {
     public List<CaseInfos> getCases() {
         try (Stream<Path> walk = Files.walk(getStorageRootDir())) {
             return walk.filter(Files::isRegularFile)
-                    .map(this::getCaseInfoSafely)
-                    .filter(Objects::nonNull)
-                    .toList();
+                .map(this::getCaseInfoSafely)
+                .filter(Objects::nonNull)
+                .toList();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -290,25 +290,6 @@ public class FsCaseService implements CaseService {
 
     private CaseInfos createInfos(Path caseFile, UUID caseUuid) {
         return createInfos(caseFile.getFileName().toString(), caseUuid, getFormat(caseFile));
-    }
-
-    @Override
-    public Optional<Network> loadNetwork(UUID caseUuid) {
-        checkStorageInitialization();
-
-        Path caseFile = getCaseFile(caseUuid);
-        if (caseFile == null) {
-            return Optional.empty();
-        }
-
-        if (Files.exists(caseFile) && Files.isRegularFile(caseFile)) {
-            Network network = Network.read(caseFile);
-            if (network == null) {
-                throw CaseException.createFileNotImportable(caseFile);
-            }
-            return Optional.of(network);
-        }
-        return Optional.empty();
     }
 
     void deleteDirectoryRecursively(Path caseDirectory) {

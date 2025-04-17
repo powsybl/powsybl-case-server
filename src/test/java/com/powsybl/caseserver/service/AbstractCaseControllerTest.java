@@ -41,7 +41,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.*;
@@ -212,19 +211,6 @@ abstract class AbstractCaseControllerTest {
     }
 
     @Test
-    void testExportNonExistingCaseFromat() throws Exception {
-        createStorageDir();
-
-        // import a case
-        UUID firstCaseUuid = importCase(TEST_CASE, false);
-
-        // export a case in a non-existing format
-        mvc.perform(post(GET_CASE_URL, firstCaseUuid).param("format", "JPEG"))
-                .andExpect(status().isUnprocessableEntity());
-        assertNotNull(outputDestination.receive(1000, caseImportDestination));
-    }
-
-    @Test
     void deleteNonExistingCase() throws Exception {
         createStorageDir();
 
@@ -261,14 +247,6 @@ abstract class AbstractCaseControllerTest {
                 .andReturn();
 
         String testCaseContent = new String(ByteStreams.toByteArray(getClass().getResourceAsStream("/" + TEST_CASE)), StandardCharsets.UTF_8);
-
-        // retrieve a case in XIIDM format
-        var mvcResult = mvc.perform(post(GET_CASE_URL, firstCaseUuid).param("format", "XIIDM"))
-                .andExpect(status().isOk())
-                .andExpect(content().xml(testCaseContent))
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_OCTET_STREAM))
-                .andReturn();
-        assertThat(mvcResult.getResponse().getHeader("content-disposition")).contains("attachment;");
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
         // download a case
@@ -276,14 +254,6 @@ abstract class AbstractCaseControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().xml(testCaseContent))
                 .andReturn();
-
-        // export a case in CGMES format
-        mvcResult = mvc.perform(post(GET_CASE_URL, firstCaseUuid).param("format", "CGMES"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_OCTET_STREAM))
-                .andReturn();
-        assertThat(mvcResult.getResponse().getHeader("content-disposition")).contains("attachment;");
-
         // delete the case
         mvc.perform(delete(GET_CASE_URL, firstCaseUuid))
                 .andExpect(status().isOk());
@@ -418,7 +388,7 @@ abstract class AbstractCaseControllerTest {
                 .andReturn();
 
         // list the cases and expect one case
-        mvcResult = mvc.perform(get("/v1/cases"))
+        MvcResult mvcResult = mvc.perform(get("/v1/cases"))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -818,11 +788,6 @@ abstract class AbstractCaseControllerTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].format").value(TEST_CASE_FORMAT))
                 .andReturn();
 
-        // retrieve a case in XIIDM format
-        var mvcResult = mvc.perform(post(GET_CASE_URL, tarCaseUuid).param("format", "XIIDM"))
-                .andExpect(status().isOk())
-                .andReturn();
-        assertThat(mvcResult.getResponse().getHeader("content-disposition")).contains("attachment;");
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
         //duplicate an existing case
