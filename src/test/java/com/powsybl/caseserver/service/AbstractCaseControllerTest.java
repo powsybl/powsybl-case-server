@@ -279,8 +279,8 @@ abstract class AbstractCaseControllerTest {
         Message<byte[]> messageImportPrivate2 = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImportPrivate2.getPayload()));
         MessageHeaders headersPrivateCase2 = messageImportPrivate2.getHeaders();
-        assertEquals(TEST_CASE, headersPrivateCase2.get(CaseInfos.NAME_HEADER_KEY));
-        assertEquals(secondCaseUuid, headersPrivateCase2.get(CaseInfos.UUID_HEADER_KEY));
+        assertEquals(TEST_GZIP_CASE, headersPrivateCase2.get(CaseInfos.NAME_HEADER_KEY));
+        assertEquals(gzipCaseUuid, headersPrivateCase2.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("XIIDM", headersPrivateCase2.get(CaseInfos.FORMAT_HEADER_KEY));
 
         //check that the case doesn't have an expiration date
@@ -302,7 +302,7 @@ abstract class AbstractCaseControllerTest {
         assertEquals("", new String(messageImport.getPayload()));
         MessageHeaders headersCase = messageImport.getHeaders();
         assertEquals(TEST_CASE, headersCase.get(CaseInfos.NAME_HEADER_KEY));
-        assertEquals(caseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
+        assertEquals(secondCaseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
 
         //check that the case doesn't have an expiration date
@@ -321,7 +321,7 @@ abstract class AbstractCaseControllerTest {
         messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         headersCase = messageImport.getHeaders();
-        assertEquals(UUID.fromString(duplicateCaseUuid), headersCase.get(CaseInfos.UUID_HEADER_KEY));
+        assertEquals(caseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals(TEST_CASE, headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
 
@@ -340,7 +340,7 @@ abstract class AbstractCaseControllerTest {
         assertEquals("", new String(messageImport.getPayload()));
         headersCase = messageImport.getHeaders();
         assertEquals(TEST_CASE, headersCase.get(CaseInfos.NAME_HEADER_KEY));
-        assertEquals(thirdCaseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
+        assertEquals(UUID.fromString(duplicateCaseUuid), headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
 
         //check that the case does have an expiration date
@@ -364,7 +364,7 @@ abstract class AbstractCaseControllerTest {
         messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         headersCase = messageImport.getHeaders();
-        assertEquals(UUID.fromString(duplicateCaseUuid2), headersCase.get(CaseInfos.UUID_HEADER_KEY));
+        assertEquals(thirdCaseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals(TEST_CASE, headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
 
@@ -418,6 +418,7 @@ abstract class AbstractCaseControllerTest {
         // delete all cases
         mvc.perform(delete("/v1/cases"))
                 .andExpect(status().isOk());
+        outputDestination.receive(1000, caseImportDestination);
     }
 
     @Test
