@@ -6,38 +6,44 @@
  */
 package com.powsybl.caseserver.service;
 
+import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.IndexOperations;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * @author Jamal KHEYYAD <jamal.kheyyad at rte-international.com>
  */
 @Service
 public class SupervisionService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SupervisionService.class);
 
     private final CaseInfosRepository caseInfosRepository;
+    private final ElasticsearchOperations elasticsearchOperations;
 
-    public SupervisionService(CaseInfosRepository caseInfosRepository) {
+    public SupervisionService(CaseInfosRepository caseInfosRepository, ElasticsearchOperations elasticsearchOperations) {
         this.caseInfosRepository = caseInfosRepository;
-    }
-
-    public long deleteIndexedCases() {
-        AtomicReference<Long> startTime = new AtomicReference<>();
-        startTime.set(System.nanoTime());
-
-        long nbIndexesToDelete = getIndexedCasesCount();
-        caseInfosRepository.deleteAll();
-        LOGGER.trace("Indexed cases deletion : {} seconds", TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startTime.get()));
-        return nbIndexesToDelete;
+        this.elasticsearchOperations = elasticsearchOperations;
     }
 
     public long getIndexedCasesCount() {
         return caseInfosRepository.count();
+    }
+
+    public void recreateIndex() {
+        IndexOperations indexOperations = elasticsearchOperations.indexOps(CaseInfos.class);
+        boolean isDeleted = indexOperations.delete();
+        if (!isDeleted) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to delete cases ElasticSearch index");
+        }
+
+        boolean isCreated = indexOperations.createWithMapping();
+        if (!isCreated) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Failed to create cases ElasticSearch index");
+        }
     }
 }

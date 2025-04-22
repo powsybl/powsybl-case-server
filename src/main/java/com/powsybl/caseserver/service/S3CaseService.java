@@ -45,7 +45,6 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -119,7 +118,7 @@ public class S3CaseService implements CaseService {
             // Create parent directory if necessary
             Path parentPath = Paths.get(filename).getParent();
             if (parentPath != null) {
-                Files.createDirectory(tempdirPath.resolve(parentPath), attr);
+                Files.createDirectories(tempdirPath.resolve(parentPath), attr);
             }
             // after this line, need to cleanup the dir
         } catch (IOException e) {
@@ -256,18 +255,12 @@ public class S3CaseService implements CaseService {
                     .build();
 
             ResponseInputStream<GetObjectResponse> responseInputStream = s3Client.getObject(getObjectRequest);
-            if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
-                return Optional.of(new GZIPInputStream(responseInputStream));
-            }
             return Optional.of(responseInputStream);
         } catch (NoSuchKeyException e) {
             LOGGER.error("The expected key does not exist in the bucket s3 : {}", caseFileKey);
             return Optional.empty();
         } catch (CaseException | ResponseStatusException e) {
             LOGGER.error(e.getMessage());
-            return Optional.empty();
-        } catch (IOException e) {
-            LOGGER.error("Unable to decompress {}", caseFileKey);
             return Optional.empty();
         }
     }

@@ -29,8 +29,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -40,6 +39,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
+import java.util.zip.GZIPOutputStream;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
@@ -57,6 +57,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ContextConfigurationWithTestChannel
 abstract class AbstractCaseControllerTest {
     static final String TEST_CASE = "testCase.xiidm";
+    static final String TEST_GZIP_CASE = "LF.xml.gz";
     private static final String TEST_TAR_CASE = "tarCase.tar";
     private static final String TEST_CASE_FORMAT = "XIIDM";
     private static final String NOT_A_NETWORK = "notANetwork.txt";
@@ -249,10 +250,23 @@ abstract class AbstractCaseControllerTest {
         String testCaseContent = new String(ByteStreams.toByteArray(getClass().getResourceAsStream("/" + TEST_CASE)), StandardCharsets.UTF_8);
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
-        // download a case
-        mvc.perform(get(GET_CASE_URL, firstCaseUuid))
+        // download a plain file case
+        try (InputStream inputStream = getClass().getResourceAsStream("/" + TEST_CASE)) {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            try (GZIPOutputStream gzipOutputStream = new GZIPOutputStream(byteArrayOutputStream)) {
+                inputStream.transferTo(gzipOutputStream);
+            }
+            byte[] expectedGzippedBytes = byteArrayOutputStream.toByteArray();
+            mvc.perform(get(GET_CASE_URL, firstCaseUuid))
+                    .andExpect(status().isOk())
+                    .andExpect(content().bytes(expectedGzippedBytes))
+                    .andReturn();
+        }
+
+        UUID gzipCaseUuid = importCase(TEST_GZIP_CASE, false);
+        mvc.perform(get(GET_CASE_URL, gzipCaseUuid))
                 .andExpect(status().isOk())
-                .andExpect(content().xml(testCaseContent))
+                .andExpect(content().bytes(getClass().getResourceAsStream("/" + TEST_GZIP_CASE).readAllBytes()))
                 .andReturn();
         // delete the case
         mvc.perform(delete(GET_CASE_URL, firstCaseUuid))
