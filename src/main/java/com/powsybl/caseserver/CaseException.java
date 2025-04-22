@@ -28,10 +28,7 @@ public final class CaseException extends RuntimeException {
         DIRECTORY_NOT_FOUND,
         ORIGINAL_FILE_NOT_FOUND,
         TEMP_FILE_INIT,
-        TEMP_FILE_PROCESS,
         TEMP_DIRECTORY_CREATION,
-        ZIP_FILE_PROCESS,
-        UNSUPPORTED_FORMAT
     }
 
     private final Type type;
@@ -103,13 +100,5 @@ public final class CaseException extends RuntimeException {
     public static CaseException createInitTempFileError(UUID uuid, Throwable e) {
         Objects.requireNonNull(uuid);
         return new CaseException(Type.TEMP_FILE_INIT, "Error initializing temporary case file: " + uuid, e);
-    }
-
-    public static CaseException createCopyZipContentError(UUID uuid, Exception e) {
-        return new CaseException(Type.ZIP_FILE_PROCESS, "Error copying zip content file: " + uuid, e);
-    }
-
-    public static CaseException createUnsupportedFormat(String format) {
-        return new CaseException(Type.UNSUPPORTED_FORMAT, "The format: " + format + " is unsupported");
     }
 }
