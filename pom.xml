@@ -47,7 +47,6 @@
         <liquibase-hibernate-package>com.powsybl.caseserver.repository</liquibase-hibernate-package>
         <powsybl-ws-dependencies.version>2.20.0</powsybl-ws-dependencies.version>
         <spring-cloud-aws-starter-s3>3.2.0</spring-cloud-aws-starter-s3>
-        <powsybl-rte.version>4.9.2</powsybl-rte.version>
     </properties>
 
     <build>
@@ -99,30 +98,6 @@
 
     <dependencies>
         <!-- Compile dependencies -->
-        <dependency>
-            <groupId>com.rte-france.powsybl</groupId>
-            <artifactId>powsybl-die</artifactId>
-            <version>${powsybl-rte.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.rte-france.powsybl</groupId>
-                    <artifactId>powsybl-iidm-cvg-extensions</artifactId>
-                </exclusion>
-            </exclusions>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.rte-france.powsybl</groupId>
-            <artifactId>powsybl-die-importer</artifactId>
-            <version>${powsybl-rte.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.rte-france.powsybl</groupId>
-                    <artifactId>powsybl-iidm-cvg-extensions</artifactId>
-                </exclusion>
-            </exclusions>
-            <scope>runtime</scope>
-        </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
