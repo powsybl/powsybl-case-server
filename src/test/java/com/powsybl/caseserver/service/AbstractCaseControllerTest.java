@@ -247,9 +247,6 @@ abstract class AbstractCaseControllerTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].format").value(TEST_CASE_FORMAT))
                 .andReturn();
 
-        String testCaseContent = new String(ByteStreams.toByteArray(getClass().getResourceAsStream("/" + TEST_CASE)), StandardCharsets.UTF_8);
-        assertNotNull(outputDestination.receive(1000, caseImportDestination));
-
         // download a plain file case
         try (InputStream inputStream = getClass().getResourceAsStream("/" + TEST_CASE)) {
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -268,6 +265,8 @@ abstract class AbstractCaseControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().bytes(getClass().getResourceAsStream("/" + TEST_GZIP_CASE).readAllBytes()))
                 .andReturn();
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
+
         // delete the case
         mvc.perform(delete(GET_CASE_URL, firstCaseUuid))
                 .andExpect(status().isOk());
