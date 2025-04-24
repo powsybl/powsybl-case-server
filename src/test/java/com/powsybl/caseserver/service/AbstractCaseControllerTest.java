@@ -8,7 +8,6 @@ package com.powsybl.caseserver.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.ByteStreams;
 import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
@@ -29,8 +28,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -246,6 +246,7 @@ abstract class AbstractCaseControllerTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].name").value(TEST_CASE))
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].format").value(TEST_CASE_FORMAT))
                 .andReturn();
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
         // download a plain file case
         try (InputStream inputStream = getClass().getResourceAsStream("/" + TEST_CASE)) {
@@ -278,8 +279,8 @@ abstract class AbstractCaseControllerTest {
         Message<byte[]> messageImportPrivate2 = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImportPrivate2.getPayload()));
         MessageHeaders headersPrivateCase2 = messageImportPrivate2.getHeaders();
-        assertEquals(TEST_GZIP_CASE, headersPrivateCase2.get(CaseInfos.NAME_HEADER_KEY));
-        assertEquals(gzipCaseUuid, headersPrivateCase2.get(CaseInfos.UUID_HEADER_KEY));
+        assertEquals(TEST_CASE, headersPrivateCase2.get(CaseInfos.NAME_HEADER_KEY));
+        assertEquals(secondCaseUuid, headersPrivateCase2.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("XIIDM", headersPrivateCase2.get(CaseInfos.FORMAT_HEADER_KEY));
 
         //check that the case doesn't have an expiration date
@@ -301,7 +302,7 @@ abstract class AbstractCaseControllerTest {
         assertEquals("", new String(messageImport.getPayload()));
         MessageHeaders headersCase = messageImport.getHeaders();
         assertEquals(TEST_CASE, headersCase.get(CaseInfos.NAME_HEADER_KEY));
-        assertEquals(secondCaseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
+        assertEquals(caseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
 
         //check that the case doesn't have an expiration date
@@ -320,7 +321,7 @@ abstract class AbstractCaseControllerTest {
         messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         headersCase = messageImport.getHeaders();
-        assertEquals(caseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
+        assertEquals(UUID.fromString(duplicateCaseUuid), headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals(TEST_CASE, headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
 
@@ -339,7 +340,7 @@ abstract class AbstractCaseControllerTest {
         assertEquals("", new String(messageImport.getPayload()));
         headersCase = messageImport.getHeaders();
         assertEquals(TEST_CASE, headersCase.get(CaseInfos.NAME_HEADER_KEY));
-        assertEquals(UUID.fromString(duplicateCaseUuid), headersCase.get(CaseInfos.UUID_HEADER_KEY));
+        assertEquals(thirdCaseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
 
         //check that the case does have an expiration date
@@ -363,7 +364,7 @@ abstract class AbstractCaseControllerTest {
         messageImport = outputDestination.receive(1000, caseImportDestination);
         assertEquals("", new String(messageImport.getPayload()));
         headersCase = messageImport.getHeaders();
-        assertEquals(thirdCaseUuid, headersCase.get(CaseInfos.UUID_HEADER_KEY));
+        assertEquals(UUID.fromString(duplicateCaseUuid2), headersCase.get(CaseInfos.UUID_HEADER_KEY));
         assertEquals(TEST_CASE, headersCase.get(CaseInfos.NAME_HEADER_KEY));
         assertEquals("XIIDM", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
 
@@ -417,7 +418,6 @@ abstract class AbstractCaseControllerTest {
         // delete all cases
         mvc.perform(delete("/v1/cases"))
                 .andExpect(status().isOk());
-        outputDestination.receive(1000, caseImportDestination);
     }
 
     @Test
