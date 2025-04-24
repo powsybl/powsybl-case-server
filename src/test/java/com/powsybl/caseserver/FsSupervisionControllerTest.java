@@ -31,7 +31,6 @@ import java.nio.file.Path;
 @TestPropertySource(properties = {"storage.type=FS"})
 class FsSupervisionControllerTest extends AbstractSupervisionControllerTest {
 
-
     FileSystem fileSystem;
 
     @Autowired
@@ -43,13 +42,13 @@ class FsSupervisionControllerTest extends AbstractSupervisionControllerTest {
         fileSystem = Jimfs.newFileSystem(Configuration.unix());
         ((FsCaseService) caseService).setFileSystem(fileSystem);
         caseService.setComputationManager(Mockito.mock(ComputationManager.class));
-        caseMetadataRepository.deleteAll();
         createStorageDir();
     }
 
     @AfterEach
     void tearDown() throws Exception {
         fileSystem.close();
+        caseMetadataRepository.deleteAll();
     }
 
     private void createStorageDir() throws IOException {
