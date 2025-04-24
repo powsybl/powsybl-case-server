@@ -14,8 +14,6 @@ import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
-import com.powsybl.caseserver.utils.TestUtils;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -29,11 +27,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -83,23 +80,7 @@ abstract class AbstractCaseControllerTest {
     @Autowired
     ObjectMapper mapper;
 
-    FileSystem fileSystem;
-
     final String caseImportDestination = "case.import.destination";
-
-    @AfterEach
-    public void tearDown() throws Exception {
-        fileSystem.close();
-        List<String> destinations = List.of(caseImportDestination);
-        TestUtils.assertQueuesEmptyThenClear(destinations, outputDestination);
-    }
-
-    void createStorageDir() throws IOException {
-        Path path = fileSystem.getPath(caseService.getRootDirectory());
-        if (!Files.exists(path)) {
-            Files.createDirectories(path);
-        }
-    }
 
     private static MockMultipartFile createMockMultipartFile(String fileName) throws IOException {
         try (InputStream inputStream = AbstractCaseControllerTest.class.getResourceAsStream("/" + fileName)) {
@@ -109,18 +90,12 @@ abstract class AbstractCaseControllerTest {
 
     @Test
     void testDeleteCases() throws Exception {
-        // create the storage dir
-        createStorageDir();
-
         mvc.perform(delete("/v1/cases"))
                 .andExpect(status().isOk());
     }
 
     @Test
     void testCheckNonExistingCase() throws Exception {
-        // create the storage dir
-        createStorageDir();
-
         // check if the case exists (except a false)
         mvc.perform(get("/v1/cases/{caseUuid}/exists", RANDOM_UUID))
                 .andExpect(status().isOk())
@@ -130,8 +105,6 @@ abstract class AbstractCaseControllerTest {
 
     @Test
     void testImportValidCase() throws Exception {
-        createStorageDir();
-
         // import a case
         UUID firstCaseUuid = importCase(TEST_CASE, false);
 
@@ -185,8 +158,6 @@ abstract class AbstractCaseControllerTest {
 
     @Test
     void testImportInvalidFile() throws Exception {
-        createStorageDir();
-
         // import a non valid case and expect a fail
         mvc.perform(multipart("/v1/cases")
                         .file(createMockMultipartFile(NOT_A_NETWORK)))
@@ -204,8 +175,6 @@ abstract class AbstractCaseControllerTest {
 
     @Test
     void testDownloadNonExistingCase() throws Exception {
-        createStorageDir();
-
         // download a non existing case
         mvc.perform(get(GET_CASE_URL, UUID.randomUUID()))
                 .andExpect(status().isNoContent())
@@ -214,8 +183,6 @@ abstract class AbstractCaseControllerTest {
 
     @Test
     void testExportNonExistingCaseFromat() throws Exception {
-        createStorageDir();
-
         // import a case
         UUID firstCaseUuid = importCase(TEST_CASE, false);
 
@@ -227,8 +194,6 @@ abstract class AbstractCaseControllerTest {
 
     @Test
     void deleteNonExistingCase() throws Exception {
-        createStorageDir();
-
         // import a case
         UUID caseaseUuid = importCase(TEST_CASE, false);
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
@@ -246,9 +211,6 @@ abstract class AbstractCaseControllerTest {
 
     @Test
     void test() throws Exception {
-        // create the storage dir
-        createStorageDir();
-
         // import a case
         UUID firstCaseUuid = importCase(TEST_CASE, false);
 
@@ -462,9 +424,6 @@ abstract class AbstractCaseControllerTest {
 
     @Test
     void testDuplicateNonIndexedCase() throws Exception {
-        // create the storage dir
-        createStorageDir();
-
         // import IIDM test case
         String caseUuid = mvc.perform(multipart("/v1/cases")
                         .file(createMockMultipartFile(TEST_CASE))
@@ -503,9 +462,6 @@ abstract class AbstractCaseControllerTest {
 
     @Test
     void searchCaseTest() throws Exception {
-        // create the storage dir
-        createStorageDir();
-
         // delete all cases
         mvc.perform(delete("/v1/cases"))
                 .andExpect(status().isOk());
@@ -742,8 +698,6 @@ abstract class AbstractCaseControllerTest {
 
     @Test
     void invalidFileInCaseDirectoryShouldBeIgnored() throws Exception {
-        createStorageDir();
-
         // add a random file in the storage, not stored in a UUID named directory
         addRandomFile();
 
@@ -766,8 +720,6 @@ abstract class AbstractCaseControllerTest {
 
     @Test
     void casesWithoutMetadataShouldBeIgnored() throws Exception {
-        createStorageDir();
-
         // add a case file in a UUID named directory but no metadata in the database
         UUID caseUuid = importCase(TEST_CASE, false);
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
@@ -819,9 +771,6 @@ abstract class AbstractCaseControllerTest {
 
     @Test
     public void testTar() throws Exception {
-        // create the storage dir
-        createStorageDir();
-
         // import a case
         UUID tarCaseUuid = importCase(TEST_TAR_CASE, false);
 
@@ -857,8 +806,6 @@ abstract class AbstractCaseControllerTest {
 
     @Test
     void testImportCaseWithUuid() throws Exception {
-        createStorageDir();
-
         // import a case
         mvc.perform(multipart("/v1/migration/cases")
                         .file(createMockMultipartFile(TEST_CASE))
