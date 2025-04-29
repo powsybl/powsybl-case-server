@@ -38,7 +38,7 @@ class FsCaseControllerTest extends AbstractCaseControllerTest {
     private FsCaseService fsCaseService;
 
     @AfterEach
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         fileSystem.close();
         List<String> destinations = List.of(caseImportDestination);
         TestUtils.assertQueuesEmptyThenClear(destinations, outputDestination);
