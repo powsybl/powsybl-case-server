@@ -9,7 +9,6 @@ package com.powsybl.caseserver;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.caseserver.service.SupervisionService;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -20,9 +19,6 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.FileSystem;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -43,11 +39,9 @@ abstract class AbstractSupervisionControllerTest {
     protected MockMvc mockMvc;
 
     private static final String TEST_CASE = "testCase.xiidm";
-    FileSystem fileSystem;
 
     @Test
     void testGetCaseInfosCount() throws Exception {
-        createStorageDir();
         importCase(true);
         importCase(true);
         importCase(false);
@@ -58,7 +52,6 @@ abstract class AbstractSupervisionControllerTest {
 
     @Test
     void testReindexAll() throws Exception {
-        createStorageDir();
         importCase(true);
         importCase(true);
         importCase(false);
@@ -99,19 +92,6 @@ abstract class AbstractSupervisionControllerTest {
     private static MockMultipartFile createMockMultipartFile() throws IOException {
         try (InputStream inputStream = AbstractSupervisionControllerTest.class.getResourceAsStream("/" + AbstractSupervisionControllerTest.TEST_CASE)) {
             return new MockMultipartFile("file", AbstractSupervisionControllerTest.TEST_CASE, MediaType.TEXT_PLAIN_VALUE, inputStream);
-        }
-    }
-
-    @AfterEach
-    void tearDown() throws Exception {
-        fileSystem.close();
-        caseMetadataRepository.deleteAll();
-    }
-
-    private void createStorageDir() throws IOException {
-        Path path = fileSystem.getPath(caseService.getRootDirectory());
-        if (!Files.exists(path)) {
-            Files.createDirectories(path);
         }
     }
 }

@@ -6,8 +6,6 @@
  */
 package com.powsybl.caseserver;
 
-import com.google.common.jimfs.Configuration;
-import com.google.common.jimfs.Jimfs;
 import com.powsybl.caseserver.service.MinioContainerConfig;
 import com.powsybl.caseserver.service.S3CaseService;
 import com.powsybl.computation.ComputationManager;
@@ -32,7 +30,6 @@ class S3SupervisionControllerTest extends AbstractSupervisionControllerTest impl
     @BeforeEach
     void setUp() {
         caseService = s3CaseService;
-        fileSystem = Jimfs.newFileSystem(Configuration.unix());
         caseService.setComputationManager(Mockito.mock(ComputationManager.class));
         caseService.deleteAllCases();
     }

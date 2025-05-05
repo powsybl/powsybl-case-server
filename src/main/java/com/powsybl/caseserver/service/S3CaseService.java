@@ -14,7 +14,6 @@ import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.computation.ComputationManager;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
-import com.powsybl.iidm.network.Network;
 import com.powsybl.ws.commons.SecuredZipInputStream;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -30,7 +29,6 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
 import org.springframework.web.server.ResponseStatusException;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -47,7 +45,6 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -121,7 +118,7 @@ public class S3CaseService implements CaseService {
             // Create parent directory if necessary
             Path parentPath = Paths.get(filename).getParent();
             if (parentPath != null) {
-                Files.createDirectory(tempdirPath.resolve(parentPath), attr);
+                Files.createDirectories(tempdirPath.resolve(parentPath), attr);
             }
             // after this line, need to cleanup the dir
         } catch (IOException e) {
@@ -258,18 +255,12 @@ public class S3CaseService implements CaseService {
                     .build();
 
             ResponseInputStream<GetObjectResponse> responseInputStream = s3Client.getObject(getObjectRequest);
-            if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
-                return Optional.of(new GZIPInputStream(responseInputStream));
-            }
             return Optional.of(responseInputStream);
         } catch (NoSuchKeyException e) {
             LOGGER.error("The expected key does not exist in the bucket s3 : {}", caseFileKey);
             return Optional.empty();
         } catch (CaseException | ResponseStatusException e) {
             LOGGER.error(e.getMessage());
-            return Optional.empty();
-        } catch (IOException e) {
-            LOGGER.error("Unable to decompress {}", caseFileKey);
             return Optional.empty();
         }
     }
@@ -547,20 +538,6 @@ public class S3CaseService implements CaseService {
         }
         notificationService.sendImportMessage(caseInfos.createMessage());
         return newCaseUuid;
-    }
-
-    @Override
-    public Optional<Network> loadNetwork(UUID caseUuid) {
-        if (!caseExists(caseUuid)) {
-            return Optional.empty();
-        }
-        return Optional.of(withS3DownloadedTempPath(caseUuid, path -> {
-            Network network = Network.read(path);
-            if (network == null) {
-                throw CaseException.createFileNotImportable(path);
-            }
-            return network;
-        }));
     }
 
     @Override

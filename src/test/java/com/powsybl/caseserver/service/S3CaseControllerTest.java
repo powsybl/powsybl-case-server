@@ -6,8 +6,6 @@
  */
 package com.powsybl.caseserver.service;
 
-import com.google.common.jimfs.Configuration;
-import com.google.common.jimfs.Jimfs;
 import com.powsybl.computation.ComputationManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
@@ -32,7 +30,6 @@ class S3CaseControllerTest extends AbstractCaseControllerTest implements MinioCo
     @BeforeEach
     void setUp() {
         caseService = s3CaseService;
-        fileSystem = Jimfs.newFileSystem(Configuration.unix());
         caseService.setComputationManager(Mockito.mock(ComputationManager.class));
         caseService.deleteAllCases();
         outputDestination.clear();
