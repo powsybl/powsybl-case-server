@@ -183,15 +183,15 @@ public class S3CaseService implements CaseService {
 
     // key format is "<rootDirectory>/UUID/path/to/file"
     private UUID parseUuidFromKey(String key) {
-        int firstSlash = key.indexOf(DELIMITER);
-        int secondSlash = key.indexOf(DELIMITER, firstSlash + 1);
-        return UUID.fromString(key.substring(firstSlash + 1, secondSlash));
+        String keyWithoutRootDirectory = key.replaceAll(rootDirectory + DELIMITER, "");
+        int firstSlash = keyWithoutRootDirectory.indexOf(DELIMITER);
+        return UUID.fromString(keyWithoutRootDirectory.substring(0, firstSlash));
     }
 
     private String parseFilenameFromKey(String key) {
-        int firstSlash = key.indexOf(DELIMITER);
-        int secondSlash = key.indexOf(DELIMITER, firstSlash + 1);
-        return key.substring(secondSlash + 1);
+        String keyWithoutRootDirectory = key.replaceAll(rootDirectory + DELIMITER, "");
+        int firstSlash = keyWithoutRootDirectory.indexOf(DELIMITER);
+        return keyWithoutRootDirectory.substring(firstSlash + 1);
     }
 
     public String uuidToKeyPrefix(UUID uuid) {
