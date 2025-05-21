@@ -185,7 +185,7 @@ public class S3CaseService implements CaseService {
     private UUID parseUuidFromKey(String key) {
         String keyWithoutRootDirectory = key.replaceAll(rootDirectory + DELIMITER, "");
         int secondSlash = keyWithoutRootDirectory.indexOf(DELIMITER, 0);
-        return UUID.fromString(keyWithoutRootDirectory.substring(1, secondSlash));
+        return UUID.fromString(keyWithoutRootDirectory.substring(0, secondSlash));
     }
 
     private String parseFilenameFromKey(String key) {
