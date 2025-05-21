@@ -14,7 +14,6 @@ import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.computation.ComputationManager;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
-import com.powsybl.iidm.network.Network;
 import com.powsybl.ws.commons.SecuredZipInputStream;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -30,7 +29,6 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
 import org.springframework.web.server.ResponseStatusException;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -540,20 +538,6 @@ public class S3CaseService implements CaseService {
         }
         notificationService.sendImportMessage(caseInfos.createMessage());
         return newCaseUuid;
-    }
-
-    @Override
-    public Optional<Network> loadNetwork(UUID caseUuid) {
-        if (!caseExists(caseUuid)) {
-            return Optional.empty();
-        }
-        return Optional.of(withS3DownloadedTempPath(caseUuid, path -> {
-            Network network = Network.read(path);
-            if (network == null) {
-                throw CaseException.createFileNotImportable(path);
-            }
-            return network;
-        }));
     }
 
     @Override

@@ -10,12 +10,18 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.powsybl.caseserver.service.FsCaseService;
 import com.powsybl.computation.ComputationManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
+
+import java.io.IOException;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * @author Jamal KHEYYAD <jamal.kheyyad at rte-international.com>
@@ -25,15 +31,30 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(properties = {"storage.type=FS"})
 class FsSupervisionControllerTest extends AbstractSupervisionControllerTest {
 
+    FileSystem fileSystem;
+
     @Autowired
     private FsCaseService fsCaseService;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() throws IOException {
         caseService = fsCaseService;
         fileSystem = Jimfs.newFileSystem(Configuration.unix());
         ((FsCaseService) caseService).setFileSystem(fileSystem);
         caseService.setComputationManager(Mockito.mock(ComputationManager.class));
+        createStorageDir();
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        fileSystem.close();
         caseMetadataRepository.deleteAll();
+    }
+
+    private void createStorageDir() throws IOException {
+        Path path = fileSystem.getPath(caseService.getRootDirectory());
+        if (!Files.exists(path)) {
+            Files.createDirectories(path);
+        }
     }
 }
