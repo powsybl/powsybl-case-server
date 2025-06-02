@@ -50,12 +50,22 @@ import static com.powsybl.caseserver.service.S3CaseService.DELIMITER;
 public class FsCaseService implements CaseService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FsCaseService.class);
+    public static final String GET_CASE_FILE = "get.case.file";
+    public static final String READ_FS = "read_fs";
+    public static final String CASE_EXISTS = "case.exists";
+    public static final String CHECK_EXISTENCE_FS = "check_existence_fs";
+    public static final String IMPORT_CASE = "import.case";
+    public static final String IMPORT_TOTAL_TIME = "import_total_time";
+    public static final String IMPORT_CASE_WRITE_FS = "import.case.write_fs";
+    public static final String WRITE_FS = "write_fs";
 
     private FileSystem fileSystem = FileSystems.getDefault();
 
     private ComputationManager computationManager = LocalComputationManager.getDefault();
 
     private final CaseMetadataRepository caseMetadataRepository;
+
+    private final CaseObserver caseObserver;
 
     @Autowired
     private NotificationService notificationService;
@@ -71,8 +81,9 @@ public class FsCaseService implements CaseService {
 
     private String rootDirectory;
 
-    public FsCaseService(CaseMetadataRepository caseMetadataRepository) {
+    public FsCaseService(CaseMetadataRepository caseMetadataRepository, CaseObserver caseObserver) {
         this.caseMetadataRepository = caseMetadataRepository;
+        this.caseObserver = caseObserver;
     }
 
     @PostConstruct
@@ -148,7 +159,8 @@ public class FsCaseService implements CaseService {
     }
 
     public Path getCaseFile(UUID caseUuid) {
-        return walkCaseDirectory(getStorageRootDir().resolve(caseUuid.toString()));
+        return caseObserver.observe(GET_CASE_FILE, null,  READ_FS,()-> walkCaseDirectory(getStorageRootDir().resolve(caseUuid.toString())));
+
     }
 
     Path getCaseDirectory(UUID caseUuid) {
@@ -176,12 +188,16 @@ public class FsCaseService implements CaseService {
 
     @Override
     public boolean caseExists(UUID caseName) {
-        checkStorageInitialization();
-        Path caseFile = getCaseFile(caseName);
-        if (caseFile == null) {
-            return false;
-        }
-        return Files.exists(caseFile) && Files.isRegularFile(caseFile);
+        return caseObserver.observe(CASE_EXISTS, null, CHECK_EXISTENCE_FS,
+                ()-> {
+                    checkStorageInitialization();
+                    Path caseFile = getCaseFile(caseName);
+                    if (caseFile == null) {
+                        return false;
+                    }
+                    return Files.exists(caseFile) && Files.isRegularFile(caseFile);
+                }
+                );
     }
 
     @Override
@@ -197,40 +213,59 @@ public class FsCaseService implements CaseService {
 
         boolean shouldCompress = !isCompressedCaseFile(caseName) && !isArchivedCaseFile(caseName);
         Path caseFile = getCasePath(caseName, shouldCompress, uuidDirectory);
-        try (InputStream inputStream = mpf.getInputStream();
-             OutputStream fileOutputStream = Files.newOutputStream(caseFile);
-             OutputStream outputStream = shouldCompress ? new GZIPOutputStream(fileOutputStream) : new BufferedOutputStream(fileOutputStream)) {
-            inputStream.transferTo(outputStream);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+        return caseObserver.observe(
+                IMPORT_CASE,
+                mpf.getSize(),
+                IMPORT_TOTAL_TIME,
+                () -> {
+                    try (InputStream inputStream = mpf.getInputStream();
+                         OutputStream fileOutputStream = Files.newOutputStream(caseFile);
+                         OutputStream outputStream = shouldCompress ? new GZIPOutputStream(fileOutputStream) : new BufferedOutputStream(fileOutputStream)) {
+                        caseObserver.observe(
+                                IMPORT_CASE_WRITE_FS,
+                                WRITE_FS,
+                                () -> {
+                                    try {
+                                         inputStream.transferTo(outputStream);
+                                    } catch (IOException e) {
+                                        throw new UncheckedIOException(e);
+                                    }
+                                }
+                        );
 
-        Importer importer;
-        try {
-            importer = getImporterOrThrowsException(caseFile);
-        } catch (CaseException e) {
-            try {
-                Files.deleteIfExists(caseFile);
-                Files.deleteIfExists(uuidDirectory);
-            } catch (IOException e2) {
-                LOGGER.error(e2.toString(), e2);
-            }
-            throw e;
-        }
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
 
-        String format = importer.getFormat();
-        String compressionFormat = FileNameUtils.getExtension(Paths.get(caseName));
-        createCaseMetadataEntity(caseUuid, withExpiration, withIndexation, caseName, compressionFormat, format);
-        String caseInfoFileName = caseFile.getFileName().toString();
-        if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
-            caseInfoFileName = removeExtension(caseInfoFileName, GZIP_EXTENSION);
-        }
-        CaseInfos caseInfos = createInfos(caseInfoFileName, caseUuid, format);
-        if (withIndexation) {
-            caseInfosService.addCaseInfos(caseInfos);
-        }
-        notificationService.sendImportMessage(caseInfos.createMessage());
-        return caseUuid;
+                    Importer importer;
+                    try {
+                        importer = getImporterOrThrowsException(caseFile);
+                    } catch (CaseException e) {
+                        try {
+                            Files.deleteIfExists(caseFile);
+                            Files.deleteIfExists(uuidDirectory);
+                        } catch (IOException e2) {
+                            LOGGER.error(e2.toString(), e2);
+                        }
+                        throw e;
+                    }
+
+                    String format = importer.getFormat();
+                    String compressionFormat = FileNameUtils.getExtension(Paths.get(caseName));
+                    createCaseMetadataEntity(caseUuid, withExpiration, withIndexation, caseName, compressionFormat, format);
+                    String caseInfoFileName = caseFile.getFileName().toString();
+                    if (Boolean.TRUE.equals(isUploadedAsPlainFile(caseUuid))) {
+                        caseInfoFileName = removeExtension(caseInfoFileName, GZIP_EXTENSION);
+                    }
+                    CaseInfos caseInfos = createInfos(caseInfoFileName, caseUuid, format);
+                    if (withIndexation) {
+                        caseInfosService.addCaseInfos(caseInfos);
+                    }
+                    notificationService.sendImportMessage(caseInfos.createMessage());
+                    return caseUuid;
+                }
+        );
+
     }
 
     private static void createDirectory(Path uuidDirectory) {

@@ -6,6 +6,7 @@
  */
 package com.powsybl.caseserver.repository;
 
+import com.powsybl.caseserver.service.CaseObserver;
 import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.caseserver.service.FsCaseService;
 import com.powsybl.caseserver.service.S3CaseService;
@@ -25,19 +26,21 @@ public class StorageConfig {
 
     private final CaseMetadataRepository caseMetadataRepository;
     private final String storageType;
+    private final CaseObserver caseObserver;
 
-    public StorageConfig(@Value("${storage.type}")String storageType, CaseMetadataRepository caseMetadataRepository) {
+    public StorageConfig(@Value("${storage.type}")String storageType, CaseMetadataRepository caseMetadataRepository, CaseObserver caseObserver) {
         this.storageType = storageType;
         this.caseMetadataRepository = caseMetadataRepository;
+        this.caseObserver = caseObserver;
     }
 
     @Primary
     @Bean
     public CaseService storageService() {
         if ("FS".equals(storageType)) {
-            return new FsCaseService(caseMetadataRepository);
+            return new FsCaseService(caseMetadataRepository, caseObserver);
         } else if ("S3".equals(storageType)) {
-            return new S3CaseService(caseMetadataRepository);
+            return new S3CaseService(caseMetadataRepository, caseObserver);
         }
         return null;
     }
