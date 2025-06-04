@@ -63,10 +63,18 @@ public class S3CaseService implements CaseService {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3CaseService.class);
     public static final int MAX_SIZE = 500000000;
     public static final String DELIMITER = "/";
-
+    public static final String IMPORT_CASE_UPLOAD_S3 = "import.case.upload_s3";
+    public static final String UPLOAD_S3_COMPRESSED = "upload_s3_compressed";
+    public static final String CASE_EXISTS = "case.exists";
+    public static final String CHECK_EXISTENCE_S3 = "check_existence_s3";
+    public static final String IMPORT_CASE = "import.case";
+    public static final String IMPORT_TOTAL_TIME = "import_total_time";
+    public static final String UPLOAD_S3_AS_IS = "upload_s3_as_is";
     private ComputationManager computationManager = LocalComputationManager.getDefault();
 
     private final CaseMetadataRepository caseMetadataRepository;
+
+    private final CaseObserver caseObserver;
 
     @Autowired
     private CaseInfosService caseInfosService;
@@ -83,8 +91,9 @@ public class S3CaseService implements CaseService {
     @Autowired
     private S3Client s3Client;
 
-    public S3CaseService(CaseMetadataRepository caseMetadataRepository) {
+    public S3CaseService(CaseMetadataRepository caseMetadataRepository, CaseObserver caseObserver) {
         this.caseMetadataRepository = caseMetadataRepository;
+        this.caseObserver = caseObserver;
     }
 
     @Override
@@ -291,7 +300,7 @@ public class S3CaseService implements CaseService {
 
     @Override
     public boolean caseExists(UUID uuid) {
-        return !getCaseS3Objects(uuid).isEmpty();
+        return caseObserver.observe(CASE_EXISTS, null, CHECK_EXISTENCE_S3,()->!getCaseS3Objects(uuid).isEmpty());
     }
 
     public Boolean datasourceExists(UUID caseUuid, String fileName) {
@@ -384,49 +393,65 @@ public class S3CaseService implements CaseService {
      */
     @Override
     public UUID importCase(MultipartFile mpf, boolean withExpiration, boolean withIndexation, UUID caseUuid) {
-        String caseName = Objects.requireNonNull(mpf.getOriginalFilename());
-        validateCaseName(caseName);
+       return caseObserver.observe(IMPORT_CASE, mpf.getSize(), IMPORT_TOTAL_TIME,
+               ()-> {
+                   String caseName = Objects.requireNonNull(mpf.getOriginalFilename());
+                   validateCaseName(caseName);
 
-        String format = withTempCopy(caseUuid, caseName, mpf::transferTo, this::getFormat);
-        String compressionFormat = FileNameUtils.getExtension(Paths.get(caseName));
+                   String format = withTempCopy(caseUuid, caseName, mpf::transferTo, this::getFormat);
+                   String compressionFormat = FileNameUtils.getExtension(Paths.get(caseName));
 
-        // Process and store GZ compressed files extracted from archive file
-        if (isArchivedCaseFile(caseName)) {
-            try (InputStream inputStream = mpf.getInputStream()) {
-                if (isZippedFile(caseName)) {
-                    importZipContent(inputStream, caseUuid);
-                } else if (isTaredFile(caseName)) {
-                    importTarContent(inputStream, caseUuid);
-                }
-            } catch (IOException e) {
-                throw CaseException.createFileNotImportable(caseName, e);
-            }
-        }
+                   // Process and store GZ compressed files extracted from archive file
+                   if (isArchivedCaseFile(caseName)) {
+                       try (InputStream inputStream = mpf.getInputStream()) {
+                           if (isZippedFile(caseName)) {
+                               importZipContent(inputStream, caseUuid);
+                           } else if (isTaredFile(caseName)) {
+                               importTarContent(inputStream, caseUuid);
+                           }
+                       } catch (IOException e) {
+                           throw CaseException.createFileNotImportable(caseName, e);
+                       }
+                   }
 
-        // Store the original file
-        try (InputStream inputStream = mpf.getInputStream()) {
-            if (!isArchivedCaseFile(caseName) && !isCompressedCaseFile(caseName)) {
-                // If it's a plain file, compress it before storing
-                compressAndUploadToS3(caseUuid, caseName + GZIP_EXTENSION, APPLICATION_OCTET_STREAM_VALUE, inputStream);
-            } else {
-                // If the file is an archive or already compressed, store it as-is
-                uploadToS3(
-                        uuidToKeyWithFileName(caseUuid, caseName),
-                        mpf.getContentType(),
-                        RequestBody.fromInputStream(inputStream, mpf.getSize()));
-            }
-        } catch (IOException e) {
-            throw CaseException.createFileNotImportable(caseName, e);
-        }
+                   // Store the original file
+                   try (InputStream inputStream = mpf.getInputStream()) {
+                       if (!isArchivedCaseFile(caseName) && !isCompressedCaseFile(caseName)) {
+                           // If it's a plain file, compress it before storing
+                           caseObserver.observe(
+                                   IMPORT_CASE_UPLOAD_S3,
+                                   UPLOAD_S3_COMPRESSED,
+                                   () -> compressAndUploadToS3(caseUuid, caseName + GZIP_EXTENSION, APPLICATION_OCTET_STREAM_VALUE, inputStream)
+                           );
+                       } else {
+                           // If the file is an archive or already compressed, store it as-is
+                           uploadToS3(
+                                   uuidToKeyWithFileName(caseUuid, caseName),
+                                   mpf.getContentType(),
+                                   RequestBody.fromInputStream(inputStream, mpf.getSize()));
+                           caseObserver.observe(
+                                   IMPORT_CASE_UPLOAD_S3,
+                                   UPLOAD_S3_AS_IS,
+                                   () -> uploadToS3(
+                                           uuidToKeyWithFileName(caseUuid, caseName),
+                                           mpf.getContentType(),
+                                           RequestBody.fromInputStream(inputStream, mpf.getSize()))
+                           );
+                       }
+                   } catch (IOException e) {
+                       throw CaseException.createFileNotImportable(caseName, e);
+                   }
 
-        createCaseMetadataEntity(caseUuid, withExpiration, withIndexation, caseName, compressionFormat, format);
-        CaseInfos caseInfos = createInfos(caseName, caseUuid, format);
-        if (withIndexation) {
-            caseInfosService.addCaseInfos(caseInfos);
-        }
-        notificationService.sendImportMessage(caseInfos.createMessage());
+                   createCaseMetadataEntity(caseUuid, withExpiration, withIndexation, caseName, compressionFormat, format);
+                   CaseInfos caseInfos = createInfos(caseName, caseUuid, format);
+                   if (withIndexation) {
+                       caseInfosService.addCaseInfos(caseInfos);
+                   }
+                   notificationService.sendImportMessage(caseInfos.createMessage());
 
-        return caseUuid;
+                   return caseUuid;
+               });
+
     }
 
     private void compressAndUploadToS3(UUID caseUuid, String fileName, String contentType, InputStream inputStream) {
