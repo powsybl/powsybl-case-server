@@ -7,9 +7,16 @@
 package com.powsybl.caseserver.migration;
 
 import com.powsybl.caseserver.CaseConstants;
+import com.powsybl.caseserver.dto.CaseInfos;
+import com.powsybl.caseserver.repository.CaseMetadataEntity;
+import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.caseserver.service.CaseService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.transaction.Transactional;
+import org.apache.commons.compress.utils.FileNameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -50,5 +58,30 @@ public class MigrationController {
         }
         caseService.importCase(file, withExpiration, withIndexation, caseUuid);
         return ResponseEntity.ok().build();
+    }
+
+    @PutMapping(value = "/cases/{caseUuid}/metadata")
+    @Operation(summary = "update case metadata")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Update case metadata")})
+    @Transactional
+    public ResponseEntity<Void> updateCasesMetadata(@PathVariable("caseUuid") UUID caseUuid) {
+        CaseMetadataRepository repository = caseService.getCaseMetadataRepository();
+        Optional<CaseMetadataEntity> entity = repository.findById(caseUuid);
+        if (entity.isPresent()) {
+            CaseInfos info = caseService.getCaseInfos(caseUuid);
+            entity.get().setOriginalFilename(info.getName());
+            entity.get().setFormat(info.getFormat());
+        }
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping(value = "/cases/emptyMetadata")
+    @Operation(summary = "get cases ids with empty metadata")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "get cases ids with empty metadata")})
+    public ResponseEntity<List<String>> getCasesWithNoMetaData() {
+        CaseMetadataRepository repository = caseService.getCaseMetadataRepository();
+        List<CaseMetadataEntity> entities = repository.getCaseMetadataEntitiesByOriginalFilename("");
+
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(entities.stream().map(entity -> entity.getId().toString()).toList());
     }
 }

@@ -18,4 +18,6 @@ import java.util.UUID;
 @Repository
 public interface CaseMetadataRepository extends JpaRepository<CaseMetadataEntity, UUID> {
     List<CaseMetadataEntity> findAllByIndexedTrue();
+
+    List<CaseMetadataEntity> getCaseMetadataEntitiesByOriginalFilename(String originalFilename);
 }
