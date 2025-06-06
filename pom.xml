@@ -47,6 +47,7 @@
         <liquibase-hibernate-package>com.powsybl.caseserver.repository</liquibase-hibernate-package>
         <powsybl-ws-dependencies.version>2.21.0</powsybl-ws-dependencies.version>
         <spring-cloud-aws-starter-s3>3.2.0</spring-cloud-aws-starter-s3>
+        <sonar.coverage.exclusions>**/migration/**/*</sonar.coverage.exclusions>
     </properties>
 
     <build>
