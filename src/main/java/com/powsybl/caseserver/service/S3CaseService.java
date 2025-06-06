@@ -291,7 +291,7 @@ public class S3CaseService implements CaseService {
 
     @Override
     public boolean caseExists(UUID uuid) {
-        return !getCaseS3Objects(uuid).isEmpty();
+        return caseMetadataRepository.findById(uuid).isPresent();
     }
 
     public Boolean datasourceExists(UUID caseUuid, String fileName) {
