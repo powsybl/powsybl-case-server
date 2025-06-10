@@ -68,6 +68,8 @@ public class S3CaseService implements CaseService {
 
     private final CaseMetadataRepository caseMetadataRepository;
 
+    private final CaseObserver caseObserver;
+
     @Autowired
     private CaseInfosService caseInfosService;
 
@@ -83,13 +85,19 @@ public class S3CaseService implements CaseService {
     @Autowired
     private S3Client s3Client;
 
-    public S3CaseService(CaseMetadataRepository caseMetadataRepository) {
+    public S3CaseService(CaseMetadataRepository caseMetadataRepository, CaseObserver caseObserver) {
         this.caseMetadataRepository = caseMetadataRepository;
+        this.caseObserver = caseObserver;
     }
 
     @Override
     public String getRootDirectory() {
         return rootDirectory;
+    }
+
+    @Override
+    public StorageType getStorageType() {
+        return StorageType.S3;
     }
 
     public S3Client getS3Client() {
@@ -291,7 +299,7 @@ public class S3CaseService implements CaseService {
 
     @Override
     public boolean caseExists(UUID uuid) {
-        return !getCaseS3Objects(uuid).isEmpty();
+        return caseObserver.observeCaseExist(getStorageType(), () -> !getCaseS3Objects(uuid).isEmpty());
     }
 
     public Boolean datasourceExists(UUID caseUuid, String fileName) {
@@ -458,7 +466,7 @@ public class S3CaseService implements CaseService {
                 .key(key)
                 .contentType(contentType)
                 .build();
-        s3Client.putObject(putObjectRequest, requestBody);
+        caseObserver.observeCaseWriting(getStorageType(), () -> s3Client.putObject(putObjectRequest, requestBody));
     }
 
     private void writeGzTmpFileOnFileSystem(InputStream inputStream, Path tempCasePath) throws IOException {
