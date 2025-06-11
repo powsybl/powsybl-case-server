@@ -59,10 +59,10 @@ public class MigrationController {
     }
 
     @PutMapping(value = "/cases/{caseUuid}/metadata")
-    @Operation(summary = "update case metadata")
+    @Operation(summary = "complete case metadata")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Update case metadata")})
     @Transactional
-    public ResponseEntity<Void> updateCasesMetadata(@PathVariable("caseUuid") UUID caseUuid) {
+    public ResponseEntity<Void> completeCasesMetadata(@PathVariable("caseUuid") UUID caseUuid) {
         CaseMetadataRepository repository = caseService.getCaseMetadataRepository();
         Optional<CaseMetadataEntity> entity = repository.findById(caseUuid);
         if (entity.isPresent()) {
@@ -76,10 +76,10 @@ public class MigrationController {
     @GetMapping(value = "/cases/emptyMetadata")
     @Operation(summary = "get cases ids with empty metadata")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "get cases ids with empty metadata")})
-    public ResponseEntity<List<String>> getCasesWithNoMetaData() {
+    public ResponseEntity<List<UUID>> getCasesWithNoMetaData() {
         CaseMetadataRepository repository = caseService.getCaseMetadataRepository();
-        List<CaseMetadataEntity> entities = repository.getCaseMetadataEntitiesByOriginalFilename("");
+        List<CaseMetadataEntity> entities = repository.getCaseMetadataEntitiesByOriginalFilename(null);
 
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(entities.stream().map(entity -> entity.getId().toString()).toList());
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(entities.stream().map(entity -> entity.getId()).toList());
     }
 }
