@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.transaction.Transactional;
+import org.apache.commons.compress.utils.FileNameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -69,6 +71,7 @@ public class MigrationController {
             CaseInfos info = caseService.getCaseInfos(caseUuid);
             entity.get().setOriginalFilename(info.getName());
             entity.get().setFormat(info.getFormat());
+            entity.get().setCompressionFormat(FileNameUtils.getExtension(Paths.get(info.getName())));
         }
         return ResponseEntity.ok().build();
     }
