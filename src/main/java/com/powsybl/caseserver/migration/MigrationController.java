@@ -69,9 +69,11 @@ public class MigrationController {
         Optional<CaseMetadataEntity> entity = repository.findById(caseUuid);
         if (entity.isPresent()) {
             CaseInfos info = caseService.getCaseInfos(caseUuid);
-            entity.get().setOriginalFilename(info.getName());
-            entity.get().setFormat(info.getFormat());
-            entity.get().setCompressionFormat(FileNameUtils.getExtension(Paths.get(info.getName())));
+            if (info != null) {
+                entity.get().setOriginalFilename(info.getName());
+                entity.get().setFormat(info.getFormat());
+                entity.get().setCompressionFormat(FileNameUtils.getExtension(Paths.get(info.getName())));
+            }
         }
         return ResponseEntity.ok().build();
     }
