@@ -87,8 +87,11 @@ public class FsCaseService implements CaseService {
 
     @Override
     public String getFormat(UUID caseUuid) {
-        Path file = getCaseFile(caseUuid);
-        return getFormat(file);
+        CaseInfos caseInfos = getCaseInfos(caseUuid);
+        if (caseInfos != null) {
+            return caseInfos.getFormat();
+        }
+        return null;
     }
 
     String getFormat(Path caseFile) {
@@ -139,12 +142,12 @@ public class FsCaseService implements CaseService {
 
     @Override
     public CaseInfos getCaseInfos(UUID caseUuid) {
-        Path file = getCaseFile(caseUuid);
-        if (file == null) {
+        CaseMetadataEntity caseMetadataEntity = caseMetadataRepository.findById(caseUuid).orElse(null);
+        if (caseMetadataEntity == null) {
             LOGGER.error("The directory with the following uuid doesn't exist: {}", caseUuid);
             return null;
         }
-        return getCaseInfos(file);
+        return new CaseInfos(caseUuid, caseMetadataEntity.getOriginalFilename(), caseMetadataEntity.getFormat());
     }
 
     public Path getCaseFile(UUID caseUuid) {
@@ -177,11 +180,7 @@ public class FsCaseService implements CaseService {
     @Override
     public boolean caseExists(UUID caseName) {
         checkStorageInitialization();
-        Path caseFile = getCaseFile(caseName);
-        if (caseFile == null) {
-            return false;
-        }
-        return Files.exists(caseFile) && Files.isRegularFile(caseFile);
+        return caseMetadataRepository.findById(caseName).isPresent();
     }
 
     @Override
