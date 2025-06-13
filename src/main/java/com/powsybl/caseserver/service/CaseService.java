@@ -33,6 +33,8 @@ import static com.powsybl.caseserver.Utils.*;
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
  */
 public interface CaseService {
+    enum StorageType { FS, S3 }
+
     default void validateCaseName(String caseName) {
         Objects.requireNonNull(caseName);
         if (!caseName.matches("[^<>:\"/|?*]+(\\.[\\w]+)")) {
@@ -99,6 +101,8 @@ public interface CaseService {
                 .collect(Collectors.toSet());
         return getCases().stream().filter(c -> casesToReindex.contains(c.getUuid())).toList();
     }
+
+    StorageType getStorageType();
 
     List<CaseInfos> getCases();
 

@@ -6,15 +6,17 @@
  */
 package com.powsybl.caseserver.repository;
 
-import com.powsybl.caseserver.service.CaseService;
-import com.powsybl.caseserver.service.FsCaseService;
-import com.powsybl.caseserver.service.S3CaseService;
 import com.powsybl.caseserver.datasource.CaseDataSourceService;
 import com.powsybl.caseserver.datasource.FsCaseDataSourceService;
 import com.powsybl.caseserver.datasource.S3CaseDataSourceService;
+import com.powsybl.caseserver.service.CaseObserver;
+import com.powsybl.caseserver.service.CaseService;
+import com.powsybl.caseserver.service.CaseService.StorageType;
+import com.powsybl.caseserver.service.FsCaseService;
+import com.powsybl.caseserver.service.S3CaseService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 
 /**
@@ -24,20 +26,22 @@ import org.springframework.context.annotation.Primary;
 public class StorageConfig {
 
     private final CaseMetadataRepository caseMetadataRepository;
-    private final String storageType;
+    private final CaseObserver caseObserver;
+    private final StorageType storageType;
 
-    public StorageConfig(@Value("${storage.type}")String storageType, CaseMetadataRepository caseMetadataRepository) {
+    public StorageConfig(@Value("${storage.type}") StorageType storageType, CaseMetadataRepository caseMetadataRepository, CaseObserver caseObserver) {
         this.storageType = storageType;
         this.caseMetadataRepository = caseMetadataRepository;
+        this.caseObserver = caseObserver;
     }
 
     @Primary
     @Bean
     public CaseService storageService() {
-        if ("FS".equals(storageType)) {
-            return new FsCaseService(caseMetadataRepository);
-        } else if ("S3".equals(storageType)) {
-            return new S3CaseService(caseMetadataRepository);
+        if (StorageType.FS == storageType) {
+            return new FsCaseService(caseMetadataRepository, caseObserver);
+        } else if (StorageType.S3 == storageType) {
+            return new S3CaseService(caseMetadataRepository, caseObserver);
         }
         return null;
     }
@@ -45,9 +49,9 @@ public class StorageConfig {
     @Primary
     @Bean
     public CaseDataSourceService caseDataSourceService() {
-        if ("FS".equals(storageType)) {
+        if (StorageType.FS == storageType) {
             return new FsCaseDataSourceService();
-        } else if ("S3".equals(storageType)) {
+        } else if (StorageType.S3 == storageType) {
             return new S3CaseDataSourceService();
         }
         return null;

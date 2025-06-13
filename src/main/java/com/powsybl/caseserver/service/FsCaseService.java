@@ -57,6 +57,8 @@ public class FsCaseService implements CaseService {
 
     private final CaseMetadataRepository caseMetadataRepository;
 
+    private final CaseObserver caseObserver;
+
     @Autowired
     private NotificationService notificationService;
 
@@ -71,8 +73,9 @@ public class FsCaseService implements CaseService {
 
     private String rootDirectory;
 
-    public FsCaseService(CaseMetadataRepository caseMetadataRepository) {
+    public FsCaseService(CaseMetadataRepository caseMetadataRepository, CaseObserver caseObserver) {
         this.caseMetadataRepository = caseMetadataRepository;
+        this.caseObserver = caseObserver;
     }
 
     @PostConstruct
@@ -83,6 +86,11 @@ public class FsCaseService implements CaseService {
     @Override
     public String getRootDirectory() {
         return rootDirectory;
+    }
+
+    @Override
+    public StorageType getStorageType() {
+        return StorageType.FS;
     }
 
     @Override
@@ -176,12 +184,14 @@ public class FsCaseService implements CaseService {
 
     @Override
     public boolean caseExists(UUID caseName) {
-        checkStorageInitialization();
-        Path caseFile = getCaseFile(caseName);
-        if (caseFile == null) {
-            return false;
-        }
-        return Files.exists(caseFile) && Files.isRegularFile(caseFile);
+        return caseObserver.observeCaseExist(getStorageType(), () -> {
+            checkStorageInitialization();
+            Path caseFile = getCaseFile(caseName);
+            if (caseFile == null) {
+                return false;
+            }
+            return Files.exists(caseFile) && Files.isRegularFile(caseFile);
+        });
     }
 
     @Override
@@ -200,7 +210,7 @@ public class FsCaseService implements CaseService {
         try (InputStream inputStream = mpf.getInputStream();
              OutputStream fileOutputStream = Files.newOutputStream(caseFile);
              OutputStream outputStream = shouldCompress ? new GZIPOutputStream(fileOutputStream) : new BufferedOutputStream(fileOutputStream)) {
-            inputStream.transferTo(outputStream);
+            caseObserver.observeCaseWriting(getStorageType(), () -> inputStream.transferTo(outputStream));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
