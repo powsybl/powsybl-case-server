@@ -14,9 +14,6 @@ import io.micrometer.observation.ObservationRegistry;
 import lombok.NonNull;
 import org.springframework.stereotype.Service;
 
-import java.io.InputStream;
-import java.util.Optional;
-
 /**
  * @author Slimane Amar <slimane.amar at rte-france.com>
  */
@@ -27,7 +24,6 @@ public class CaseObserver {
 
     private static final String CASE_WRITING_OBSERVATION_NAME = OBSERVATION_PREFIX + "writing";
     private static final String CASE_IMPORT_OBSERVATION_NAME = OBSERVATION_PREFIX + "import";
-    private static final String CASE_EXPORT_OBSERVATION_NAME = OBSERVATION_PREFIX + "export";
     private static final String CASE_SIZE_METER_NAME = CASE_IMPORT_OBSERVATION_NAME + ".size";
 
     private static final String CASE_EXIST_OBSERVATION_NAME = OBSERVATION_PREFIX + "is_exist";
@@ -47,10 +43,6 @@ public class CaseObserver {
     public <E extends Throwable> void observeCaseImport(long caseSize, StorageType storageType, Observation.CheckedRunnable<E> runnable) throws E {
         createObservation(CASE_IMPORT_OBSERVATION_NAME, storageType).observeChecked(runnable);
         recordCaseSize(caseSize, storageType);
-    }
-
-    public <E extends Throwable> Optional<InputStream> observeCaseExport(StorageType storageType, Observation.CheckedCallable<Optional<InputStream>, E> callable) throws E {
-        return createObservation(CASE_EXPORT_OBSERVATION_NAME, storageType).observeChecked(callable);
     }
 
     public <E extends Throwable> Boolean observeCaseExist(StorageType storageType, Observation.CheckedCallable<Boolean, E> callable) throws E {

@@ -110,7 +110,7 @@ public class CaseController {
     @Operation(summary = "Download a case")
     public ResponseEntity<Resource> downloadCase(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("getCase request received with parameter caseUuid = {}", caseUuid);
-        Optional<InputStream> caseStreamOpt = caseObserver.observeCaseExport(caseService.getStorageType(), () -> caseService.getCaseStream(caseUuid));
+        Optional<InputStream> caseStreamOpt = caseService.getCaseStream(caseUuid);
         if (caseStreamOpt.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
