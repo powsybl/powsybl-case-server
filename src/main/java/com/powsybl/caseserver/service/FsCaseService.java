@@ -187,19 +187,8 @@ public class FsCaseService implements CaseService {
 
     @Override
     public boolean caseExists(UUID caseName) {
-<<<<<<< cases_use_metadata
         checkStorageInitialization();
         return caseMetadataRepository.findById(caseName).isPresent();
-=======
-        return caseObserver.observeCaseExist(getStorageType(), () -> {
-            checkStorageInitialization();
-            Path caseFile = getCaseFile(caseName);
-            if (caseFile == null) {
-                return false;
-            }
-            return Files.exists(caseFile) && Files.isRegularFile(caseFile);
-        });
->>>>>>> main
     }
 
     @Override
