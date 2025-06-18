@@ -137,11 +137,7 @@ public class FsCaseService implements CaseService {
 
     @Override
     public String getCaseName(UUID caseUuid) {
-        Path file = getCaseFile(caseUuid);
-        if (file == null) {
-            throw createDirectoryNotFound(caseUuid);
-        }
-        CaseInfos caseInfos = getCaseInfos(file);
+        CaseInfos caseInfos = getCaseInfos(caseUuid);
         if (caseInfos == null) {
             throw CaseException.createFileNameNotFound(caseUuid);
         }
