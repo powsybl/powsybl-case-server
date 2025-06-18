@@ -8,6 +8,7 @@ package com.powsybl.caseserver;
 
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
+import com.powsybl.caseserver.service.CaseObserver;
 import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.caseserver.service.MetadataService;
 import com.powsybl.commons.datasource.DataSourceUtil;
@@ -35,7 +36,6 @@ import java.util.UUID;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
 import static com.powsybl.caseserver.Utils.buildHeaders;
-
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -51,6 +51,9 @@ public class CaseController {
     @Autowired
     @Qualifier("storageService")
     private CaseService caseService;
+
+    @Autowired
+    private CaseObserver caseObserver;
 
     @Autowired
     private CaseInfosService caseInfosService;
@@ -136,7 +139,7 @@ public class CaseController {
                                            @RequestParam(value = "withIndexation", required = false, defaultValue = "false") boolean withIndexation) {
         LOGGER.debug("importCase request received with file = {}", file.getOriginalFilename());
         UUID caseUuid = UUID.randomUUID();
-        caseService.importCase(file, withExpiration, withIndexation, caseUuid);
+        caseObserver.observeCaseImport(file.getSize(), caseService.getStorageType(), () -> caseService.importCase(file, withExpiration, withIndexation, caseUuid));
         return ResponseEntity.ok().body(caseUuid);
     }
 
