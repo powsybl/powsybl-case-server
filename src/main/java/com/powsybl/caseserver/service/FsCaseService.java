@@ -36,7 +36,6 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
 
-import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
 import static com.powsybl.caseserver.Utils.*;
 import static com.powsybl.caseserver.service.S3CaseService.DELIMITER;
 
