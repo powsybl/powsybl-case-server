@@ -253,7 +253,7 @@ public class S3CaseService implements CaseService {
     }
 
     @Override
-    public Optional<InputStream> getCaseStream(UUID caseUuid) {
+    public Optional<InputStream> getCaseStream(UUID caseUuid) throws FileNotFoundException {
         String caseFileKey = null;
         try {
             caseFileKey = uuidToKeyWithOriginalFileName(caseUuid);
@@ -266,7 +266,7 @@ public class S3CaseService implements CaseService {
             return Optional.of(responseInputStream);
         } catch (NoSuchKeyException e) {
             LOGGER.error("The expected key does not exist in the bucket s3 : {}", caseFileKey);
-            return Optional.empty();
+            throw new FileNotFoundException("The expected key does not exist in the bucket s3 : " + caseFileKey);
         } catch (CaseException | ResponseStatusException e) {
             LOGGER.error(e.getMessage());
             return Optional.empty();

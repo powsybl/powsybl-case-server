@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -114,7 +115,7 @@ public interface CaseService {
 
     String getCaseName(UUID caseUuid);
 
-    Optional<InputStream> getCaseStream(UUID caseUuid);
+    Optional<InputStream> getCaseStream(UUID caseUuid) throws FileNotFoundException;
 
     UUID importCase(MultipartFile file, boolean withExpiration, boolean withIndexation, UUID caseUuid);
 

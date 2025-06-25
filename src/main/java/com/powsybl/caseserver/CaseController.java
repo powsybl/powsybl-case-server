@@ -29,6 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
@@ -108,7 +109,7 @@ public class CaseController {
 
     @GetMapping(value = "/cases/{caseUuid}")
     @Operation(summary = "Download a case")
-    public ResponseEntity<Resource> downloadCase(@PathVariable("caseUuid") UUID caseUuid) {
+    public ResponseEntity<Resource> downloadCase(@PathVariable("caseUuid") UUID caseUuid) throws FileNotFoundException {
         LOGGER.debug("getCase request received with parameter caseUuid = {}", caseUuid);
         Optional<InputStream> caseStreamOpt = caseService.getCaseStream(caseUuid);
         if (caseStreamOpt.isEmpty()) {
