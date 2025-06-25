@@ -280,7 +280,8 @@ public class FsCaseService implements CaseService {
             if (existingCase.isIndexed()) {
                 caseInfosService.addCaseInfos(caseInfos);
             }
-            createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed());
+            createCaseMetadataEntity(newCaseUuid, withExpiration, existingCase.isIndexed(), existingCase.getOriginalFilename(),
+                existingCase.getCompressionFormat(), existingCase.getFormat());
             notificationService.sendImportMessage(caseInfos.createMessage());
             return newCaseUuid;
 

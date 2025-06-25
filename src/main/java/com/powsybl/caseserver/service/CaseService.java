@@ -71,10 +71,6 @@ public interface CaseService {
         getCaseMetadataRepository().save(new CaseMetadataEntity(newCaseUuid, expirationTime, withIndexation, originalFilename, compressionFormat, format));
     }
 
-    default void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, boolean withIndexation) {
-        createCaseMetadataEntity(newCaseUuid, withExpiration, withIndexation, null, null, null);
-    }
-
     default List<CaseInfos> getMetadata(List<UUID> ids) {
         List<CaseInfos> cases = new ArrayList<>();
         ids.forEach(caseUuid -> {
