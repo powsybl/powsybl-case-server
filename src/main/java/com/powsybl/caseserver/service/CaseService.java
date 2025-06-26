@@ -115,7 +115,7 @@ public interface CaseService {
 
     UUID importCase(MultipartFile file, boolean withExpiration, boolean withIndexation, UUID caseUuid);
 
-    UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration);
+    UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration) throws FileNotFoundException;
 
     void deleteCase(UUID caseUuid);
 

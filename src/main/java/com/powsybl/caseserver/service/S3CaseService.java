@@ -509,7 +509,7 @@ public class S3CaseService implements CaseService {
     }
 
     @Override
-    public UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration) {
+    public UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration) throws FileNotFoundException {
         if (!caseExists(sourceCaseUuid)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Source case " + sourceCaseUuid + NOT_FOUND);
         }
@@ -520,6 +520,10 @@ public class S3CaseService implements CaseService {
                 .prefix(uuidToKeyPrefix(sourceCaseUuid))
                 .build()
         );
+        if (sourceCaseObjects.contents().isEmpty()) {
+            throw new FileNotFoundException("The expected key does not exist in the bucket s3 : " + uuidToKeyPrefix(sourceCaseUuid));
+        }
+
         // To optimize copy, cases to copy are not downloaded on the case-server. They are directly copied on the S3 server.
         for (S3Object object : sourceCaseObjects.contents()) {
             String filename = parseFilenameFromKey(object.key());
