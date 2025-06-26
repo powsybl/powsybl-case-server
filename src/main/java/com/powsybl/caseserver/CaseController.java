@@ -151,7 +151,7 @@ public class CaseController {
         @ApiResponse(responseCode = "500", description = "An error occurred during the case file duplication")})
     public ResponseEntity<UUID> duplicateCase(
             @RequestParam("duplicateFrom") UUID caseId,
-            @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration) {
+            @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration) throws FileNotFoundException {
         LOGGER.debug("duplicateCase request received with parameter sourceCaseUuid = {}", caseId);
         UUID newCaseUuid = caseService.duplicateCase(caseId, withExpiration);
         return ResponseEntity.ok().body(newCaseUuid);
