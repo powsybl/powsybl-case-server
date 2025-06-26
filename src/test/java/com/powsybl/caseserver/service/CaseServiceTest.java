@@ -145,6 +145,13 @@ class CaseServiceTest {
         assertThrows(CaseException.class, () -> caseService.getCaseStream(caseUuid));
     }
 
+    @Test
+    void testGetCaseFormat() {
+        UUID caseUuid = UUID.randomUUID();
+        caseService.createCaseMetadataEntity(caseUuid, false, false, TEST_OTHER_CASE_FILE_NAME, null, null);
+        assertThrows(NullPointerException.class, () -> caseService.getFormat(caseUuid));
+    }
+
     public void testNonValidNameEntsoe() {
         CaseInfos caseInfos = createInfos(TEST_OTHER_CASE_FILE_NAME, "XIIDM");
         assertEquals(TEST_OTHER_CASE_FILE_NAME, caseInfos.getName());
