@@ -21,6 +21,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.Path;
 import java.util.UUID;
@@ -123,6 +124,18 @@ class CaseServiceTest {
         assertEquals("2D", caseInfos.getBusinessProcess());
         assertEquals("RTEFRANCE", caseInfos.getTso());
         assertEquals(Integer.valueOf(1), caseInfos.getVersion());
+    }
+
+    @Test
+    void testCasesInfosInvalidCase() {
+        UUID caseUuid = UUID.randomUUID();
+        assertNull(caseService.getCaseInfos(caseUuid));
+    }
+
+    @Test
+    void duplicateInvalidCase() {
+        UUID caseUuid = UUID.randomUUID();
+        assertThrows(ResponseStatusException.class, () -> caseService.duplicateCase(caseUuid, false));
     }
 
     public void testNonValidNameEntsoe() {
