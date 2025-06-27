@@ -10,6 +10,7 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.powsybl.caseserver.utils.TestUtils;
 import com.powsybl.computation.ComputationManager;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -84,5 +86,12 @@ class FsCaseControllerTest extends AbstractCaseControllerTest {
     @Override
     void removeRandomFile() throws IOException {
         Files.delete(fileSystem.getPath(caseService.getRootDirectory()).resolve("randomFile.txt"));
+    }
+
+    @Override
+    void removeFile(String caseKey) throws IOException {
+        String caseUuid = caseKey.substring(caseKey.lastIndexOf("/") + 1);
+        File caseFile = new File(fileSystem.getPath(caseService.getRootDirectory()).resolve(caseUuid).toString());
+        FileUtils.deleteDirectory(caseFile);
     }
 }
