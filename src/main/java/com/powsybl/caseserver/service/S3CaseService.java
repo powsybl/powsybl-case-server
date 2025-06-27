@@ -79,7 +79,7 @@ public class S3CaseService implements CaseService {
     @Value("${spring.cloud.aws.bucket}")
     private String bucketName;
 
-    @Value("${case-subpath}")
+    @Value("${powsybl-ws.s3.subpath.prefix:}${case-subpath}")
     private String rootDirectory;
 
     @Autowired
