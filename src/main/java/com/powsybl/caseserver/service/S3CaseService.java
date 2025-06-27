@@ -513,7 +513,6 @@ public class S3CaseService implements CaseService {
         if (!caseExists(sourceCaseUuid)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Source case " + sourceCaseUuid + NOT_FOUND);
         }
-
         UUID newCaseUuid = UUID.randomUUID();
         ListObjectsResponse sourceCaseObjects = s3Client.listObjects(ListObjectsRequest.builder()
                 .bucket(bucketName)

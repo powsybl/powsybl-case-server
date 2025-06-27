@@ -21,6 +21,7 @@ import org.springframework.test.context.TestPropertySource;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -63,7 +64,7 @@ class FsCaseControllerTest extends AbstractCaseControllerTest {
     @BeforeEach
     void setUp() throws IOException {
         caseService = fsCaseService;
-        fileSystem = Jimfs.newFileSystem(Configuration.unix());
+        fileSystem = Jimfs.newFileSystem();
         ((FsCaseService) caseService).setFileSystem(fileSystem);
         caseService.setComputationManager(Mockito.mock(ComputationManager.class));
         caseMetadataRepository.deleteAll();
@@ -84,13 +85,8 @@ class FsCaseControllerTest extends AbstractCaseControllerTest {
     }
 
     @Override
-    void removeRandomFile() throws IOException {
-        Files.delete(fileSystem.getPath(caseService.getRootDirectory()).resolve("randomFile.txt"));
-    }
-
-    @Override
     void removeFile(String caseKey) throws IOException {
-        String caseUuid = caseKey.substring(caseKey.lastIndexOf("/") + 1);
+        String caseUuid = caseKey.substring(0, caseKey.lastIndexOf("/"));
         File caseFile = new File(fileSystem.getPath(caseService.getRootDirectory()).resolve(caseUuid).toString());
         FileUtils.deleteDirectory(caseFile);
     }

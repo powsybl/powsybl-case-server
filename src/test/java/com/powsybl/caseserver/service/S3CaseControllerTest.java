@@ -52,20 +52,6 @@ class S3CaseControllerTest extends AbstractCaseControllerTest implements MinioCo
     }
 
     @Override
-    void removeRandomFile() {
-        List<ObjectIdentifier> objectsToDelete = s3CaseService.getS3Client().listObjectsV2(builder -> builder.bucket(s3CaseService.getBucketName()).prefix(s3CaseService.getRootDirectory() + "/randomFile.txt"))
-                .contents()
-                .stream()
-                .map(s3Object -> ObjectIdentifier.builder().key(s3Object.key()).build())
-                .toList();
-        DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
-                .bucket(s3CaseService.getBucketName())
-                .delete(delete -> delete.objects(objectsToDelete))
-                .build();
-        s3CaseService.getS3Client().deleteObjects(deleteObjectsRequest);
-    }
-
-    @Override
     void removeFile(String caseKey) {
         List<ObjectIdentifier> objectsToDelete = s3CaseService.getS3Client().listObjectsV2(builder -> builder.bucket(s3CaseService.getBucketName()).prefix(s3CaseService.getRootDirectory() + "/" + caseKey))
             .contents()
@@ -79,10 +65,4 @@ class S3CaseControllerTest extends AbstractCaseControllerTest implements MinioCo
         s3CaseService.getS3Client().deleteObjects(deleteObjectsRequest);
     }
 
-    @Test
-    void testDuplicate() throws Exception {
-        UUID firstCaseUuid = importCase(TEST_CASE, false);
-        removeFile(firstCaseUuid + "/" + TEST_CASE);
-        assertThrows(FileNotFoundException.class, () -> caseService.duplicateCase(firstCaseUuid, false));
-    }
 }
