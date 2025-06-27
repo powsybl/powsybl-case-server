@@ -10,7 +10,6 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.powsybl.caseserver.utils.TestUtils;
 import com.powsybl.computation.ComputationManager;
-import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,10 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.FileSystemUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -64,30 +61,11 @@ class FsCaseControllerTest extends AbstractCaseControllerTest {
     void setUp() throws IOException {
         caseService = fsCaseService;
         fileSystem = Jimfs.newFileSystem(Configuration.unix());
-        //fileSystem = FileSystems.getDefault();
         ((FsCaseService) caseService).setFileSystem(fileSystem);
         caseService.setComputationManager(Mockito.mock(ComputationManager.class));
         caseMetadataRepository.deleteAll();
         outputDestination.clear();
         createStorageDir();
-    }
-
-    public static void deleteRecursively(Path path) throws IOException {
-        Files.walkFileTree(path, new SimpleFileVisitor<>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                    throws IOException {
-                Files.delete(file);
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc)
-                    throws IOException {
-                Files.delete(dir);
-                return FileVisitResult.CONTINUE;
-            }
-        });
     }
 
     @Test
@@ -100,10 +78,6 @@ class FsCaseControllerTest extends AbstractCaseControllerTest {
     @Override
     void addRandomFile() throws IOException {
         Files.createFile(fileSystem.getPath(caseService.getRootDirectory()).resolve("randomFile.txt"));
-    }
-
-    void removeRandomFile() throws IOException {
-        Files.delete(fileSystem.getPath(caseService.getRootDirectory()).resolve("randomFile.txt"));
     }
 
     @Override

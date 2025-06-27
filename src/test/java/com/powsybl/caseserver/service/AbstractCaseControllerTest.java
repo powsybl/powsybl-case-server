@@ -27,7 +27,6 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
@@ -663,8 +662,6 @@ abstract class AbstractCaseControllerTest {
     }
 
     abstract void addRandomFile() throws IOException;
-
-    abstract void removeRandomFile() throws IOException;
 
     abstract void removeFile(String caseKey) throws IOException;
 
