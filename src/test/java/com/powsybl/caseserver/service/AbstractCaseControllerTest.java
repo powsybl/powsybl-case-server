@@ -664,6 +664,8 @@ abstract class AbstractCaseControllerTest {
 
     abstract void addRandomFile() throws IOException;
 
+    abstract void removeRandomFile() throws IOException;
+
     abstract void removeFile(String caseKey) throws IOException;
 
     @Test
@@ -794,7 +796,8 @@ abstract class AbstractCaseControllerTest {
     @Test
     void testDuplicate() throws Exception {
         UUID firstCaseUuid = importCase(TEST_CASE, false);
-        removeFile(firstCaseUuid + "/" + TEST_CASE);
+        removeFile(firstCaseUuid.toString());
         assertThrows(Exception.class, () -> caseService.duplicateCase(firstCaseUuid, false));
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
     }
 }

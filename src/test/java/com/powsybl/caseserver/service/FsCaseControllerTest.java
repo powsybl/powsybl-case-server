@@ -17,13 +17,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.util.FileSystemUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -64,12 +63,31 @@ class FsCaseControllerTest extends AbstractCaseControllerTest {
     @BeforeEach
     void setUp() throws IOException {
         caseService = fsCaseService;
-        fileSystem = Jimfs.newFileSystem();
+        fileSystem = Jimfs.newFileSystem(Configuration.unix());
+        //fileSystem = FileSystems.getDefault();
         ((FsCaseService) caseService).setFileSystem(fileSystem);
         caseService.setComputationManager(Mockito.mock(ComputationManager.class));
         caseMetadataRepository.deleteAll();
         outputDestination.clear();
         createStorageDir();
+    }
+
+    public static void deleteRecursively(Path path) throws IOException {
+        Files.walkFileTree(path, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                    throws IOException {
+                Files.delete(file);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc)
+                    throws IOException {
+                Files.delete(dir);
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 
     @Test
@@ -84,10 +102,12 @@ class FsCaseControllerTest extends AbstractCaseControllerTest {
         Files.createFile(fileSystem.getPath(caseService.getRootDirectory()).resolve("randomFile.txt"));
     }
 
+    void removeRandomFile() throws IOException {
+        Files.delete(fileSystem.getPath(caseService.getRootDirectory()).resolve("randomFile.txt"));
+    }
+
     @Override
-    void removeFile(String caseKey) throws IOException {
-        String caseUuid = caseKey.substring(0, caseKey.lastIndexOf("/"));
-        File caseFile = new File(fileSystem.getPath(caseService.getRootDirectory()).resolve(caseUuid).toString());
-        FileUtils.deleteDirectory(caseFile);
+    void removeFile(String caseName) throws IOException {
+        FileSystemUtils.deleteRecursively(fileSystem.getPath(caseService.getRootDirectory()).resolve(caseName));
     }
 }

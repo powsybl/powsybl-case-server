@@ -23,10 +23,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.FileNotFoundException;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
@@ -139,10 +142,10 @@ class CaseServiceTest {
     }
 
     @Test
-    void testDownloadInvalidCase() {
+    void testDownloadInvalidCase() throws FileNotFoundException {
         UUID caseUuid = UUID.randomUUID();
         caseService.createCaseMetadataEntity(caseUuid, false, false, TEST_OTHER_CASE_FILE_NAME, null, "XIIDM");
-        assertThrows(CaseException.class, () -> caseService.getCaseStream(caseUuid));
+        assertEquals(Optional.empty(), caseService.getCaseStream(caseUuid));
     }
 
     @Test
