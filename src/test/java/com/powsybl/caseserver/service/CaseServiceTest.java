@@ -21,6 +21,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.Path;
 import java.util.UUID;
@@ -123,6 +124,32 @@ class CaseServiceTest {
         assertEquals("2D", caseInfos.getBusinessProcess());
         assertEquals("RTEFRANCE", caseInfos.getTso());
         assertEquals(Integer.valueOf(1), caseInfos.getVersion());
+    }
+
+    @Test
+    void testCasesInfosInvalidCase() {
+        UUID caseUuid = UUID.randomUUID();
+        assertNull(caseService.getCaseInfos(caseUuid));
+    }
+
+    @Test
+    void testDuplicateInvalidCase() {
+        UUID caseUuid = UUID.randomUUID();
+        assertThrows(ResponseStatusException.class, () -> caseService.duplicateCase(caseUuid, false));
+    }
+
+    @Test
+    void testDownloadInvalidCase() {
+        UUID caseUuid = UUID.randomUUID();
+        caseService.createCaseMetadataEntity(caseUuid, false, false, TEST_OTHER_CASE_FILE_NAME, null, "XIIDM");
+        assertThrows(CaseException.class, () -> caseService.getCaseStream(caseUuid));
+    }
+
+    @Test
+    void testGetCaseFormat() {
+        UUID caseUuid = UUID.randomUUID();
+        caseService.createCaseMetadataEntity(caseUuid, false, false, TEST_OTHER_CASE_FILE_NAME, null, null);
+        assertThrows(NullPointerException.class, () -> caseService.getFormat(caseUuid));
     }
 
     public void testNonValidNameEntsoe() {

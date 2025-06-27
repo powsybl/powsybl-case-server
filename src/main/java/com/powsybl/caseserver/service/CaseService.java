@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -70,10 +71,6 @@ public interface CaseService {
         getCaseMetadataRepository().save(new CaseMetadataEntity(newCaseUuid, expirationTime, withIndexation, originalFilename, compressionFormat, format));
     }
 
-    default void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, boolean withIndexation) {
-        createCaseMetadataEntity(newCaseUuid, withExpiration, withIndexation, null, null, null);
-    }
-
     default List<CaseInfos> getMetadata(List<UUID> ids) {
         List<CaseInfos> cases = new ArrayList<>();
         ids.forEach(caseUuid -> {
@@ -114,11 +111,11 @@ public interface CaseService {
 
     String getCaseName(UUID caseUuid);
 
-    Optional<InputStream> getCaseStream(UUID caseUuid);
+    Optional<InputStream> getCaseStream(UUID caseUuid) throws FileNotFoundException;
 
     UUID importCase(MultipartFile file, boolean withExpiration, boolean withIndexation, UUID caseUuid);
 
-    UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration);
+    UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration) throws FileNotFoundException;
 
     void deleteCase(UUID caseUuid);
 

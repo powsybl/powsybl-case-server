@@ -665,6 +665,8 @@ abstract class AbstractCaseControllerTest {
 
     abstract void removeRandomFile() throws IOException;
 
+    abstract void removeFile(String caseKey) throws IOException;
+
     @Test
     void invalidFileInCaseDirectoryShouldBeIgnored() throws Exception {
         // add a random file in the storage, not stored in a UUID named directory

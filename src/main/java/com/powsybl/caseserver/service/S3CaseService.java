@@ -253,7 +253,7 @@ public class S3CaseService implements CaseService {
     }
 
     @Override
-    public Optional<InputStream> getCaseStream(UUID caseUuid) {
+    public Optional<InputStream> getCaseStream(UUID caseUuid) throws FileNotFoundException {
         String caseFileKey = null;
         try {
             caseFileKey = uuidToKeyWithOriginalFileName(caseUuid);
@@ -266,7 +266,7 @@ public class S3CaseService implements CaseService {
             return Optional.of(responseInputStream);
         } catch (NoSuchKeyException e) {
             LOGGER.error("The expected key does not exist in the bucket s3 : {}", caseFileKey);
-            return Optional.empty();
+            throw new FileNotFoundException("The expected key does not exist in the bucket s3 : " + caseFileKey);
         } catch (CaseException | ResponseStatusException e) {
             LOGGER.error(e.getMessage());
             return Optional.empty();
@@ -299,7 +299,7 @@ public class S3CaseService implements CaseService {
 
     @Override
     public boolean caseExists(UUID uuid) {
-        return caseObserver.observeCaseExist(getStorageType(), () -> !getCaseS3Objects(uuid).isEmpty());
+        return caseMetadataRepository.findById(uuid).isPresent();
     }
 
     public Boolean datasourceExists(UUID caseUuid, String fileName) {
@@ -509,7 +509,7 @@ public class S3CaseService implements CaseService {
     }
 
     @Override
-    public UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration) {
+    public UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration) throws FileNotFoundException {
         if (!caseExists(sourceCaseUuid)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Source case " + sourceCaseUuid + NOT_FOUND);
         }
@@ -520,6 +520,10 @@ public class S3CaseService implements CaseService {
                 .prefix(uuidToKeyPrefix(sourceCaseUuid))
                 .build()
         );
+        if (sourceCaseObjects.contents().isEmpty()) {
+            throw new FileNotFoundException("The expected key does not exist in the bucket s3 : " + uuidToKeyPrefix(sourceCaseUuid));
+        }
+
         // To optimize copy, cases to copy are not downloaded on the case-server. They are directly copied on the S3 server.
         for (S3Object object : sourceCaseObjects.contents()) {
             String filename = parseFilenameFromKey(object.key());
