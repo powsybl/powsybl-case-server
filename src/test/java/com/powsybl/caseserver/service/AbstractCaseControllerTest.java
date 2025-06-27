@@ -663,8 +663,6 @@ abstract class AbstractCaseControllerTest {
 
     abstract void addRandomFile() throws IOException;
 
-    abstract void removeRandomFile() throws IOException;
-
     abstract void removeFile(String caseKey) throws IOException;
 
     @Test
@@ -683,7 +681,7 @@ abstract class AbstractCaseControllerTest {
         assertEquals(1, caseInfos.size());
         assertEquals(TEST_CASE, caseInfos.get(0).getName());
 
-        removeRandomFile();
+        removeFile("randomFile.txt");
         mvc.perform(delete("/v1/cases"))
                 .andExpect(status().isOk());
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
@@ -789,6 +787,14 @@ abstract class AbstractCaseControllerTest {
                         .param("caseUuid", CASE_UUID_TO_IMPORT.toString()))
                 .andExpect(status().isConflict());
 
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
+    }
+
+    @Test
+    void testDuplicate() throws Exception {
+        UUID firstCaseUuid = importCase(TEST_CASE, false);
+        removeFile(firstCaseUuid.toString());
+        assertThrows(Exception.class, () -> caseService.duplicateCase(firstCaseUuid, false));
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
     }
 }

@@ -6,6 +6,8 @@
  */
 package com.powsybl.caseserver.service;
 
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import com.powsybl.caseserver.CaseException;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.dto.cgmes.CgmesCaseInfos;
@@ -23,10 +25,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
@@ -139,10 +145,14 @@ class CaseServiceTest {
     }
 
     @Test
-    void testDownloadInvalidCase() {
+    void testDownloadInvalidCase() throws IOException {
+        Path path = Jimfs.newFileSystem(Configuration.unix()).getPath(caseService.getRootDirectory());
+        if (!Files.exists(path)) {
+            Files.createDirectories(path);
+        }
         UUID caseUuid = UUID.randomUUID();
         caseService.createCaseMetadataEntity(caseUuid, false, false, TEST_OTHER_CASE_FILE_NAME, null, "XIIDM");
-        assertThrows(CaseException.class, () -> caseService.getCaseStream(caseUuid));
+        assertEquals(Optional.empty(), caseService.getCaseStream(caseUuid));
     }
 
     @Test
