@@ -10,6 +10,11 @@ spring:
       dialect: org.hibernate.dialect.H2Dialect
       #to turn off schema validation that fails (because of timestampz types) and blocks tests even if the schema is compatible
       ddl-auto: none
+  cloud:
+    aws:
+      credentials:
+        access-key: minioadmin
+        secret-key: minioadmin
 
 logging:
   level:
