@@ -14,6 +14,7 @@ import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.computation.ComputationManager;
 import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
+import com.powsybl.ws.commons.SecuredTarInputStream;
 import com.powsybl.ws.commons.SecuredZipInputStream;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -61,7 +62,8 @@ import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM_VALUE;
 public class S3CaseService implements CaseService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(S3CaseService.class);
-    public static final int MAX_SIZE = 2000000000;
+    public static final int MAX_UNCOMPRESSED_ARCHIVE_SIZE = 2000000000;
+    public static final int MAX_ARCHIVE_ENTRIES = 1000;
     public static final String DELIMITER = "/";
 
     private ComputationManager computationManager = LocalComputationManager.getDefault();
@@ -477,7 +479,7 @@ public class S3CaseService implements CaseService {
     }
 
     private void importZipContent(InputStream inputStream, UUID caseUuid) throws IOException {
-        try (ZipInputStream zipInputStream = new SecuredZipInputStream(inputStream, 1000, MAX_SIZE)) {
+        try (ZipInputStream zipInputStream = new SecuredZipInputStream(inputStream, MAX_ARCHIVE_ENTRIES, MAX_UNCOMPRESSED_ARCHIVE_SIZE)) {
             ZipEntry entry;
             while ((entry = zipInputStream.getNextEntry()) != null) {
                 if (!entry.isDirectory()) {
@@ -489,8 +491,7 @@ public class S3CaseService implements CaseService {
     }
 
     private void importTarContent(InputStream inputStream, UUID caseUuid) throws IOException {
-        try (BufferedInputStream tarStream = new BufferedInputStream(inputStream);
-            TarArchiveInputStream tarInputStream = new TarArchiveInputStream(tarStream)) {
+        try (TarArchiveInputStream tarInputStream = new SecuredTarInputStream(inputStream, MAX_ARCHIVE_ENTRIES, MAX_UNCOMPRESSED_ARCHIVE_SIZE)) {
             ArchiveEntry entry;
             while ((entry = tarInputStream.getNextEntry()) != null) {
                 if (!entry.isDirectory()) {
