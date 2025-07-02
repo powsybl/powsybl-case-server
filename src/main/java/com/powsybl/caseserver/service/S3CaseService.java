@@ -61,7 +61,7 @@ import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM_VALUE;
 public class S3CaseService implements CaseService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(S3CaseService.class);
-    public static final int MAX_SIZE = 500000000;
+    public static final int MAX_SIZE = 2000000000;
     public static final String DELIMITER = "/";
 
     private ComputationManager computationManager = LocalComputationManager.getDefault();
