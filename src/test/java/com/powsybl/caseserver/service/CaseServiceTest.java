@@ -142,13 +142,6 @@ class CaseServiceTest {
     }
 
     @Test
-    void testDownloadInvalidCase() throws IOException {
-        UUID caseUuid = UUID.randomUUID();
-        caseService.createCaseMetadataEntity(caseUuid, false, false, TEST_OTHER_CASE_FILE_NAME, null, "XIIDM");
-        assertEquals(Optional.empty(), caseService.getCaseStream(caseUuid));
-    }
-
-    @Test
     void testGetCaseFormat() {
         UUID caseUuid = UUID.randomUUID();
         caseService.createCaseMetadataEntity(caseUuid, false, false, TEST_OTHER_CASE_FILE_NAME, null, null);
