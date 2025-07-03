@@ -33,11 +33,13 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.zip.GZIPOutputStream;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -663,8 +665,6 @@ abstract class AbstractCaseControllerTest {
 
     abstract void addRandomFile() throws IOException;
 
-    abstract void removeRandomFile() throws IOException;
-
     abstract void removeFile(String caseKey) throws IOException;
 
     @Test
@@ -683,7 +683,7 @@ abstract class AbstractCaseControllerTest {
         assertEquals(1, caseInfos.size());
         assertEquals(TEST_CASE, caseInfos.get(0).getName());
 
-        removeRandomFile();
+        removeFile("randomFile.txt");
         mvc.perform(delete("/v1/cases"))
                 .andExpect(status().isOk());
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
@@ -789,6 +789,21 @@ abstract class AbstractCaseControllerTest {
                         .param("caseUuid", CASE_UUID_TO_IMPORT.toString()))
                 .andExpect(status().isConflict());
 
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
+    }
+
+    @Test
+    void testDownloadInvalidCase() throws IOException {
+        UUID caseUuid = UUID.randomUUID();
+        caseService.createCaseMetadataEntity(caseUuid, false, false, "testCase.xiidm", null, "XIIDM");
+        assertEquals(Optional.empty(), caseService.getCaseStream(caseUuid));
+    }
+
+    @Test
+    void testDuplicate() throws Exception {
+        UUID firstCaseUuid = importCase(TEST_CASE, false);
+        removeFile(firstCaseUuid.toString());
+        assertThrows(Exception.class, () -> caseService.duplicateCase(firstCaseUuid, false));
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
     }
 }

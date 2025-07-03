@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.UUID;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
@@ -136,13 +137,6 @@ class CaseServiceTest {
     void testDuplicateInvalidCase() {
         UUID caseUuid = UUID.randomUUID();
         assertThrows(ResponseStatusException.class, () -> caseService.duplicateCase(caseUuid, false));
-    }
-
-    @Test
-    void testDownloadInvalidCase() {
-        UUID caseUuid = UUID.randomUUID();
-        caseService.createCaseMetadataEntity(caseUuid, false, false, TEST_OTHER_CASE_FILE_NAME, null, "XIIDM");
-        assertThrows(CaseException.class, () -> caseService.getCaseStream(caseUuid));
     }
 
     @Test
