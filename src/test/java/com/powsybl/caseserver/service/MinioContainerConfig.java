@@ -19,7 +19,7 @@ import java.time.Duration;
  */
 public interface MinioContainerConfig {
     String MINIO_DOCKER_IMAGE_NAME = "minio/minio";
-    String BUCKET_NAME = "my-bucket";
+    String BUCKET_NAME = "ws-bucket";
     // Just a fixed version, latest at the time of writing this
     String MINIO_DOCKER_IMAGE_VERSION = "RELEASE.2023-09-27T15-22-50Z";
     int MINIO_PORT = 9000;
