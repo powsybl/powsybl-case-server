@@ -111,11 +111,11 @@ public interface CaseService {
 
     String getCaseName(UUID caseUuid);
 
-    Optional<InputStream> getCaseStream(UUID caseUuid) throws FileNotFoundException;
+    Optional<InputStream> getCaseStream(UUID caseUuid);
 
     UUID importCase(MultipartFile file, boolean withExpiration, boolean withIndexation, UUID caseUuid);
 
-    UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration) throws FileNotFoundException;
+    UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration);
 
     void deleteCase(UUID caseUuid);
 

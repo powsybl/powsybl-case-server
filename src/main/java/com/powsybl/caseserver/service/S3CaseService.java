@@ -255,7 +255,7 @@ public class S3CaseService implements CaseService {
     }
 
     @Override
-    public Optional<InputStream> getCaseStream(UUID caseUuid) throws FileNotFoundException {
+    public Optional<InputStream> getCaseStream(UUID caseUuid) {
         String caseFileKey = null;
         try {
             caseFileKey = uuidToKeyWithOriginalFileName(caseUuid);
@@ -510,7 +510,7 @@ public class S3CaseService implements CaseService {
     }
 
     @Override
-    public UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration) throws FileNotFoundException {
+    public UUID duplicateCase(UUID sourceCaseUuid, boolean withExpiration) {
         if (!caseExists(sourceCaseUuid)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Source case " + sourceCaseUuid + NOT_FOUND);
         }
