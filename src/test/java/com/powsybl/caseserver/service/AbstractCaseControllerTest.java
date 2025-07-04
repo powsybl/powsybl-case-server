@@ -25,6 +25,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -803,7 +804,7 @@ abstract class AbstractCaseControllerTest {
     void testDuplicate() throws Exception {
         UUID firstCaseUuid = importCase(TEST_CASE, false);
         removeFile(firstCaseUuid.toString());
-        assertThrows(Exception.class, () -> caseService.duplicateCase(firstCaseUuid, false));
+        assertThrows(ResponseStatusException.class, () -> caseService.duplicateCase(firstCaseUuid, false));
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
     }
 }
