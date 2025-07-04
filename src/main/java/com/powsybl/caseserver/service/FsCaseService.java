@@ -182,7 +182,7 @@ public class FsCaseService implements CaseService {
 
     @Override
     public boolean caseExists(UUID caseName) {
-        return caseMetadataRepository.findById(caseName).isPresent();
+        return caseObserver.observeCaseExist(getStorageType(), () -> caseMetadataRepository.findById(caseName).isPresent());
     }
 
     @Override
