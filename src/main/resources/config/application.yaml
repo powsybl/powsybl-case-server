@@ -16,6 +16,6 @@ powsybl-ws:
 cleaning-cases-cron: 0 0 2 * * ?
 
 storage:
-  type: S3  # FS or S3
+  type: FS  # FS or S3
 
 case-subpath: cases
