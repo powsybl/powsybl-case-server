@@ -20,7 +20,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.time.Instant;

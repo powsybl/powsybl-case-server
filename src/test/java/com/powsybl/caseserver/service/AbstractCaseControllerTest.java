@@ -82,6 +82,10 @@ abstract class AbstractCaseControllerTest {
 
     final String caseImportDestination = "case.import.destination";
 
+    abstract void addRandomFile() throws IOException;
+
+    abstract void removeFile(String caseKey) throws IOException;
+
     private static MockMultipartFile createMockMultipartFile(String fileName) throws IOException {
         try (InputStream inputStream = AbstractCaseControllerTest.class.getResourceAsStream("/" + fileName)) {
             return new MockMultipartFile("file", fileName, MediaType.TEXT_PLAIN_VALUE, inputStream);
@@ -663,10 +667,6 @@ abstract class AbstractCaseControllerTest {
         String utcFormattedDate = EntsoeFileNameParser.parseDateTime(entsoeFormatDate).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         return "date:\"" + utcFormattedDate + "\"";
     }
-
-    abstract void addRandomFile() throws IOException;
-
-    abstract void removeFile(String caseKey) throws IOException;
 
     @Test
     void invalidFileInCaseDirectoryShouldBeIgnored() throws Exception {
