@@ -301,7 +301,7 @@ public class S3CaseService implements CaseService {
 
     @Override
     public boolean caseExists(UUID uuid) {
-        return caseMetadataRepository.findById(uuid).isPresent();
+        return caseObserver.observeCaseExist(getStorageType(), () -> !getCaseS3Objects(uuid).isEmpty());
     }
 
     public Boolean datasourceExists(UUID caseUuid, String fileName) {
@@ -521,10 +521,6 @@ public class S3CaseService implements CaseService {
                 .prefix(uuidToKeyPrefix(sourceCaseUuid))
                 .build()
         );
-        if (sourceCaseObjects.contents().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "The expected key does not exist in the bucket s3 : " + uuidToKeyPrefix(sourceCaseUuid));
-        }
-
         // To optimize copy, cases to copy are not downloaded on the case-server. They are directly copied on the S3 server.
         for (S3Object object : sourceCaseObjects.contents()) {
             String filename = parseFilenameFromKey(object.key());

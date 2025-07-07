@@ -16,10 +16,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.util.FileSystemUtils;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -81,7 +82,7 @@ class FsCaseControllerTest extends AbstractCaseControllerTest {
     }
 
     @Override
-    void removeFile(String caseName) throws IOException {
-        FileSystemUtils.deleteRecursively(fileSystem.getPath(caseService.getRootDirectory()).resolve(caseName));
+    void removeRandomFile() throws IOException {
+        Files.delete(fileSystem.getPath(caseService.getRootDirectory()).resolve("randomFile.txt"));
     }
 }
