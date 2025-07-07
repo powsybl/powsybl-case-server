@@ -29,6 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
@@ -108,7 +109,7 @@ public class CaseController {
 
     @GetMapping(value = "/cases/{caseUuid}")
     @Operation(summary = "Download a case")
-    public ResponseEntity<Resource> downloadCase(@PathVariable("caseUuid") UUID caseUuid) {
+    public ResponseEntity<Resource> downloadCase(@PathVariable("caseUuid") UUID caseUuid) throws FileNotFoundException {
         LOGGER.debug("getCase request received with parameter caseUuid = {}", caseUuid);
         Optional<InputStream> caseStreamOpt = caseService.getCaseStream(caseUuid);
         if (caseStreamOpt.isEmpty()) {
@@ -150,7 +151,7 @@ public class CaseController {
         @ApiResponse(responseCode = "500", description = "An error occurred during the case file duplication")})
     public ResponseEntity<UUID> duplicateCase(
             @RequestParam("duplicateFrom") UUID caseId,
-            @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration) {
+            @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration) throws FileNotFoundException {
         LOGGER.debug("duplicateCase request received with parameter sourceCaseUuid = {}", caseId);
         UUID newCaseUuid = caseService.duplicateCase(caseId, withExpiration);
         return ResponseEntity.ok().body(newCaseUuid);

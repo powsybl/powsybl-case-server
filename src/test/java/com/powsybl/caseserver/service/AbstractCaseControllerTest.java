@@ -794,7 +794,7 @@ abstract class AbstractCaseControllerTest {
     }
 
     @Test
-    void testDownloadInvalidCase() {
+    void testDownloadInvalidCase() throws IOException {
         UUID caseUuid = UUID.randomUUID();
         caseService.createCaseMetadataEntity(caseUuid, false, false, "testCase.xiidm", null, "XIIDM");
         assertEquals(Optional.empty(), caseService.getCaseStream(caseUuid));
