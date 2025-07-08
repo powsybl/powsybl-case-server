@@ -47,17 +47,16 @@ class S3CaseControllerTest extends AbstractCaseControllerTest implements MinioCo
     }
 
     @Override
-    void removeFile(String caseKey) {
-        List<ObjectIdentifier> objectsToDelete = s3CaseService.getS3Client().listObjectsV2(builder -> builder.bucket(s3CaseService.getBucketName()).prefix(s3CaseService.getRootDirectory() + "/" + caseKey))
-            .contents()
-            .stream()
-            .map(s3Object -> ObjectIdentifier.builder().key(s3Object.key()).build())
-            .toList();
+    void removeRandomFile() {
+        List<ObjectIdentifier> objectsToDelete = s3CaseService.getS3Client().listObjectsV2(builder -> builder.bucket(s3CaseService.getBucketName()).prefix(s3CaseService.getRootDirectory() + "/randomFile.txt"))
+                .contents()
+                .stream()
+                .map(s3Object -> ObjectIdentifier.builder().key(s3Object.key()).build())
+                .toList();
         DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
-            .bucket(s3CaseService.getBucketName())
-            .delete(delete -> delete.objects(objectsToDelete))
-            .build();
+                .bucket(s3CaseService.getBucketName())
+                .delete(delete -> delete.objects(objectsToDelete))
+                .build();
         s3CaseService.getS3Client().deleteObjects(deleteObjectsRequest);
     }
-
 }
