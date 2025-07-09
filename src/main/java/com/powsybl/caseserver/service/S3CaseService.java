@@ -354,7 +354,7 @@ public class S3CaseService implements CaseService {
                         .collect(Collectors.toList());
             }
         }
-        return filenames.stream().filter(n -> n.matches(Pattern.quote(regex))).collect(Collectors.toSet());
+        return filenames.stream().filter(n -> n.matches(regex)).collect(Collectors.toSet());
     }
 
     /**
