@@ -45,6 +45,7 @@ import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
@@ -239,7 +240,8 @@ public class S3CaseService implements CaseService {
     @Override
     public CaseInfos getCaseInfos(UUID caseUuid) {
         if (!caseExists(caseUuid)) {
-            LOGGER.error("The directory with the following uuid doesn't exist: {}", caseUuid);
+            String cleanedUuid = caseUuid.toString().replaceAll("[\n\r]", "_");
+            LOGGER.error("The directory with the following uuid doesn't exist: {}", cleanedUuid);
             return null;
         }
         return new CaseInfos(caseUuid, getCaseName(caseUuid), getFormat(caseUuid));
@@ -352,7 +354,7 @@ public class S3CaseService implements CaseService {
                         .collect(Collectors.toList());
             }
         }
-        return filenames.stream().filter(n -> n.matches(regex)).collect(Collectors.toSet());
+        return filenames.stream().filter(n -> n.matches(Pattern.quote(regex))).collect(Collectors.toSet());
     }
 
     /**
