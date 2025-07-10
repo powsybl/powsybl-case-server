@@ -37,7 +37,10 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -239,7 +242,8 @@ public class S3CaseService implements CaseService {
     @Override
     public CaseInfos getCaseInfos(UUID caseUuid) {
         if (!caseExists(caseUuid)) {
-            LOGGER.error("The directory with the following uuid doesn't exist: {}", caseUuid);
+            String cleanedUuid = caseUuid.toString().replaceAll("[\n\r]", "_");
+            LOGGER.error("The directory with the following uuid doesn't exist: {}", cleanedUuid);
             return null;
         }
         return new CaseInfos(caseUuid, getCaseName(caseUuid), getFormat(caseUuid));
