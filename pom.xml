@@ -44,7 +44,7 @@
     </developers>
 
     <properties>
-		<!-- FIXME to remove at next upgrade of powsybl-ws-dependencies -->
+        <!-- FIXME to remove at next upgrade of powsybl-ws-dependencies -->
         <powsybl-network-store.version>1.28.0</powsybl-network-store.version>
         <liquibase-hibernate-package>com.powsybl.caseserver.repository</liquibase-hibernate-package>
         <powsybl-ws-dependencies.version>2.22.1</powsybl-ws-dependencies.version>
