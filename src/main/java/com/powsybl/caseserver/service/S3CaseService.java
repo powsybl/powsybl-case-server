@@ -237,6 +237,7 @@ public class S3CaseService implements CaseService {
     }
 
     @Override
+    @SuppressWarnings("javasecurity:S5145")
     public CaseInfos getCaseInfos(UUID caseUuid) {
         if (!caseExists(caseUuid)) {
             LOGGER.error("The directory with the following uuid doesn't exist: {}", caseUuid);

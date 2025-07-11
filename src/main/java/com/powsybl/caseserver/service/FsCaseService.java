@@ -146,6 +146,7 @@ public class FsCaseService implements CaseService {
     }
 
     @Override
+    @SuppressWarnings("javasecurity:S5145")
     public CaseInfos getCaseInfos(UUID caseUuid) {
         Path file = getCaseFile(caseUuid);
         if (file == null) {
