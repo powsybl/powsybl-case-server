@@ -44,6 +44,8 @@
     </developers>
 
     <properties>
+		<!-- FIXME to remove at next upgrade of powsybl-ws-dependencies -->
+        <powsybl-network-store.version>1.28.0</powsybl-network-store.version>
         <liquibase-hibernate-package>com.powsybl.caseserver.repository</liquibase-hibernate-package>
         <powsybl-ws-dependencies.version>2.22.1</powsybl-ws-dependencies.version>
         <spring-cloud-aws-starter-s3>3.2.0</spring-cloud-aws-starter-s3>
@@ -79,9 +81,27 @@
         </plugins>
     </build>
 
-    <dependencyManagement>
+     <dependencyManagement>
         <dependencies>
             <!-- overrides of imports -->
+            <!-- FIXME to remove at next upgrade of powsybl-ws-dependencies -->
+            <dependency>
+                <groupId>com.powsybl</groupId>
+                <artifactId>powsybl-network-store-model</artifactId>
+                <version>${powsybl-network-store.version}</version>
+            </dependency>
+            <!-- FIXME to remove at next upgrade of powsybl-ws-dependencies -->
+            <dependency>
+                <groupId>com.powsybl</groupId>
+                <artifactId>powsybl-network-store-iidm-impl</artifactId>
+                <version>${powsybl-network-store.version}</version>
+            </dependency>
+            <!-- FIXME to remove at next upgrade of powsybl-ws-dependencies -->
+            <dependency>
+                <groupId>com.powsybl</groupId>
+                <artifactId>powsybl-network-store-client</artifactId>
+                <version>${powsybl-network-store.version}</version>
+            </dependency>
 
             <!-- imports -->
             <dependency>
