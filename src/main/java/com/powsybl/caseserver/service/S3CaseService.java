@@ -6,6 +6,7 @@
  */
 package com.powsybl.caseserver.service;
 
+import com.google.re2j.Pattern;
 import com.powsybl.caseserver.CaseException;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
@@ -353,7 +354,7 @@ public class S3CaseService implements CaseService {
                         .collect(Collectors.toList());
             }
         }
-        return filenames.stream().filter(n -> n.matches(regex)).collect(Collectors.toSet());
+        return filenames.stream().filter(n -> Pattern.compile(regex).matches(n)).collect(Collectors.toSet());
     }
 
     /**
