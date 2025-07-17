@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'main'
+      - 'full-sonar-analysis-**'
   pull_request:
 
 jobs:
