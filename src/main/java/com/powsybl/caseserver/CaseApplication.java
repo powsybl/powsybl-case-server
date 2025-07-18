@@ -24,7 +24,6 @@ public class CaseApplication {
     public static void main(String[] args) {
         SpringApplication.run(CaseApplication.class, args);
     }
-
     @Bean
     public Module module() {
         return new JavaTimeModule();
