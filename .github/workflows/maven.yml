@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - 'main'
-      - 'branch-testtt'
+      - 'branch-test2'
     tags:
       - 'v[0-9]*'
   pull_request:
