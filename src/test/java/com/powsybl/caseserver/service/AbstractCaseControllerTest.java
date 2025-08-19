@@ -25,6 +25,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -33,11 +34,13 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.zip.GZIPOutputStream;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -78,6 +81,10 @@ abstract class AbstractCaseControllerTest {
     ObjectMapper mapper;
 
     final String caseImportDestination = "case.import.destination";
+
+    abstract void addRandomFile() throws IOException;
+
+    abstract void removeFile(String caseKey) throws IOException;
 
     private static MockMultipartFile createMockMultipartFile(String fileName) throws IOException {
         try (InputStream inputStream = AbstractCaseControllerTest.class.getResourceAsStream("/" + fileName)) {
@@ -661,10 +668,6 @@ abstract class AbstractCaseControllerTest {
         return "date:\"" + utcFormattedDate + "\"";
     }
 
-    abstract void addRandomFile() throws IOException;
-
-    abstract void removeRandomFile() throws IOException;
-
     @Test
     void invalidFileInCaseDirectoryShouldBeIgnored() throws Exception {
         // add a random file in the storage, not stored in a UUID named directory
@@ -681,7 +684,7 @@ abstract class AbstractCaseControllerTest {
         assertEquals(1, caseInfos.size());
         assertEquals(TEST_CASE, caseInfos.get(0).getName());
 
-        removeRandomFile();
+        removeFile("randomFile.txt");
         mvc.perform(delete("/v1/cases"))
                 .andExpect(status().isOk());
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
@@ -787,6 +790,21 @@ abstract class AbstractCaseControllerTest {
                         .param("caseUuid", CASE_UUID_TO_IMPORT.toString()))
                 .andExpect(status().isConflict());
 
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
+    }
+
+    @Test
+    void testDownloadInvalidCase() {
+        UUID caseUuid = UUID.randomUUID();
+        caseService.createCaseMetadataEntity(caseUuid, false, false, "testCase.xiidm", null, "XIIDM");
+        assertEquals(Optional.empty(), caseService.getCaseStream(caseUuid));
+    }
+
+    @Test
+    void testDuplicate() throws Exception {
+        UUID firstCaseUuid = importCase(TEST_CASE, false);
+        removeFile(firstCaseUuid.toString());
+        assertThrows(ResponseStatusException.class, () -> caseService.duplicateCase(firstCaseUuid, false));
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
     }
 }
