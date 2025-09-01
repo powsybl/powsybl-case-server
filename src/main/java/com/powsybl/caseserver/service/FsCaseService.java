@@ -129,7 +129,7 @@ public class FsCaseService implements CaseService {
             return getCaseInfos(file);
         } catch (Exception e) {
             // This method is called by getCases() that is a method for supervision and administration. We do not want the request to stop and fail on error cases.
-            LOGGER.error("Error processing file {}: {}", file.getFileName(), e.getMessage(), e);
+            LOGGER.error("Error processing file {} in directory {}: {}", file.getFileName(), file.getParent().getFileName(), e.getMessage(), e);
             return null;
         }
     }
@@ -144,6 +144,7 @@ public class FsCaseService implements CaseService {
     }
 
     @Override
+    @SuppressWarnings("javasecurity:S5145")
     public CaseInfos getCaseInfos(UUID caseUuid) {
         CaseMetadataEntity caseMetadataEntity = caseMetadataRepository.findById(caseUuid).orElse(null);
         if (caseMetadataEntity == null) {

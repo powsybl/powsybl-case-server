@@ -15,6 +15,8 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Set;
 import java.util.UUID;
@@ -75,7 +77,8 @@ public class S3CaseDataSourceService implements CaseDataSourceService {
 
     @Override
     public Set<String> listName(UUID caseUuid, String regex) {
-        return s3CaseService.listName(caseUuid, regex);
+        final String decodedRegex = URLDecoder.decode(regex, StandardCharsets.UTF_8);
+        return s3CaseService.listName(caseUuid, decodedRegex);
     }
 }
 
