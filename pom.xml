@@ -45,7 +45,7 @@
 
     <properties>
         <liquibase-hibernate-package>com.powsybl.caseserver.repository</liquibase-hibernate-package>
-        <gridsuite-dependencies.version>2.24.0</gridsuite-dependencies.version>
+        <powsybl-ws-dependencies.version>2.24.0</powsybl-ws-dependencies.version>
         <spring-cloud-aws-starter-s3>3.2.0</spring-cloud-aws-starter-s3>
     </properties>
 
