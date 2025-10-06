@@ -93,12 +93,6 @@ abstract class AbstractCaseControllerTest {
     }
 
     @Test
-    void testDeleteCases() throws Exception {
-        mvc.perform(delete("/v1/cases"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
     void testCheckNonExistingCase() throws Exception {
         // check if the case exists (except a false)
         mvc.perform(get("/v1/cases/{caseUuid}/exists", RANDOM_UUID))
@@ -258,8 +252,7 @@ abstract class AbstractCaseControllerTest {
         assertNull(caseMetadataEntity.getExpirationDate());
 
         // delete all cases
-        mvc.perform(delete("/v1/cases"))
-                .andExpect(status().isOk());
+        caseService.deleteAllCases();
 
         //check that the caseMetadataRepository is empty since all cases were removed
         assertTrue(caseMetadataRepository.findAll().isEmpty());
@@ -385,8 +378,7 @@ abstract class AbstractCaseControllerTest {
         assertTrue(response.contains("\"format\":\"XIIDM\""));
 
         // delete all cases
-        mvc.perform(delete("/v1/cases"))
-                .andExpect(status().isOk());
+        caseService.deleteAllCases();
     }
 
     @Test
@@ -438,9 +430,7 @@ abstract class AbstractCaseControllerTest {
 
     @Test
     void searchCaseTest() throws Exception {
-        // delete all cases
-        mvc.perform(delete("/v1/cases"))
-                .andExpect(status().isOk());
+        caseService.deleteAllCases();
 
         // import IIDM test case
         String aCase = mvc.perform(multipart("/v1/cases")
@@ -649,8 +639,7 @@ abstract class AbstractCaseControllerTest {
         assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
 
         // delete all cases
-        mvc.perform(delete("/v1/cases"))
-                .andExpect(status().isOk());
+        caseService.deleteAllCases();
 
         mvcResult = mvc.perform(get("/v1/cases/search")
                 .param("q", getDateSearchTerm("20200103_0915") + " AND geographicalCode:(FR OR CH OR D8)"))
@@ -685,8 +674,7 @@ abstract class AbstractCaseControllerTest {
         assertEquals(TEST_CASE, caseInfos.get(0).getName());
 
         removeFile("randomFile.txt");
-        mvc.perform(delete("/v1/cases"))
-                .andExpect(status().isOk());
+        caseService.deleteAllCases();
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
     }
 
@@ -710,8 +698,7 @@ abstract class AbstractCaseControllerTest {
         assertEquals(TEST_CASE, caseInfos.get(0).getName());
 
         caseService.deleteCase(caseUuid);
-        mvc.perform(delete("/v1/cases"))
-                .andExpect(status().isOk());
+        caseService.deleteAllCases();
     }
 
     @Test

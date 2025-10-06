@@ -178,14 +178,6 @@ public class CaseController {
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping(value = "/cases")
-    @Operation(summary = "delete all cases")
-    public ResponseEntity<Void> deleteCases() {
-        LOGGER.debug("deleteCases request received");
-        caseService.deleteAllCases();
-        return ResponseEntity.ok().build();
-    }
-
     @GetMapping(value = "/cases/search")
     @Operation(summary = "Search cases by metadata")
     public ResponseEntity<List<CaseInfos>> searchCases(@RequestParam(value = "q") String query) {
