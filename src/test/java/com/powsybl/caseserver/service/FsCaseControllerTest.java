@@ -20,14 +20,10 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.FileSystemUtils;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.*;
 import java.util.List;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
