@@ -7,7 +7,6 @@
 package com.powsybl.caseserver;
 
 import com.powsybl.caseserver.service.CaseService;
-import com.powsybl.caseserver.elasticsearch.CaseInfosRepository;
 import com.powsybl.caseserver.elasticsearch.DisableElasticsearch;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
@@ -16,7 +15,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -32,6 +32,7 @@ import static org.mockito.Mockito.verify;
  */
 @SpringBootTest
 @DisableElasticsearch
+@Import(DisableElasticsearch.MockConfig.class)
 class ScheduledCaseCleanerTest {
 
     @Autowired
@@ -40,10 +41,7 @@ class ScheduledCaseCleanerTest {
     @Autowired
     private ScheduledCaseCleaner scheduledCaseCleaner;
 
-    @MockBean
-    private CaseInfosRepository caseInfosRepository;
-
-    @MockBean
+    @MockitoBean
     private CaseService caseService;
 
     @BeforeEach

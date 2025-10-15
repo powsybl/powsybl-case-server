@@ -45,8 +45,8 @@
 
     <properties>
         <liquibase-hibernate-package>com.powsybl.caseserver.repository</liquibase-hibernate-package>
-        <powsybl-ws-dependencies.version>2.24.0</powsybl-ws-dependencies.version>
-        <spring-cloud-aws-starter-s3>3.2.0</spring-cloud-aws-starter-s3>
+        <powsybl-ws-dependencies.version>2.25.0</powsybl-ws-dependencies.version>
+        <spring-cloud-aws-starter-s3>3.3.1</spring-cloud-aws-starter-s3>
     </properties>
 
     <build>
@@ -165,7 +165,10 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+        </dependency>
         <!-- Runtime dependencies -->
         <dependency>
             <groupId>org.liquibase</groupId>
