@@ -16,6 +16,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cloud.stream.binder.test.EnableTestBinder;
 import org.springframework.test.context.TestPropertySource;
 
 import java.io.IOException;
@@ -29,6 +30,7 @@ import java.nio.file.Path;
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @TestPropertySource(properties = {"storage.type=FS"})
+@EnableTestBinder
 class FsSupervisionControllerTest extends AbstractSupervisionControllerTest {
 
     FileSystem fileSystem;
