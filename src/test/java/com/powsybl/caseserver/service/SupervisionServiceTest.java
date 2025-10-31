@@ -14,10 +14,11 @@ import org.junit.runner.RunWith;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.IndexOperations;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -32,12 +33,13 @@ import static org.mockito.Mockito.times;
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @DisableElasticsearch
+@Import(DisableElasticsearch.MockConfig.class)
 class SupervisionServiceTest {
 
-    @MockBean
+    @MockitoBean
     ElasticsearchOperations elasticsearchOperations;
 
-    @MockBean
+    @MockitoBean
     IndexOperations indexOperations;
 
     @Autowired

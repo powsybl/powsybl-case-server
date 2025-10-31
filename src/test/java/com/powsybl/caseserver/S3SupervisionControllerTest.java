@@ -14,6 +14,7 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cloud.stream.binder.test.EnableTestBinder;
 import org.springframework.test.context.TestPropertySource;
 
 /**
@@ -22,6 +23,7 @@ import org.springframework.test.context.TestPropertySource;
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @TestPropertySource(properties = {"storage.type=S3"})
+@EnableTestBinder
 class S3SupervisionControllerTest extends AbstractSupervisionControllerTest implements MinioContainerConfig {
 
     @Autowired

@@ -13,9 +13,10 @@ import com.powsybl.commons.datasource.DataSource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cloud.stream.function.StreamBridge;
+import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -38,9 +39,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Etienne Homer <etienne.homer at rte-france.com>
  */
 @DisableElasticsearch
+@Import(DisableElasticsearch.MockConfig.class)
 public abstract class AbstractCaseDataSourceControllerTest {
 
-    @MockBean
+    @MockitoBean
     StreamBridge streamBridge;
 
     @Autowired

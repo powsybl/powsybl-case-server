@@ -12,6 +12,7 @@ import com.powsybl.caseserver.parsers.FileNameParser;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 
 import java.nio.file.Path;
 import java.util.Optional;
@@ -23,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @DisableElasticsearch
+@Import(DisableElasticsearch.MockConfig.class)
 class CaseFileNameParserTests {
     private static final String CASE_FILE_NAME_INCORRECT = "20200103_0915_SN5.UCT";
     private static final String TEST_OTHER_CASE_FILE_NAME = "testCase.xiidm";
