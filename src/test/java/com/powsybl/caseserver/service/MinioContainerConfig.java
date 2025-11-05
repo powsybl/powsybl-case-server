@@ -21,7 +21,7 @@ public interface MinioContainerConfig {
     String MINIO_DOCKER_IMAGE_NAME = "minio/minio";
     String BUCKET_NAME = "ws-bucket";
     // Just a fixed version, latest at the time of writing this
-    String MINIO_DOCKER_IMAGE_VERSION = "RELEASE.2023-09-27T15-22-50Z";
+    String MINIO_DOCKER_IMAGE_VERSION = "RELEASE.2025-09-07T16-13-09Z";
     int MINIO_PORT = 9000;
     GenericContainer<?> MINIO_CONTAINER = createMinioContainer();
     static GenericContainer<?> createMinioContainer() {
