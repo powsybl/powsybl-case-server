@@ -6,9 +6,10 @@
  */
 package com.powsybl.caseserver.service;
 
-import com.powsybl.caseserver.CaseException;
+import com.powsybl.caseserver.error.CaseBusinessException;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
+import com.powsybl.caseserver.error.CaseRuntimeException;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.computation.ComputationManager;
@@ -138,7 +139,7 @@ public class FsCaseService implements CaseService {
     public String getCaseName(UUID caseUuid) {
         CaseInfos caseInfos = getCaseInfos(caseUuid);
         if (caseInfos == null) {
-            throw CaseException.createFileNameNotFound(caseUuid);
+            throw CaseRuntimeException.fileNameNotFound(caseUuid);
         }
         return caseInfos.getName();
     }
@@ -163,7 +164,7 @@ public class FsCaseService implements CaseService {
         if (Files.exists(caseDirectory) && Files.isDirectory(caseDirectory)) {
             return caseDirectory;
         }
-        throw CaseException.createDirectoryNotFound(caseUuid);
+        throw CaseRuntimeException.directoryNotFound(caseUuid);
     }
 
     public Path walkCaseDirectory(Path caseDirectory) {
@@ -171,7 +172,7 @@ public class FsCaseService implements CaseService {
             try (Stream<Path> pathStream = Files.walk(caseDirectory)) {
                 Optional<Path> pathOpt = pathStream.filter(file -> !Files.isDirectory(file)).findFirst();
                 if (pathOpt.isEmpty()) {
-                    throw CaseException.createDirectoryEmpty(caseDirectory);
+                    throw CaseRuntimeException.emptyDirectory(caseDirectory);
                 }
                 return pathOpt.get();
             } catch (IOException e) {
@@ -210,7 +211,7 @@ public class FsCaseService implements CaseService {
         Importer importer;
         try {
             importer = getImporterOrThrowsException(caseFile);
-        } catch (CaseException e) {
+        } catch (CaseBusinessException e) {
             try {
                 Files.deleteIfExists(caseFile);
                 Files.deleteIfExists(uuidDirectory);
@@ -237,7 +238,7 @@ public class FsCaseService implements CaseService {
 
     private static void createDirectory(Path uuidDirectory) {
         if (Files.exists(uuidDirectory)) {
-            throw CaseException.createDirectoryAlreadyExists(uuidDirectory.toString());
+            throw CaseRuntimeException.directoryAlreadyExists(uuidDirectory.toString());
         }
         try {
             Files.createDirectory(uuidDirectory);
@@ -343,7 +344,7 @@ public class FsCaseService implements CaseService {
 
     public void checkStorageInitialization() {
         if (!isStorageCreated()) {
-            throw CaseException.createStorageNotInitialized(getStorageRootDir());
+            throw CaseRuntimeException.storageNotInitialized(getStorageRootDir());
         }
     }
 

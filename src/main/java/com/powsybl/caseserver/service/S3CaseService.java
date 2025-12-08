@@ -7,9 +7,9 @@
 package com.powsybl.caseserver.service;
 
 import com.google.re2j.Pattern;
-import com.powsybl.caseserver.CaseException;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
+import com.powsybl.caseserver.error.CaseRuntimeException;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.computation.ComputationManager;
@@ -133,21 +133,21 @@ public class S3CaseService implements CaseService {
             }
             // after this line, need to cleanup the dir
         } catch (IOException e) {
-            throw CaseException.createTempDirectory(caseUuid, e);
+            throw CaseRuntimeException.tempDirectoryCreation(caseUuid, e);
         }
         try {
             tempCasePath = tempdirPath.resolve(filename);
             try {
                 contentInitializer.accept(tempCasePath);
             } catch (Exception e) {
-                throw CaseException.createInitTempFileError(caseUuid, e);
+                throw CaseRuntimeException.initTempFile(caseUuid, e);
             }
             // after this line, need to cleanup the file
             try {
                 try {
                     return f.apply(tempCasePath);
                 } catch (Exception e) {
-                    throw CaseException.createFileNotImportable(tempdirPath.toString(), e);
+                    throw CaseRuntimeException.fileNotImportable(tempdirPath, e);
                 }
             } finally {
                 try {
@@ -251,7 +251,7 @@ public class S3CaseService implements CaseService {
     public String getCaseName(UUID caseUuid) {
         String originalFilename = getOriginalFilename(caseUuid);
         if (originalFilename == null) {
-            throw CaseException.createOriginalFileNotFound(caseUuid);
+            throw CaseRuntimeException.originalFileNotFound(caseUuid);
         }
         return originalFilename;
     }
@@ -271,7 +271,7 @@ public class S3CaseService implements CaseService {
         } catch (NoSuchKeyException e) {
             LOGGER.error("The expected key does not exist in the bucket s3 : {}", caseFileKey);
             return Optional.empty();
-        } catch (CaseException | ResponseStatusException e) {
+        } catch (ResponseStatusException e) {
             LOGGER.error(e.getMessage());
             return Optional.empty();
         }
@@ -411,7 +411,7 @@ public class S3CaseService implements CaseService {
                     importTarContent(inputStream, caseUuid);
                 }
             } catch (IOException e) {
-                throw CaseException.createFileNotImportable(caseName, e);
+                throw CaseRuntimeException.fileNotImportable(Path.of(caseName), e);
             }
         }
 
@@ -428,7 +428,7 @@ public class S3CaseService implements CaseService {
                         RequestBody.fromInputStream(inputStream, mpf.getSize()));
             }
         } catch (IOException e) {
-            throw CaseException.createFileNotImportable(caseName, e);
+            throw CaseRuntimeException.fileNotImportable(Path.of(caseName), e);
         }
 
         createCaseMetadataEntity(caseUuid, withExpiration, withIndexation, caseName, compressionFormat, format);

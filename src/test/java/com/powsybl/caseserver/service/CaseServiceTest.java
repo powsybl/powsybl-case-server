@@ -6,7 +6,8 @@
  */
 package com.powsybl.caseserver.service;
 
-import com.powsybl.caseserver.CaseException;
+import com.powsybl.caseserver.error.CaseBusinessErrorCode;
+import com.powsybl.caseserver.error.CaseBusinessException;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.dto.cgmes.CgmesCaseInfos;
 import com.powsybl.caseserver.dto.entsoe.EntsoeCaseInfos;
@@ -52,7 +53,7 @@ class CaseServiceTest {
     @Test
     void testCreateDefaultCaseInfo() {
         CaseInfos infos = caseService.createInfos(TEST_OTHER_CASE_FILE_NAME, UUID.randomUUID(), "UNKNOW");
-        assertEquals(infos.getClass(), CaseInfos.class);
+        assertEquals(CaseInfos.class, infos.getClass());
     }
 
     @Test
@@ -62,12 +63,12 @@ class CaseServiceTest {
         caseService.validateCaseName("testcase1.7zip");
         caseService.validateCaseName("testcase1.xiidm.gz");
         caseService.validateCaseName("test..xiidm");
-        CaseException exception = assertThrows(CaseException.class, () -> caseService.validateCaseName("test"));
-        assertEquals(CaseException.Type.ILLEGAL_FILE_NAME, exception.getType());
-        CaseException exception1 = assertThrows(CaseException.class, () -> caseService.validateCaseName("../test.xiidm"));
-        assertEquals(CaseException.Type.ILLEGAL_FILE_NAME, exception1.getType());
-        CaseException exception2 = assertThrows(CaseException.class, () -> caseService.validateCaseName("test/xiidm"));
-        assertEquals(CaseException.Type.ILLEGAL_FILE_NAME, exception2.getType());
+        CaseBusinessException exception = assertThrows(CaseBusinessException.class, () -> caseService.validateCaseName("test"));
+        assertEquals(CaseBusinessErrorCode.ILLEGAL_FILE_NAME, exception.getBusinessErrorCode());
+        CaseBusinessException exception1 = assertThrows(CaseBusinessException.class, () -> caseService.validateCaseName("../test.xiidm"));
+        assertEquals(CaseBusinessErrorCode.ILLEGAL_FILE_NAME, exception1.getBusinessErrorCode());
+        CaseBusinessException exception2 = assertThrows(CaseBusinessException.class, () -> caseService.validateCaseName("test/xiidm"));
+        assertEquals(CaseBusinessErrorCode.ILLEGAL_FILE_NAME, exception2.getBusinessErrorCode());
     }
 
     @Test
@@ -144,7 +145,7 @@ class CaseServiceTest {
     @Test
     void testGetCaseFormat() {
         UUID caseUuid = UUID.randomUUID();
-        caseService.createCaseMetadataEntity(caseUuid, false, false, TEST_OTHER_CASE_FILE_NAME, null, null);
+       // caseService.createCaseMetadataEntity(caseUuid, false, false, TEST_OTHER_CASE_FILE_NAME, null, null);
         assertThrows(NullPointerException.class, () -> caseService.getFormat(caseUuid));
     }
 

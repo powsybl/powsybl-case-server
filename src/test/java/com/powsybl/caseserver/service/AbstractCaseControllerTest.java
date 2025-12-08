@@ -38,8 +38,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.zip.GZIPOutputStream;
 
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -160,7 +159,7 @@ abstract class AbstractCaseControllerTest {
         mvc.perform(multipart("/v1/cases")
                         .file(createMockMultipartFile(NOT_A_NETWORK)))
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(content().string(startsWith("This file cannot be imported")))
+                .andExpect(content().string(contains("This file cannot be imported").toString()))
                 .andReturn();
 
         // import a non valid case with a valid extension and expect a fail
@@ -175,7 +174,7 @@ abstract class AbstractCaseControllerTest {
     void testDownloadNonExistingCase() throws Exception {
         // download a non existing case
         mvc.perform(get(GET_CASE_URL, UUID.randomUUID()))
-                .andExpect(status().isNoContent())
+                .andExpect(status().isNotFound())
                 .andReturn();
     }
 
@@ -191,7 +190,7 @@ abstract class AbstractCaseControllerTest {
 
         // delete non existing file
         mvc.perform(delete(GET_CASE_URL, caseaseUuid))
-                .andExpect(content().string(startsWith("The directory with the following uuid doesn't exist:")))
+                .andExpect(content().string(containsString("The directory with the following uuid doesn't exist:")))
                 .andReturn();
 
     }
