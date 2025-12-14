@@ -8,6 +8,7 @@ package com.powsybl.caseserver.service;
 
 import com.powsybl.caseserver.error.CaseBusinessException;
 import com.powsybl.caseserver.dto.CaseInfos;
+import com.powsybl.caseserver.error.CaseRuntimeException;
 import com.powsybl.caseserver.parsers.FileNameInfos;
 import com.powsybl.caseserver.parsers.FileNameParser;
 import com.powsybl.caseserver.parsers.FileNameParsers;
@@ -43,7 +44,7 @@ public interface CaseService {
     }
 
     default CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
-        return getCaseMetadataRepository().findById(caseUuid).orElseThrow(() -> new HttpStatusCodeException(HttpStatus.NOT_FOUND) {
+        return getCaseMetadataRepository().findById(caseUuid).orElseThrow(() -> new CaseRuntimeException("Case not found: " + caseUuid) {
         });
     }
 

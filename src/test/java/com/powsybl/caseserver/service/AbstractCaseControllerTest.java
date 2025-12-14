@@ -13,6 +13,7 @@ import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -158,23 +159,29 @@ abstract class AbstractCaseControllerTest {
         // import a non valid case and expect a fail
         mvc.perform(multipart("/v1/cases")
                         .file(createMockMultipartFile(NOT_A_NETWORK)))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(content().string(contains("This file cannot be imported").toString()))
-                .andReturn();
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(result -> {
+                Throwable ex = result.getResolvedException();
+                assertNotNull(ex);
+                Assertions.assertTrue(ex.getMessage().contains("No available importer found for this file:"));
+            });
 
         // import a non valid case with a valid extension and expect a fail
         mvc.perform(multipart("/v1/cases")
                         .file(createMockMultipartFile(STILL_NOT_A_NETWORK)))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(content().string(startsWith("This file cannot be imported")))
-                .andReturn();
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(result -> {
+                Throwable ex = result.getResolvedException();
+                assertNotNull(ex);
+                Assertions.assertTrue(ex.getMessage().contains("No available importer found for this file:"));
+            });
     }
 
     @Test
     void testDownloadNonExistingCase() throws Exception {
         // download a non existing case
         mvc.perform(get(GET_CASE_URL, UUID.randomUUID()))
-                .andExpect(status().isNotFound())
+                .andExpect(status().isNoContent())
                 .andReturn();
     }
 

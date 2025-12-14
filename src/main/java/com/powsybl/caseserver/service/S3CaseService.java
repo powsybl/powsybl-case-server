@@ -9,6 +9,7 @@ package com.powsybl.caseserver.service;
 import com.google.re2j.Pattern;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
+import com.powsybl.caseserver.error.CaseBusinessException;
 import com.powsybl.caseserver.error.CaseRuntimeException;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
@@ -146,6 +147,8 @@ public class S3CaseService implements CaseService {
             try {
                 try {
                     return f.apply(tempCasePath);
+                } catch ( CaseBusinessException businessException) {
+                    throw businessException;
                 } catch (Exception e) {
                     throw CaseRuntimeException.fileNotImportable(tempdirPath, e);
                 }
@@ -271,7 +274,7 @@ public class S3CaseService implements CaseService {
         } catch (NoSuchKeyException e) {
             LOGGER.error("The expected key does not exist in the bucket s3 : {}", caseFileKey);
             return Optional.empty();
-        } catch (ResponseStatusException e) {
+        } catch (CaseRuntimeException | ResponseStatusException e) {
             LOGGER.error(e.getMessage());
             return Optional.empty();
         }

@@ -145,7 +145,7 @@ class CaseServiceTest {
     @Test
     void testGetCaseFormat() {
         UUID caseUuid = UUID.randomUUID();
-       // caseService.createCaseMetadataEntity(caseUuid, false, false, TEST_OTHER_CASE_FILE_NAME, null, null);
+        caseService.createCaseMetadataEntity(caseUuid, false, false, TEST_OTHER_CASE_FILE_NAME, null, null);
         assertThrows(NullPointerException.class, () -> caseService.getFormat(caseUuid));
     }
 
