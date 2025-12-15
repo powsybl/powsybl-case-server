@@ -17,8 +17,6 @@ import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.commons.datasource.DataSource;
 import com.powsybl.computation.ComputationManager;
 import com.powsybl.iidm.network.Importer;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
@@ -44,7 +42,7 @@ public interface CaseService {
     }
 
     default CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
-        return getCaseMetadataRepository().findById(caseUuid).orElseThrow(() -> new CaseRuntimeException("Case not found: " + caseUuid) {
+        return getCaseMetadataRepository().findById(caseUuid).orElseThrow(() -> new CaseRuntimeException("Case metadata not found: " + caseUuid) {
         });
     }
 

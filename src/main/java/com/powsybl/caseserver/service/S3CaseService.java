@@ -147,7 +147,7 @@ public class S3CaseService implements CaseService {
             try {
                 try {
                     return f.apply(tempCasePath);
-                } catch ( CaseBusinessException businessException) {
+                } catch (CaseBusinessException businessException) {
                     throw businessException;
                 } catch (Exception e) {
                     throw CaseRuntimeException.fileNotImportable(tempdirPath, e);
@@ -184,7 +184,7 @@ public class S3CaseService implements CaseService {
 
     @Override
     public String getFormat(UUID caseUuid) {
-        return getCaseMetaDataEntity(caseUuid).getFormat();
+        return Objects.requireNonNull(getCaseMetaDataEntity(caseUuid).getFormat());
     }
 
     public String getCompressionFormat(UUID caseUuid) {
