@@ -8,6 +8,7 @@ package com.powsybl.caseserver;
 
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
+import com.powsybl.caseserver.error.CaseRuntimeException;
 import com.powsybl.caseserver.service.CaseObserver;
 import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.caseserver.service.MetadataService;
@@ -34,7 +35,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
 import static com.powsybl.caseserver.Utils.buildHeaders;
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
@@ -89,7 +89,7 @@ public class CaseController {
     public ResponseEntity<String> getCaseFormat(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("getCaseFormat request received");
         if (!caseService.caseExists(caseUuid)) {
-            throw createDirectoryNotFound(caseUuid);
+            throw CaseRuntimeException.directoryNotFound(caseUuid);
         }
         String caseFormat = caseService.getFormat(caseUuid);
         return ResponseEntity.ok().body(caseFormat);
@@ -100,7 +100,7 @@ public class CaseController {
     public ResponseEntity<String> getCaseName(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("getCaseName request received");
         if (!caseService.caseExists(caseUuid)) {
-            throw createDirectoryNotFound(caseUuid);
+            throw CaseRuntimeException.directoryNotFound(caseUuid);
         }
         String caseName = caseService.getCaseName(caseUuid);
         return ResponseEntity.ok().body(caseName);
@@ -172,7 +172,7 @@ public class CaseController {
     public ResponseEntity<Void> deleteCase(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("deleteCase request received with parameter caseUuid = {}", caseUuid);
         if (!caseService.caseExists(caseUuid)) {
-            throw createDirectoryNotFound(caseUuid);
+            throw CaseRuntimeException.directoryNotFound(caseUuid);
         }
         caseService.deleteCase(caseUuid);
         return ResponseEntity.ok().build();
