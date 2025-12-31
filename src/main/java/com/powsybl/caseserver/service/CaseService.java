@@ -6,8 +6,9 @@
  */
 package com.powsybl.caseserver.service;
 
-import com.powsybl.caseserver.CaseException;
+import com.powsybl.caseserver.error.CaseBusinessException;
 import com.powsybl.caseserver.dto.CaseInfos;
+import com.powsybl.caseserver.error.CaseRuntimeException;
 import com.powsybl.caseserver.parsers.FileNameInfos;
 import com.powsybl.caseserver.parsers.FileNameParser;
 import com.powsybl.caseserver.parsers.FileNameParsers;
@@ -16,9 +17,7 @@ import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.commons.datasource.DataSource;
 import com.powsybl.computation.ComputationManager;
 import com.powsybl.iidm.network.Importer;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -38,12 +37,13 @@ public interface CaseService {
     default void validateCaseName(String caseName) {
         Objects.requireNonNull(caseName);
         if (!caseName.matches("[^<>:\"/|?*]+(\\.[\\w]+)")) {
-            throw CaseException.createIllegalCaseName(caseName);
+            throw CaseBusinessException.createIllegalCaseName(caseName);
         }
     }
 
     default CaseMetadataEntity getCaseMetaDataEntity(UUID caseUuid) {
-        return getCaseMetadataRepository().findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Metadata of case " + caseUuid + NOT_FOUND));
+        return getCaseMetadataRepository().findById(caseUuid).orElseThrow(() -> new CaseRuntimeException("Case metadata not found: " + caseUuid) {
+        });
     }
 
     default Boolean isUploadedAsPlainFile(UUID caseUuid) {
@@ -85,7 +85,7 @@ public interface CaseService {
         DataSource dataSource = DataSource.fromPath(caseFile);
         Importer importer = Importer.find(dataSource, getComputationManager());
         if (importer == null) {
-            throw CaseException.createFileNotImportable(caseFile);
+            throw CaseBusinessException.noAvailableImporter(caseFile);
         }
         return importer;
     }

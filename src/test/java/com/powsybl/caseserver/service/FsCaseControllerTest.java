@@ -8,7 +8,7 @@ package com.powsybl.caseserver.service;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import com.powsybl.caseserver.CaseException;
+import com.powsybl.caseserver.error.CaseRuntimeException;
 import com.powsybl.caseserver.utils.TestUtils;
 import com.powsybl.computation.ComputationManager;
 import org.junit.jupiter.api.AfterEach;
@@ -73,7 +73,7 @@ class FsCaseControllerTest extends AbstractCaseControllerTest {
     void testStorageNotCreated() throws Exception {
         deleteStorageDir();
         // expect a fail since the storage dir. is not created
-        CaseException exception = assertThrows(CaseException.class, () -> caseService.deleteAllCases());
+        CaseRuntimeException exception = assertThrows(CaseRuntimeException.class, () -> caseService.deleteAllCases());
         assertEquals(exception.getMessage(), "The storage is not initialized: " + fsCaseService.getRootDirectory());
     }
 

@@ -13,6 +13,7 @@ import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -38,8 +39,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.zip.GZIPOutputStream;
 
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -160,16 +160,22 @@ abstract class AbstractCaseControllerTest {
         // import a non valid case and expect a fail
         mvc.perform(multipart("/v1/cases")
                         .file(createMockMultipartFile(NOT_A_NETWORK)))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(content().string(startsWith("This file cannot be imported")))
-                .andReturn();
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(result -> {
+                Throwable ex = result.getResolvedException();
+                assertNotNull(ex);
+                Assertions.assertTrue(ex.getMessage().contains("No available importer found for this file:"));
+            });
 
         // import a non valid case with a valid extension and expect a fail
         mvc.perform(multipart("/v1/cases")
                         .file(createMockMultipartFile(STILL_NOT_A_NETWORK)))
-                .andExpect(status().isUnprocessableEntity())
-                .andExpect(content().string(startsWith("This file cannot be imported")))
-                .andReturn();
+            .andExpect(status().isUnprocessableEntity())
+            .andExpect(result -> {
+                Throwable ex = result.getResolvedException();
+                assertNotNull(ex);
+                Assertions.assertTrue(ex.getMessage().contains("No available importer found for this file:"));
+            });
     }
 
     @Test
@@ -204,7 +210,7 @@ abstract class AbstractCaseControllerTest {
 
         // delete non existing file
         mvc.perform(delete(GET_CASE_URL, caseaseUuid))
-                .andExpect(content().string(startsWith("The directory with the following uuid doesn't exist:")))
+                .andExpect(content().string(containsString("The directory with the following uuid doesn't exist:")))
                 .andReturn();
 
     }
