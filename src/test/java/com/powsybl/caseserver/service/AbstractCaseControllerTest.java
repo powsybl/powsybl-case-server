@@ -189,7 +189,7 @@ abstract class AbstractCaseControllerTest {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        assertEquals(result.getResponse().getHeader("extension"), "xiidm");
+        assertEquals(TEST_CASE_FORMAT.toLowerCase(), result.getResponse().getHeader("extension"));
     }
 
     @Test
