@@ -185,11 +185,11 @@ abstract class AbstractCaseControllerTest {
         UUID caseUuid = importCase(TEST_CASE_2, false);
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
-        MvcResult result = mvc.perform(get(GET_CASE_URL, caseUuid))
+        mvc.perform(get(GET_CASE_URL, caseUuid))
                 .andExpect(status().isOk())
-                .andReturn();
-
-        assertEquals(TEST_CASE_FORMAT.toLowerCase(), result.getResponse().getHeader("extension"));
+                .andDo(result ->
+                        assertEquals(TEST_CASE_FORMAT.toLowerCase(), result.getResponse().getHeader("extension"))
+                );
     }
 
     @Test
