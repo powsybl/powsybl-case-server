@@ -261,9 +261,20 @@ public class S3CaseService implements CaseService {
         String caseFileKey = null;
         try {
             caseFileKey = uuidToKeyWithOriginalFileName(caseUuid);
+
+            ListObjectsV2Request listObjectsRequest = ListObjectsV2Request.builder()
+                    .bucket(bucketName)
+                    .prefix(rootDirectory + DELIMITER)
+                    .build();
+            ListObjectsV2Response listObjectsResponse = s3Client.listObjectsV2(listObjectsRequest);
+
+            List<ObjectIdentifier> objectsToDelete = listObjectsResponse.contents().stream()
+                    .map(s3Object -> ObjectIdentifier.builder().key(s3Object.key()).build())
+                    .toList();
+
             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                     .bucket(bucketName)
-                    .key(caseFileKey)
+                    .key(objectsToDelete.getFirst().key())
                     .build();
 
             ResponseInputStream<GetObjectResponse> responseInputStream = s3Client.getObject(getObjectRequest);

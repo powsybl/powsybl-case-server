@@ -21,6 +21,7 @@ import org.springframework.cloud.stream.binder.test.OutputDestination;
 import org.springframework.http.MediaType;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -33,6 +34,7 @@ import java.io.InputStream;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -55,6 +57,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ContextConfigurationWithTestChannel
 abstract class AbstractCaseControllerTest {
     static final String TEST_CASE = "testCase.xiidm";
+    static final String TEST_CASE_2 = "testCase(2).xiidm";
     static final String TEST_GZIP_CASE = "LF.xml.gz";
     private static final String TEST_TAR_CASE = "tarCase.tar";
     private static final String TEST_CASE_FORMAT = "XIIDM";
@@ -177,6 +180,17 @@ abstract class AbstractCaseControllerTest {
         mvc.perform(get(GET_CASE_URL, UUID.randomUUID()))
                 .andExpect(status().isNoContent())
                 .andReturn();
+    }
+
+    @Test
+    void testDownloadCaseWithSpecialCaracters() throws Exception {
+        UUID caseUuid = importCase(TEST_CASE_2, false);
+
+        MvcResult result = mvc.perform(get(GET_CASE_URL, caseUuid))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertEquals(result.getResponse().getHeader("extension"), "xiidm");
     }
 
     @Test
