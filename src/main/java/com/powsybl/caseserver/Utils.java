@@ -54,7 +54,7 @@ public final class Utils {
 
     public static HttpHeaders buildHeaders(String name, Boolean isUploadedAsPlainFile) {
         String baseName = DataSourceUtil.getBaseName(name);
-        String extension = name.replaceFirst(   Pattern.quote(baseName) + ".", "");
+        String extension = name.replaceFirst(Pattern.quote(baseName) + ".", "");
         HttpHeaders headers = new HttpHeaders();
         headers.add("extension", extension);
         if (Boolean.TRUE.equals(isUploadedAsPlainFile)) {
