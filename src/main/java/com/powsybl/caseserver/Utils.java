@@ -10,6 +10,7 @@ import com.powsybl.commons.datasource.DataSourceUtil;
 import org.springframework.http.HttpHeaders;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * @author Etienne Lesot <etienne.lesot at rte-france.com>
@@ -53,7 +54,7 @@ public final class Utils {
 
     public static HttpHeaders buildHeaders(String name, Boolean isUploadedAsPlainFile) {
         String baseName = DataSourceUtil.getBaseName(name);
-        String extension = name.replaceFirst(baseName + ".", "");
+        String extension = name.replaceFirst(Pattern.quote(baseName) + ".", "");
         HttpHeaders headers = new HttpHeaders();
         headers.add("extension", extension);
         if (Boolean.TRUE.equals(isUploadedAsPlainFile)) {

@@ -65,7 +65,7 @@ class FsCaseDataSourceControllerTest extends AbstractCaseDataSourceControllerTes
 
         // insert plain file in the FS
         iidmCaseUuid = importCase(IIDM_FILE_NAME, "text/plain");
-        iidmDataSource = DataSource.fromPath(Paths.get(S3CaseDataSourceControllerTest.class.getResource("/" + IIDM_FILE_NAME).toURI()));
+        iidmDataSource = DataSource.fromPath(Paths.get(FsCaseDataSourceControllerTest.class.getResource("/" + IIDM_FILE_NAME).toURI()));
 
         // insert tar in the FS
         try (InputStream tarURL = getClass().getResourceAsStream("/" + IIDM_TAR_NAME);

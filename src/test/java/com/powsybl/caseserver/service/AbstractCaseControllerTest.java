@@ -55,6 +55,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ContextConfigurationWithTestChannel
 abstract class AbstractCaseControllerTest {
     static final String TEST_CASE = "testCase.xiidm";
+    static final String TEST_CASE_2 = "test(2)Case.xiidm";
     static final String TEST_GZIP_CASE = "LF.xml.gz";
     private static final String TEST_TAR_CASE = "tarCase.tar";
     private static final String TEST_CASE_FORMAT = "XIIDM";
@@ -177,6 +178,18 @@ abstract class AbstractCaseControllerTest {
         mvc.perform(get(GET_CASE_URL, UUID.randomUUID()))
                 .andExpect(status().isNoContent())
                 .andReturn();
+    }
+
+    @Test
+    void testDownloadCaseWithSpecialCharacters() throws Exception {
+        UUID caseUuid = importCase(TEST_CASE_2, false);
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
+
+        mvc.perform(get(GET_CASE_URL, caseUuid))
+                .andExpect(status().isOk())
+                .andDo(result ->
+                        assertEquals(TEST_CASE_FORMAT.toLowerCase(), result.getResponse().getHeader("extension"))
+            );
     }
 
     @Test
