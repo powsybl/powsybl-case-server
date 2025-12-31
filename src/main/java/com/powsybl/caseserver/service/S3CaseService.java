@@ -119,7 +119,7 @@ public class S3CaseService implements CaseService {
     // creates a directory, and then in this directory, initializes a file with content.
     // After applying f to the file, deletes the file and the directory.
     private <R, T1 extends Exception, T2 extends Exception> R withTempCopy(UUID caseUuid, String filename,
-                                                                           FailableConsumer<Path, T1> contentInitializer, FailableFunction<Path, R, T2> f) {
+                                                                                         FailableConsumer<Path, T1> contentInitializer, FailableFunction<Path, R, T2> f) {
         Path tempdirPath;
         Path tempCasePath;
         try {
@@ -176,7 +176,7 @@ public class S3CaseService implements CaseService {
         String nonNullCaseFileKey = Objects.requireNonNullElse(caseFileKey, uuidToKeyWithOriginalFileName(caseUuid));
         String filename = parseFilenameFromKey(nonNullCaseFileKey);
         return withTempCopy(caseUuid, filename, path ->
-                s3Client.getObject(GetObjectRequest.builder().bucket(bucketName).key(nonNullCaseFileKey).build(), path), f);
+                        s3Client.getObject(GetObjectRequest.builder().bucket(bucketName).key(nonNullCaseFileKey).build(), path), f);
     }
 
     @Override
@@ -224,7 +224,7 @@ public class S3CaseService implements CaseService {
         List<S3Object> s3Objects = new ArrayList<>();
         ListObjectsV2Iterable listObjectsV2Iterable = s3Client.listObjectsV2Paginator(getListObjectsV2Request(keyPrefix));
         listObjectsV2Iterable.iterator().forEachRemaining(listObjectsChunk ->
-                s3Objects.addAll(listObjectsChunk.contents())
+            s3Objects.addAll(listObjectsChunk.contents())
         );
         return s3Objects;
     }
@@ -559,16 +559,16 @@ public class S3CaseService implements CaseService {
     public void deleteCase(UUID caseUuid) {
         String prefixKey = uuidToKeyPrefix(caseUuid);
         List<ObjectIdentifier> objectsToDelete = s3Client.listObjectsV2(builder -> builder.bucket(bucketName).prefix(prefixKey))
-                .contents()
-                .stream()
-                .map(s3Object -> ObjectIdentifier.builder().key(s3Object.key()).build())
-                .toList();
+            .contents()
+            .stream()
+            .map(s3Object -> ObjectIdentifier.builder().key(s3Object.key()).build())
+            .toList();
 
         if (!objectsToDelete.isEmpty()) {
             DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
-                    .bucket(bucketName)
-                    .delete(delete -> delete.objects(objectsToDelete))
-                    .build();
+                .bucket(bucketName)
+                .delete(delete -> delete.objects(objectsToDelete))
+                .build();
             s3Client.deleteObjects(deleteObjectsRequest);
             caseInfosService.deleteCaseInfosByUuid(caseUuid.toString());
             caseMetadataRepository.deleteById(caseUuid);

@@ -181,7 +181,7 @@ abstract class AbstractCaseControllerTest {
     }
 
     @Test
-    void testDownloadCaseWithSpecialCaracters() throws Exception {
+    void testDownloadCaseWithSpecialCharacters() throws Exception {
         UUID caseUuid = importCase(TEST_CASE_2, false);
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
