@@ -49,13 +49,11 @@ public class CaseObserver {
     }
 
     private Observation createObservation(String name) {
-        return Observation.createNotStarted(name, observationRegistry)
-            .lowCardinalityKeyValue(STORAGE_TYPE_TAG_NAME, "S3");
+        return Observation.createNotStarted(name, observationRegistry);
     }
 
     private void recordCaseSize(long size) {
         DistributionSummary.builder(CASE_SIZE_METER_NAME)
-            .tags(STORAGE_TYPE_TAG_NAME, "S3")
             .register(meterRegistry)
             .record(size);
     }

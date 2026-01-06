@@ -38,7 +38,6 @@ import java.nio.file.Paths;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -88,7 +87,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
 
     protected DataSource iidmDataSource;
 
-    protected static UUID importCase(String filename, String contentType, CaseService caseService) throws IOException {
+    protected UUID importCase(String filename, String contentType) throws IOException {
         UUID caseUuid = UUID.randomUUID();
         try (InputStream inputStream = CaseDataSourceControllerTest.class.getResourceAsStream("/" + filename)) {
             caseService.importCase(new MockMultipartFile(filename, filename, contentType, inputStream.readAllBytes()), false, false, caseUuid);
@@ -100,21 +99,21 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
     void setUp() throws URISyntaxException, IOException {
 
         //insert a cgmes in the FS
-        cgmesCaseUuid = importCase(CGMES_ZIP_NAME, "application/zip", caseService);
+        cgmesCaseUuid = importCase(CGMES_ZIP_NAME, "application/zip");
         cgmesDataSource = DataSource.fromPath(Paths.get(CaseDataSourceControllerTest.class.getResource("/" + CGMES_ZIP_NAME).toURI()));
 
         // insert plain file in the FS
-        iidmCaseUuid = importCase(IIDM_FILE_NAME, "text/plain", caseService);
+        iidmCaseUuid = importCase(IIDM_FILE_NAME, "text/plain");
         iidmDataSource = DataSource.fromPath(Paths.get(CaseDataSourceControllerTest.class.getResource("/" + IIDM_FILE_NAME).toURI()));
 
         // insert tar in the FS
-        tarCaseUuid = importCase(IIDM_TAR_NAME, "application/tar", caseService);
+        tarCaseUuid = importCase(IIDM_TAR_NAME, "application/tar");
         tarDataSource = DataSource.fromPath(Paths.get(CaseDataSourceControllerTest.class.getResource("/" + IIDM_TAR_NAME).toURI()));
     }
 
     @Test
     void testExistsPlainWithExtraFolder() throws IOException {
-        UUID caseUuid = importCase(IIDM_FILE_NAME, "text/plain", caseService);
+        UUID caseUuid = importCase(IIDM_FILE_NAME, "text/plain");
 
         // Some implementations create an entry for the directory, mimic this behavior
         // minio doesn't do this so we do it manually
@@ -133,7 +132,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        assertEquals(cgmesDataSource.getBaseName(), mvcResult.getResponse().getContentAsString());
+        Assertions.assertEquals(cgmesDataSource.getBaseName(), mvcResult.getResponse().getContentAsString());
     }
 
     @Test
@@ -144,7 +143,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
                 .andReturn();
 
         Set<String> nameList = mapper.readValue(mvcResult.getResponse().getContentAsString(), Set.class);
-        assertEquals(cgmesDataSource.listNames(".*"), nameList);
+        Assertions.assertEquals(cgmesDataSource.listNames(".*"), nameList);
     }
 
     @Test
@@ -161,7 +160,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
             while ((str = reader.readLine()) != null) {
                 datasourceResponse.append(str).append("\n");
             }
-            assertEquals(datasourceResponse.toString(), mvcResult.getResponse().getContentAsString());
+            Assertions.assertEquals(datasourceResponse.toString(), mvcResult.getResponse().getContentAsString());
         }
     }
 
@@ -181,34 +180,34 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
     public void testInputStreamWithZipFile() throws Exception {
         String zipName = "LF.zip";
         String fileName = "LF.xml";
-        UUID caseUuid = importCase(zipName, "application/zip", caseService);
+        UUID caseUuid = importCase(zipName, "application/zip");
         DataSource dataSource = DataSource.fromPath(Paths.get(CaseDataSourceControllerTest.class.getResource("/" + zipName).toURI()));
 
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", caseUuid)
                 .param("fileName", fileName))
                 .andExpect(status().isOk())
                 .andReturn();
-        assertEquals(readDataSource(dataSource, fileName), mvcResult.getResponse().getContentAsString());
+        Assertions.assertEquals(readDataSource(dataSource, fileName), mvcResult.getResponse().getContentAsString());
     }
 
     @Test
     public void testInputStreamWithGZipFile() throws Exception {
         String gzipName = "LF.xml.gz";
         String fileName = "LF.xml";
-        UUID caseUuid = importCase(gzipName, "application/zip", caseService);
+        UUID caseUuid = importCase(gzipName, "application/zip");
         DataSource dataSource = DataSource.fromPath(Paths.get(CaseDataSourceControllerTest.class.getResource("/" + gzipName).toURI()));
 
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", caseUuid)
                         .param("fileName", fileName))
                 .andExpect(status().isOk())
                 .andReturn();
-        assertEquals(readDataSource(dataSource, fileName), mvcResult.getResponse().getContentAsString());
+        Assertions.assertEquals(readDataSource(dataSource, fileName), mvcResult.getResponse().getContentAsString());
     }
 
     @Test
     public void testInputStreamWithXiidmPlainFile() throws Exception {
         String fileName = "LF.xml";
-        UUID caseUuid = importCase(fileName, "application/zip", caseService);
+        UUID caseUuid = importCase(fileName, "application/zip");
         DataSource dataSource = DataSource.fromPath(Paths.get(CaseDataSourceControllerTest.class.getResource("/" + fileName).toURI()));
 
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", caseUuid)
@@ -216,7 +215,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        assertEquals(readDataSource(dataSource, fileName), mvcResult.getResponse().getContentAsString());
+        Assertions.assertEquals(readDataSource(dataSource, fileName), mvcResult.getResponse().getContentAsString());
     }
 
     @Test
@@ -236,7 +235,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
             while ((str = reader.readLine()) != null) {
                 datasourceResponse.append(str).append("\n");
             }
-            assertEquals(datasourceResponse.toString(), mvcResult.getResponse().getContentAsString());
+            Assertions.assertEquals(datasourceResponse.toString(), mvcResult.getResponse().getContentAsString());
         }
     }
 
@@ -248,7 +247,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
                 .andReturn();
 
         Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertEquals(cgmesDataSource.exists(CGMES_FILE_NAME), res);
+        Assertions.assertEquals(cgmesDataSource.exists(CGMES_FILE_NAME), res);
 
         mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", cgmesCaseUuid)
                         .param("fileName", "random"))
@@ -256,7 +255,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
                 .andReturn();
 
         res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertEquals(cgmesDataSource.exists("random"), res);
+        Assertions.assertEquals(cgmesDataSource.exists("random"), res);
     }
 
     @Test
@@ -270,7 +269,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
                 .andReturn();
 
         Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertEquals(cgmesDataSource.exists(suffix, ext), res);
+        Assertions.assertEquals(cgmesDataSource.exists(suffix, ext), res);
     }
 
     @Test
@@ -333,7 +332,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
                 .andExpect(status().isOk())
                 .andReturn();
 
-        assertEquals(tarDataSource.getBaseName(), mvcResult.getResponse().getContentAsString());
+        Assertions.assertEquals(tarDataSource.getBaseName(), mvcResult.getResponse().getContentAsString());
     }
 
     @Test
@@ -344,7 +343,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
                 .andReturn();
 
         Set<String> nameList = mapper.readValue(mvcResult.getResponse().getContentAsString(), Set.class);
-        assertEquals(tarDataSource.listNames(".*"), nameList);
+        Assertions.assertEquals(tarDataSource.listNames(".*"), nameList);
     }
 
     @Test
@@ -361,7 +360,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
             while ((str = reader.readLine()) != null) {
                 datasourceResponse.append(str).append("\n");
             }
-            assertEquals(datasourceResponse.toString(), mvcResult.getResponse().getContentAsString());
+            Assertions.assertEquals(datasourceResponse.toString(), mvcResult.getResponse().getContentAsString());
         }
     }
 
@@ -373,7 +372,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
                 .andReturn();
 
         Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertEquals(tarDataSource.exists(IIDM_TAR_NAME), res);
+        Assertions.assertEquals(tarDataSource.exists(IIDM_TAR_NAME), res);
 
         mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", tarCaseUuid)
                         .param("fileName", "random"))
@@ -381,7 +380,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
                 .andReturn();
 
         res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertEquals(tarDataSource.exists("random"), res);
+        Assertions.assertEquals(tarDataSource.exists("random"), res);
     }
 
     @Test
@@ -395,7 +394,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
                 .andReturn();
 
         Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertEquals(tarDataSource.exists(suffix, ext), res);
+        Assertions.assertEquals(tarDataSource.exists(suffix, ext), res);
     }
 
 }
