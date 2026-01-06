@@ -6,8 +6,8 @@
  */
 package com.powsybl.caseserver;
 
-import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
+import com.powsybl.caseserver.service.CaseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;

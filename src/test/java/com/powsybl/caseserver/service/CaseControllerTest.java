@@ -13,7 +13,10 @@ import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
+import com.powsybl.computation.ComputationManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -26,6 +29,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.web.server.ResponseStatusException;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -53,7 +60,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ContextConfigurationWithTestChannel
-abstract class AbstractCaseControllerTest {
+class CaseControllerTest implements MinioContainerConfig {
     static final String TEST_CASE = "testCase.xiidm";
     static final String TEST_CASE_2 = "test(2)Case.xiidm";
     static final String TEST_GZIP_CASE = "LF.xml.gz";
@@ -70,6 +77,7 @@ abstract class AbstractCaseControllerTest {
     @Autowired
     protected MockMvc mvc;
 
+    @Autowired
     CaseService caseService;
 
     @Autowired
@@ -83,12 +91,38 @@ abstract class AbstractCaseControllerTest {
 
     final String caseImportDestination = "case.import.destination";
 
-    abstract void addRandomFile() throws IOException;
+    void addRandomFile() {
+        RequestBody requestBody = RequestBody.fromString("");
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(caseService.getBucketName())
+                .key(caseService.getRootDirectory() + "/randomFile.txt")
+                .contentType("application/octet-stream")
+                .build();
+        caseService.getS3Client().putObject(putObjectRequest, requestBody);
+    }
 
-    abstract void removeFile(String caseKey) throws IOException;
+    void removeFile(String caseKey) {
+        List<ObjectIdentifier> objectsToDelete = caseService.getS3Client().listObjectsV2(builder -> builder.bucket(caseService.getBucketName()).prefix(caseService.getRootDirectory() + "/" + caseKey))
+                .contents()
+                .stream()
+                .map(s3Object -> ObjectIdentifier.builder().key(s3Object.key()).build())
+                .toList();
+        DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
+                .bucket(caseService.getBucketName())
+                .delete(delete -> delete.objects(objectsToDelete))
+                .build();
+        caseService.getS3Client().deleteObjects(deleteObjectsRequest);
+    }
+
+    @BeforeEach
+    void setUp() {
+        caseService.setComputationManager(Mockito.mock(ComputationManager.class));
+        caseService.deleteAllCases();
+        outputDestination.clear();
+    }
 
     private static MockMultipartFile createMockMultipartFile(String fileName) throws IOException {
-        try (InputStream inputStream = AbstractCaseControllerTest.class.getResourceAsStream("/" + fileName)) {
+        try (InputStream inputStream = CaseControllerTest.class.getResourceAsStream("/" + fileName)) {
             return new MockMultipartFile("file", fileName, MediaType.TEXT_PLAIN_VALUE, inputStream);
         }
     }

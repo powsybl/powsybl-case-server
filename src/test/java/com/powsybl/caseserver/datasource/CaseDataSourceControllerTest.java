@@ -7,29 +7,39 @@
 package com.powsybl.caseserver.datasource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
 import com.powsybl.caseserver.elasticsearch.DisableElasticsearch;
 import com.powsybl.caseserver.service.CaseService;
+import com.powsybl.caseserver.service.MinioContainerConfig;
 import com.powsybl.commons.datasource.DataSource;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -40,7 +50,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @DisableElasticsearch
 @Import(DisableElasticsearch.MockConfig.class)
-public abstract class AbstractCaseDataSourceControllerTest {
+@AutoConfigureMockMvc
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
+@ContextConfigurationWithTestChannel
+public class CaseDataSourceControllerTest implements MinioContainerConfig {
 
     @MockitoBean
     StreamBridge streamBridge;
@@ -48,7 +61,8 @@ public abstract class AbstractCaseDataSourceControllerTest {
     @Autowired
     private MockMvc mvc;
 
-    protected static CaseService caseService;
+    @Autowired
+    private CaseService caseService;
 
     static final String CGMES_ZIP_NAME = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2.zip";
 
@@ -74,12 +88,43 @@ public abstract class AbstractCaseDataSourceControllerTest {
 
     protected DataSource iidmDataSource;
 
-    protected static UUID importCase(String filename, String contentType) throws IOException {
+    protected static UUID importCase(String filename, String contentType, CaseService caseService) throws IOException {
         UUID caseUuid = UUID.randomUUID();
-        try (InputStream inputStream = S3CaseDataSourceControllerTest.class.getResourceAsStream("/" + filename)) {
+        try (InputStream inputStream = CaseDataSourceControllerTest.class.getResourceAsStream("/" + filename)) {
             caseService.importCase(new MockMultipartFile(filename, filename, contentType, inputStream.readAllBytes()), false, false, caseUuid);
         }
         return caseUuid;
+    }
+
+    @BeforeEach
+    void setUp() throws URISyntaxException, IOException {
+
+        //insert a cgmes in the FS
+        cgmesCaseUuid = importCase(CGMES_ZIP_NAME, "application/zip", caseService);
+        cgmesDataSource = DataSource.fromPath(Paths.get(CaseDataSourceControllerTest.class.getResource("/" + CGMES_ZIP_NAME).toURI()));
+
+        // insert plain file in the FS
+        iidmCaseUuid = importCase(IIDM_FILE_NAME, "text/plain", caseService);
+        iidmDataSource = DataSource.fromPath(Paths.get(CaseDataSourceControllerTest.class.getResource("/" + IIDM_FILE_NAME).toURI()));
+
+        // insert tar in the FS
+        tarCaseUuid = importCase(IIDM_TAR_NAME, "application/tar", caseService);
+        tarDataSource = DataSource.fromPath(Paths.get(CaseDataSourceControllerTest.class.getResource("/" + IIDM_TAR_NAME).toURI()));
+    }
+
+    @Test
+    void testExistsPlainWithExtraFolder() throws IOException {
+        UUID caseUuid = importCase(IIDM_FILE_NAME, "text/plain", caseService);
+
+        // Some implementations create an entry for the directory, mimic this behavior
+        // minio doesn't do this so we do it manually
+        S3Client s3client = caseService.getS3Client();
+        s3client.putObject(PutObjectRequest.builder()
+                .bucket(caseService.getBucketName())
+                .key(caseService.uuidToKeyPrefix(caseUuid))
+                .build(), RequestBody.empty());
+
+        assertTrue(caseService.datasourceExists(caseUuid, IIDM_FILE_NAME), "datasourceExist should return true for a plain file even if there is a empty key for the directory");
     }
 
     @Test
@@ -136,8 +181,8 @@ public abstract class AbstractCaseDataSourceControllerTest {
     public void testInputStreamWithZipFile() throws Exception {
         String zipName = "LF.zip";
         String fileName = "LF.xml";
-        UUID caseUuid = importCase(zipName, "application/zip");
-        DataSource dataSource = DataSource.fromPath(Paths.get(S3CaseDataSourceControllerTest.class.getResource("/" + zipName).toURI()));
+        UUID caseUuid = importCase(zipName, "application/zip", caseService);
+        DataSource dataSource = DataSource.fromPath(Paths.get(CaseDataSourceControllerTest.class.getResource("/" + zipName).toURI()));
 
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", caseUuid)
                 .param("fileName", fileName))
@@ -150,8 +195,8 @@ public abstract class AbstractCaseDataSourceControllerTest {
     public void testInputStreamWithGZipFile() throws Exception {
         String gzipName = "LF.xml.gz";
         String fileName = "LF.xml";
-        UUID caseUuid = importCase(gzipName, "application/zip");
-        DataSource dataSource = DataSource.fromPath(Paths.get(S3CaseDataSourceControllerTest.class.getResource("/" + gzipName).toURI()));
+        UUID caseUuid = importCase(gzipName, "application/zip", caseService);
+        DataSource dataSource = DataSource.fromPath(Paths.get(CaseDataSourceControllerTest.class.getResource("/" + gzipName).toURI()));
 
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", caseUuid)
                         .param("fileName", fileName))
@@ -163,8 +208,8 @@ public abstract class AbstractCaseDataSourceControllerTest {
     @Test
     public void testInputStreamWithXiidmPlainFile() throws Exception {
         String fileName = "LF.xml";
-        UUID caseUuid = importCase(fileName, "application/zip");
-        DataSource dataSource = DataSource.fromPath(Paths.get(S3CaseDataSourceControllerTest.class.getResource("/" + fileName).toURI()));
+        UUID caseUuid = importCase(fileName, "application/zip", caseService);
+        DataSource dataSource = DataSource.fromPath(Paths.get(CaseDataSourceControllerTest.class.getResource("/" + fileName).toURI()));
 
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", caseUuid)
                         .param("fileName", fileName))
