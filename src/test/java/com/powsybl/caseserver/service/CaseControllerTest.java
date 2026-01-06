@@ -776,7 +776,7 @@ class CaseControllerTest implements MinioContainerConfig {
     }
 
     @Test
-    public void testTar() throws Exception {
+    void testTar() throws Exception {
         // import a case
         UUID tarCaseUuid = importCase(TEST_TAR_CASE, false);
 

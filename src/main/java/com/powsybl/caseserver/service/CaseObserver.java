@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class CaseObserver {
     private static final String OBSERVATION_PREFIX = "app.case.";
-    private static final String STORAGE_TYPE_TAG_NAME = "storage_type";
 
     private static final String CASE_WRITING_OBSERVATION_NAME = OBSERVATION_PREFIX + "writing";
     private static final String CASE_IMPORT_OBSERVATION_NAME = OBSERVATION_PREFIX + "import";

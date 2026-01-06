@@ -52,7 +52,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ContextConfigurationWithTestChannel
-public class CaseDataSourceControllerTest implements MinioContainerConfig {
+class CaseDataSourceControllerTest implements MinioContainerConfig {
 
     @MockitoBean
     StreamBridge streamBridge;
@@ -127,7 +127,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
     }
 
     @Test
-    public void testBaseName() throws Exception {
+    void testBaseName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/baseName", cgmesCaseUuid))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -136,7 +136,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
     }
 
     @Test
-    public void testListName() throws Exception {
+    void testListName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/list", cgmesCaseUuid)
                         .param("regex", ".*"))
                 .andExpect(status().isOk())
@@ -147,7 +147,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
     }
 
     @Test
-    public void testInputStreamWithFileName() throws Exception {
+    void testInputStreamWithFileName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", cgmesCaseUuid)
                         .param("fileName", CGMES_FILE_NAME))
                 .andExpect(status().isOk())
@@ -177,7 +177,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
     }
 
     @Test
-    public void testInputStreamWithZipFile() throws Exception {
+    void testInputStreamWithZipFile() throws Exception {
         String zipName = "LF.zip";
         String fileName = "LF.xml";
         UUID caseUuid = importCase(zipName, "application/zip");
@@ -191,7 +191,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
     }
 
     @Test
-    public void testInputStreamWithGZipFile() throws Exception {
+    void testInputStreamWithGZipFile() throws Exception {
         String gzipName = "LF.xml.gz";
         String fileName = "LF.xml";
         UUID caseUuid = importCase(gzipName, "application/zip");
@@ -205,7 +205,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
     }
 
     @Test
-    public void testInputStreamWithXiidmPlainFile() throws Exception {
+    void testInputStreamWithXiidmPlainFile() throws Exception {
         String fileName = "LF.xml";
         UUID caseUuid = importCase(fileName, "application/zip");
         DataSource dataSource = DataSource.fromPath(Paths.get(CaseDataSourceControllerTest.class.getResource("/" + fileName).toURI()));
@@ -219,7 +219,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
     }
 
     @Test
-    public void testInputStreamWithSuffixExt() throws Exception {
+    void testInputStreamWithSuffixExt() throws Exception {
         String suffix = "/MicroGridTestConfiguration_BC_BE_DL_V2";
         String ext = "xml";
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", cgmesCaseUuid)
@@ -240,7 +240,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
     }
 
     @Test
-    public void testExistsWithFileName() throws Exception {
+    void testExistsWithFileName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", cgmesCaseUuid)
                         .param("fileName", CGMES_FILE_NAME))
                 .andExpect(status().isOk())
@@ -259,7 +259,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
     }
 
     @Test
-    public void testExistsWithSuffixExt() throws Exception {
+    void testExistsWithSuffixExt() throws Exception {
         String suffix = "random";
         String ext = "uct";
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", cgmesCaseUuid)
@@ -327,7 +327,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
 
     // tar tests
     @Test
-    public void testTarBaseName() throws Exception {
+    void testTarBaseName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/baseName", tarCaseUuid))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -336,7 +336,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
     }
 
     @Test
-    public void testTarListName() throws Exception {
+    void testTarListName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/list", tarCaseUuid)
                         .param("regex", ".*"))
                 .andExpect(status().isOk())
@@ -347,7 +347,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
     }
 
     @Test
-    public void testTarInputStreamWithFileName() throws Exception {
+    void testTarInputStreamWithFileName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", tarCaseUuid)
                         .param("fileName", PLAIN_IIDM_TAR_NAME))
                 .andExpect(status().isOk())
@@ -365,7 +365,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
     }
 
     @Test
-    public void testTarExistsWithFileName() throws Exception {
+    void testTarExistsWithFileName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", tarCaseUuid)
                         .param("fileName", IIDM_TAR_NAME))
                 .andExpect(status().isOk())
@@ -384,7 +384,7 @@ public class CaseDataSourceControllerTest implements MinioContainerConfig {
     }
 
     @Test
-    public void testTarExistsWithSuffixExt() throws Exception {
+    void testTarExistsWithSuffixExt() throws Exception {
         String suffix = "random";
         String ext = "uct";
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", tarCaseUuid)
