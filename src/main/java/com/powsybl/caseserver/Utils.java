@@ -8,7 +8,11 @@ package com.powsybl.caseserver;
 
 import com.powsybl.commons.datasource.DataSourceUtil;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -57,9 +61,20 @@ public final class Utils {
         String extension = name.replaceFirst(Pattern.quote(baseName) + ".", "");
         HttpHeaders headers = new HttpHeaders();
         headers.add("extension", extension);
+        String contentType;
+        // For plain files, we return the gzip file as it stored in S3. And we rely on content encoding to let the browser decompress the file.
         if (Boolean.TRUE.equals(isUploadedAsPlainFile)) {
             headers.add(HttpHeaders.CONTENT_ENCODING, GZIP_ENCODING);
+            contentType = MediaType.TEXT_PLAIN.toString();
+        } else {
+            try {
+                contentType = Files.probeContentType(Path.of(name));
+            } catch (IOException e) {
+                throw CaseException.createIllegalCaseName(name);
+            }
+
         }
+        headers.add(HttpHeaders.CONTENT_TYPE, contentType);
         return headers;
     }
 }
