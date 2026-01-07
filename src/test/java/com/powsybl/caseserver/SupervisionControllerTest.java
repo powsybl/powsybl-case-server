@@ -8,8 +8,12 @@ package com.powsybl.caseserver;
 
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.caseserver.service.CaseService;
+import com.powsybl.caseserver.service.MinioContainerConfig;
 import com.powsybl.caseserver.service.SupervisionService;
+import com.powsybl.computation.ComputationManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,18 +33,25 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @author Jamal KHEYYAD <jamal.kheyyad at rte-international.com>
  */
 @AutoConfigureMockMvc
-@SpringBootTest(classes = {CaseApplication.class})
+@SpringBootTest(classes = {CaseApplication.class}, webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @EnableTestBinder
-abstract class AbstractSupervisionControllerTest {
+class SupervisionControllerTest implements MinioContainerConfig {
     @Autowired
     private SupervisionService supervisionService;
     @Autowired
     CaseMetadataRepository caseMetadataRepository;
+    @Autowired
     CaseService caseService;
     @Autowired
     protected MockMvc mockMvc;
 
     private static final String TEST_CASE = "testCase.xiidm";
+
+    @BeforeEach
+    void setUp() {
+        caseService.setComputationManager(Mockito.mock(ComputationManager.class));
+        caseService.deleteAllCases();
+    }
 
     @Test
     void testGetCaseInfosCount() throws Exception {
@@ -92,8 +103,8 @@ abstract class AbstractSupervisionControllerTest {
     }
 
     private static MockMultipartFile createMockMultipartFile() throws IOException {
-        try (InputStream inputStream = AbstractSupervisionControllerTest.class.getResourceAsStream("/" + AbstractSupervisionControllerTest.TEST_CASE)) {
-            return new MockMultipartFile("file", AbstractSupervisionControllerTest.TEST_CASE, MediaType.TEXT_PLAIN_VALUE, inputStream);
+        try (InputStream inputStream = SupervisionControllerTest.class.getResourceAsStream("/" + SupervisionControllerTest.TEST_CASE)) {
+            return new MockMultipartFile("file", SupervisionControllerTest.TEST_CASE, MediaType.TEXT_PLAIN_VALUE, inputStream);
         }
     }
 }

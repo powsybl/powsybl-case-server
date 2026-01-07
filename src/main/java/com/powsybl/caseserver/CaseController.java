@@ -9,8 +9,8 @@ package com.powsybl.caseserver;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.service.CaseObserver;
-import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.caseserver.service.MetadataService;
+import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.commons.datasource.DataSourceUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -19,7 +19,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
@@ -49,7 +48,6 @@ public class CaseController {
     private static final Logger LOGGER = LoggerFactory.getLogger(CaseController.class);
 
     @Autowired
-    @Qualifier("storageService")
     private CaseService caseService;
 
     @Autowired
@@ -139,7 +137,7 @@ public class CaseController {
                                            @RequestParam(value = "withIndexation", required = false, defaultValue = "false") boolean withIndexation) {
         LOGGER.debug("importCase request received with file = {}", file.getOriginalFilename());
         UUID caseUuid = UUID.randomUUID();
-        caseObserver.observeCaseImport(file.getSize(), caseService.getStorageType(), () -> caseService.importCase(file, withExpiration, withIndexation, caseUuid));
+        caseObserver.observeCaseImport(file.getSize(), () -> caseService.importCase(file, withExpiration, withIndexation, caseUuid));
         return ResponseEntity.ok().body(caseUuid);
     }
 

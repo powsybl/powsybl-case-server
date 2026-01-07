@@ -6,10 +6,10 @@
  */
 package com.powsybl.caseserver;
 
-import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.caseserver.elasticsearch.DisableElasticsearch;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
+import com.powsybl.caseserver.service.CaseService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
