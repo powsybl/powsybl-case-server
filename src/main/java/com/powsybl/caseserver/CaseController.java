@@ -28,6 +28,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
@@ -152,6 +153,24 @@ public class CaseController {
         LOGGER.debug("duplicateCase request received with parameter sourceCaseUuid = {}", caseId);
         UUID newCaseUuid = caseService.duplicateCase(caseId, withExpiration);
         return ResponseEntity.ok().body(newCaseUuid);
+    }
+
+    @PostMapping(value = "/cases/create", params = "caseUuid")
+    @Operation(summary = "create a case from .....")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Case created"),
+        @ApiResponse(responseCode = "404", description = "Source case not found"),
+        @ApiResponse(responseCode = "500", description = "An error occurred during the case file duplication")})
+    public ResponseEntity<UUID> createCase(
+        @RequestParam("caseUuid") UUID caseUuid,
+        @RequestParam("folderName") String folderName,
+        @RequestParam("fileName") String fileName) {
+
+        Optional<InputStream> caseStream = caseService.getCaseStreamFromExport(caseUuid, folderName, fileName);
+        UUID uuid = null;
+        if (caseStream.isPresent()) {
+            uuid = caseService.importCase(caseStream.get(), fileName + ".zip", false, false, caseUuid);
+        }
+        return ResponseEntity.ok().body(uuid);
     }
 
     @PutMapping(value = "/cases/{caseUuid}/disableExpiration")
