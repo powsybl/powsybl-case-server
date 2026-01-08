@@ -34,6 +34,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
+import static com.powsybl.caseserver.Utils.ZIP_EXTENSION;
 import static com.powsybl.caseserver.Utils.buildHeaders;
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
@@ -152,6 +153,26 @@ public class CaseController {
         LOGGER.debug("duplicateCase request received with parameter sourceCaseUuid = {}", caseId);
         UUID newCaseUuid = caseService.duplicateCase(caseId, withExpiration);
         return ResponseEntity.ok().body(newCaseUuid);
+    }
+
+    @PostMapping(value = "/cases/create", params = {"caseUuid", "folderName", "fileName", "withExpiration", "withIndexation"})
+    @Operation(summary = "create a case from converted one stored in folder in s3")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Case created"),
+        @ApiResponse(responseCode = "404", description = "Source case not found"),
+        @ApiResponse(responseCode = "500", description = "An error occurred during the case file creation")})
+    public ResponseEntity<UUID> createCase(
+        @RequestParam("caseUuid") UUID caseUuid,
+        @RequestParam("folderName") String folderName,
+        @RequestParam("fileName") String fileName,
+        @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration,
+        @RequestParam(value = "withIndexation", required = false, defaultValue = "false") boolean withIndexation) {
+
+        Optional<InputStream> caseStream = caseService.getCaseStreamFromExport(caseUuid, folderName, fileName);
+        UUID uuid = null;
+        if (caseStream.isPresent()) {
+            uuid = caseService.importCase(caseStream.get(), fileName + ZIP_EXTENSION, withExpiration, withIndexation, caseUuid);
+        }
+        return ResponseEntity.ok().body(uuid);
     }
 
     @PutMapping(value = "/cases/{caseUuid}/disableExpiration")
