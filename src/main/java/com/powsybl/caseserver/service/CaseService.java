@@ -267,7 +267,7 @@ public class CaseService {
     public Optional<InputStream> getCaseStreamFromExport(UUID caseUuid, String folderName, String fileName) {
         String caseFileKey = null;
         try {
-            caseFileKey = folderName + DELIMITER + caseUuid.toString() + DELIMITER + fileName + ".zip";
+            caseFileKey = folderName + DELIMITER + caseUuid.toString() + DELIMITER + fileName + ZIP_EXTENSION;
             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
                 .key(caseFileKey)
@@ -286,7 +286,7 @@ public class CaseService {
 
     public UUID importCase(InputStream stream, String fileName, boolean withExpiration, boolean withIndexation, UUID caseUuid) {
 
-        MultipartFile mpf = null;
+        MultipartFile mpf;
         try {
             mpf = new InputStreamMultiPartFile(stream, fileName, "application/zip");
         } catch (IOException e) {
