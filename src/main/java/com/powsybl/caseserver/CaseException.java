@@ -29,6 +29,7 @@ public final class CaseException extends RuntimeException {
         ORIGINAL_FILE_NOT_FOUND,
         TEMP_FILE_INIT,
         TEMP_DIRECTORY_CREATION,
+        UNPROCESSABLE_CASE_NAME
     }
 
     private final Type type;
@@ -100,5 +101,10 @@ public final class CaseException extends RuntimeException {
     public static CaseException createInitTempFileError(UUID uuid, Throwable e) {
         Objects.requireNonNull(uuid);
         return new CaseException(Type.TEMP_FILE_INIT, "Error initializing temporary case file: " + uuid, e);
+    }
+
+    public static CaseException createUnprocessableCaseName(String caseName, Throwable e) {
+        Objects.requireNonNull(caseName);
+        return new CaseException(Type.TEMP_FILE_INIT, "Unprocessable case name: " + caseName, e);
     }
 }
