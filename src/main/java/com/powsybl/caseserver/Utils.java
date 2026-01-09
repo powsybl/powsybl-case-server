@@ -62,7 +62,7 @@ public final class Utils {
         HttpHeaders headers = new HttpHeaders();
         headers.add("extension", extension);
         String contentType;
-        // For plain files, we return the gzip file as it stored in S3. And we rely on content encoding to let the browser decompress the file.
+        // For plain files, we return the gzip file as it is stored in S3. And we rely on content encoding to let the browser decompress the file.
         if (Boolean.TRUE.equals(isUploadedAsPlainFile)) {
             headers.add(HttpHeaders.CONTENT_ENCODING, GZIP_ENCODING);
             contentType = MediaType.TEXT_PLAIN.toString();
@@ -70,7 +70,7 @@ public final class Utils {
             try {
                 contentType = Files.probeContentType(Path.of(name));
             } catch (IOException e) {
-                throw CaseException.createIllegalCaseName(name);
+                throw CaseException.createUnprocessableCaseName(name, e);
             }
 
         }
