@@ -8,7 +8,6 @@ package com.powsybl.caseserver.service;
 
 import com.google.re2j.Pattern;
 import com.powsybl.caseserver.CaseException;
-import com.powsybl.caseserver.datasource.utils.InputStreamMultiPartFile;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.parsers.FileNameInfos;
@@ -264,10 +263,10 @@ public class CaseService {
         return UUID.fromString(keyWithoutRootDirectory.substring(0, firstSlash));
     }
 
-    public Optional<InputStream> getCaseStreamFromExport(UUID caseUuid, String folderName, String fileName) {
+    public Optional<InputStream> getInputStreamFromS3(UUID caseUuid, String folderName, String fileName) {
         String caseFileKey = null;
         try {
-            caseFileKey = folderName + DELIMITER + caseUuid.toString() + DELIMITER + fileName + ZIP_EXTENSION;
+            caseFileKey = folderName + DELIMITER + caseUuid.toString() + DELIMITER + fileName;
             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
                 .key(caseFileKey)
@@ -282,17 +281,6 @@ public class CaseService {
             LOGGER.error(e.getMessage());
             return Optional.empty();
         }
-    }
-
-    public UUID importCase(InputStream stream, String fileName, boolean withExpiration, boolean withIndexation, UUID caseUuid) {
-
-        MultipartFile mpf;
-        try {
-            mpf = new InputStreamMultiPartFile(stream, fileName, "application/zip");
-        } catch (IOException e) {
-            throw CaseException.createFileNotImportable(fileName, e);
-        }
-        return importCase(mpf, withExpiration, withIndexation, caseUuid);
     }
 
     private String parseFilenameFromKey(String key) {

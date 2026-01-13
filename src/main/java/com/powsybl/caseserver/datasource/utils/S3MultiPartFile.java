@@ -7,31 +7,34 @@
 
 package com.powsybl.caseserver.datasource.utils;
 
+import com.powsybl.caseserver.service.CaseService;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.UUID;
 
 /**
  * @author Bassel El Cheikh <bassel.el-cheikh_externe at rte-france.com>
  */
 
-public class InputStreamMultiPartFile implements MultipartFile {
+public class S3MultiPartFile implements MultipartFile {
 
     private final String name;
-    private final byte[] contentBytes; // Store file content in bytes
     private final String contentType;
+    private final CaseService caseService;
+    private final UUID caseUuid;
+    private final String folderName;
 
-    public InputStreamMultiPartFile(InputStream inputStream, String name, String contentType) throws IOException {
+    public S3MultiPartFile(CaseService caseService, UUID caseUuid, String folderName, String name, String contentType) {
         this.name = name != null ? name : "";
         this.contentType = contentType;
-
-        // Read all bytes at once and store them for later use
-        this.contentBytes = inputStream.readAllBytes();
+        this.caseService = caseService;
+        this.caseUuid = caseUuid;
+        this.folderName = folderName;
     }
 
     @Override
@@ -41,7 +44,7 @@ public class InputStreamMultiPartFile implements MultipartFile {
 
     @Override
     public String getOriginalFilename() {
-        return name;
+        return getName();
     }
 
     @Override
@@ -51,22 +54,30 @@ public class InputStreamMultiPartFile implements MultipartFile {
 
     @Override
     public boolean isEmpty() {
-        return contentBytes.length == 0;
+        try (InputStream in = getInputStream()) {
+            return in.available() == 0;
+        } catch (IOException e) {
+            return true;
+        }
     }
 
     @Override
     public long getSize() {
-        return contentBytes.length;
+        try (InputStream in = getInputStream()) {
+            return in.available();
+        } catch (IOException e) {
+            return 0;
+        }
     }
 
     @Override
-    public byte[] getBytes() {
-        return contentBytes;
+    public byte[] getBytes() throws IOException {
+        return getInputStream().readAllBytes();
     }
 
     @Override
     public InputStream getInputStream() {
-        return new ByteArrayInputStream(contentBytes);
+        return caseService.getInputStreamFromS3(caseUuid, folderName, name).orElse(InputStream.nullInputStream());
     }
 
     @Override

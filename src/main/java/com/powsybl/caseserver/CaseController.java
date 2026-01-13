@@ -6,6 +6,7 @@
  */
 package com.powsybl.caseserver;
 
+import com.powsybl.caseserver.datasource.utils.S3MultiPartFile;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.service.CaseObserver;
@@ -167,11 +168,8 @@ public class CaseController {
         @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration,
         @RequestParam(value = "withIndexation", required = false, defaultValue = "false") boolean withIndexation) {
 
-        Optional<InputStream> caseStream = caseService.getCaseStreamFromExport(caseUuid, folderName, fileName);
-        UUID uuid = null;
-        if (caseStream.isPresent()) {
-            uuid = caseService.importCase(caseStream.get(), fileName + ZIP_EXTENSION, withExpiration, withIndexation, caseUuid);
-        }
+        MultipartFile mpf = new S3MultiPartFile(caseService, caseUuid, folderName, fileName + ZIP_EXTENSION, "application/zip");
+        UUID uuid = caseService.importCase(mpf, withExpiration, withIndexation, caseUuid);
         return ResponseEntity.ok().body(uuid);
     }
 
