@@ -29,7 +29,6 @@ public final class CaseException extends RuntimeException {
         ORIGINAL_FILE_NOT_FOUND,
         TEMP_FILE_INIT,
         TEMP_DIRECTORY_CREATION,
-        UNPROCESSABLE_CASE_NAME
     }
 
     private final Type type;
