@@ -863,7 +863,7 @@ class CaseControllerTest implements MinioContainerConfig {
 
         UUID caseUuid = UUID.randomUUID();
         String folderName = "network_exports";
-        String fileName = "testCase";
+        String fileName = "test(3)Case";
 
         // create zip case in one folder in bucket
         addZipCaseFile(caseUuid, folderName, fileName);
