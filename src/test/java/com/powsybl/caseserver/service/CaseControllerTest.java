@@ -9,11 +9,13 @@ package com.powsybl.caseserver.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
+import com.powsybl.caseserver.datasource.utils.S3MultiPartFile;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.computation.ComputationManager;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -40,6 +42,7 @@ import java.io.InputStream;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -875,5 +878,40 @@ class CaseControllerTest implements MinioContainerConfig {
             .andExpect(status().isOk());
 
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
+    }
+
+    @Test
+    void testCreateCaseKo() throws Exception {
+
+        UUID caseUuid = UUID.randomUUID();
+        String folderName = "network_exports";
+        String fileName = "testCase4";
+
+        mvc.perform(post("/v1/cases/create")
+                .param("caseUuid", caseUuid.toString())
+                .param("folderName", folderName)
+                .param("fileName", fileName))
+            .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void testS3MultiPartFile() throws IOException {
+        UUID caseUuid = UUID.randomUUID();
+        String folderName = "network_exports";
+        String fileName = "test(3)Case";
+
+        // create zip case in one folder in bucket
+        addZipCaseFile(caseUuid, folderName, fileName);
+
+        try (S3MultiPartFile file = new S3MultiPartFile(caseService, caseUuid, folderName, fileName + ZIP_EXTENSION, "application/zip")) {
+            try (InputStream inputStream = CaseControllerTest.class.getResourceAsStream("/" + fileName + ZIP_EXTENSION)) {
+                assertNotNull(inputStream);
+                byte[] bytes = inputStream.readAllBytes();
+                assertTrue(Arrays.equals(bytes, file.getBytes()));
+                Assertions.assertEquals(bytes.length, file.getSize());
+                Assertions.assertEquals("application/zip", file.getContentType());
+                assertFalse(file.isEmpty());
+            }
+        }
     }
 }

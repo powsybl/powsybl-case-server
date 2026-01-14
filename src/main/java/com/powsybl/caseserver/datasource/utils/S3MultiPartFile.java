@@ -17,6 +17,10 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -43,7 +47,8 @@ public class S3MultiPartFile implements MultipartFile, Closeable {
     }
 
     private void init() throws IOException {
-        this.tempFile = Files.createTempFile("s3-create-case-", caseUuid.toString());
+        FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
+        this.tempFile = Files.createTempFile("s3-create-case-", caseUuid.toString(), attr);
         try (InputStream in = caseService.getInputStreamFromS3(caseUuid, folderName, name)
             .orElseThrow(() -> new IOException("Could not retrieve file from S3: " + name))) {
             Files.copy(in, this.tempFile, StandardCopyOption.REPLACE_EXISTING);
