@@ -10,9 +10,7 @@ import com.powsybl.commons.datasource.DataSourceUtil;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.net.URLConnection;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -67,12 +65,7 @@ public final class Utils {
             headers.add(HttpHeaders.CONTENT_ENCODING, GZIP_ENCODING);
             contentType = MediaType.TEXT_PLAIN.toString();
         } else {
-            try {
-                contentType = Files.probeContentType(Path.of(name));
-            } catch (IOException e) {
-                throw CaseException.createUnprocessableCaseName(name, e);
-            }
-
+            contentType = URLConnection.guessContentTypeFromName(name);
         }
         headers.add(HttpHeaders.CONTENT_TYPE, contentType);
         return headers;

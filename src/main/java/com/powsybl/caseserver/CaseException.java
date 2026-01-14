@@ -102,9 +102,4 @@ public final class CaseException extends RuntimeException {
         Objects.requireNonNull(uuid);
         return new CaseException(Type.TEMP_FILE_INIT, "Error initializing temporary case file: " + uuid, e);
     }
-
-    public static CaseException createUnprocessableCaseName(String caseName, Throwable e) {
-        Objects.requireNonNull(caseName);
-        return new CaseException(Type.TEMP_FILE_INIT, "Unprocessable case name: " + caseName, e);
-    }
 }
