@@ -24,11 +24,13 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
@@ -168,9 +170,13 @@ public class CaseController {
         @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration,
         @RequestParam(value = "withIndexation", required = false, defaultValue = "false") boolean withIndexation) {
 
-        MultipartFile mpf = new S3MultiPartFile(caseService, caseUuid, folderName, fileName + ZIP_EXTENSION, "application/zip");
-        UUID uuid = caseService.importCase(mpf, withExpiration, withIndexation, caseUuid);
-        return ResponseEntity.ok().body(uuid);
+        try (S3MultiPartFile mpf = new S3MultiPartFile(caseService, caseUuid, folderName, fileName + ZIP_EXTENSION, "application/zip")) {
+            UUID uuid = caseService.importCase(mpf, withExpiration, withIndexation, caseUuid);
+            return ResponseEntity.ok().body(uuid);
+        } catch (IOException e) {
+            LOGGER.error("Failed to create case from S3 for caseUuid: {}", caseUuid, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @PutMapping(value = "/cases/{caseUuid}/disableExpiration")

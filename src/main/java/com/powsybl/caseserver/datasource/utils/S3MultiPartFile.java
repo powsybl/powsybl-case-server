@@ -10,10 +10,12 @@ package com.powsybl.caseserver.datasource.utils;
 import com.powsybl.caseserver.service.CaseService;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
@@ -21,20 +23,32 @@ import java.util.UUID;
  * @author Bassel El Cheikh <bassel.el-cheikh_externe at rte-france.com>
  */
 
-public class S3MultiPartFile implements MultipartFile {
+public class S3MultiPartFile implements MultipartFile, Closeable {
 
     private final String name;
     private final String contentType;
     private final CaseService caseService;
     private final UUID caseUuid;
     private final String folderName;
+    private Path tempFile;
+    private long size;
 
-    public S3MultiPartFile(CaseService caseService, UUID caseUuid, String folderName, String name, String contentType) {
+    public S3MultiPartFile(CaseService caseService, UUID caseUuid, String folderName, String name, String contentType) throws IOException {
         this.name = name != null ? name : "";
         this.contentType = contentType;
         this.caseService = caseService;
         this.caseUuid = caseUuid;
         this.folderName = folderName;
+        init();
+    }
+
+    private void init() throws IOException {
+        this.tempFile = Files.createTempFile("s3-create-case-", caseUuid.toString());
+        try (InputStream in = caseService.getInputStreamFromS3(caseUuid, folderName, name)
+            .orElseThrow(() -> new IOException("Could not retrieve file from S3: " + name))) {
+            Files.copy(in, this.tempFile, StandardCopyOption.REPLACE_EXISTING);
+        }
+        this.size = Files.size(this.tempFile);
     }
 
     @Override
@@ -54,36 +68,34 @@ public class S3MultiPartFile implements MultipartFile {
 
     @Override
     public boolean isEmpty() {
-        try (InputStream in = getInputStream()) {
-            return in.available() == 0;
-        } catch (IOException e) {
-            return true;
-        }
+        return getSize() == 0;
     }
 
     @Override
     public long getSize() {
-        try (InputStream in = getInputStream()) {
-            return in.available();
-        } catch (IOException e) {
-            return 0;
-        }
+        return size;
     }
 
     @Override
     public byte[] getBytes() throws IOException {
-        return getInputStream().readAllBytes();
+        return Files.readAllBytes(tempFile);
     }
 
     @Override
-    public InputStream getInputStream() {
-        return caseService.getInputStreamFromS3(caseUuid, folderName, name).orElse(InputStream.nullInputStream());
+    public InputStream getInputStream() throws IOException {
+        return Files.newInputStream(tempFile);
     }
 
     @Override
     public void transferTo(File dest) throws IOException, IllegalStateException {
-        try (InputStream in = getInputStream()) {
-            Files.copy(in, dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(tempFile, dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (tempFile != null) {
+            Files.deleteIfExists(tempFile);
+            tempFile = null;
         }
     }
 }
