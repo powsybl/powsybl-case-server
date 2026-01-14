@@ -7,6 +7,7 @@
 package com.powsybl.caseserver;
 
 import com.powsybl.commons.datasource.DataSourceUtil;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 
 import java.util.List;
@@ -60,6 +61,9 @@ public final class Utils {
         if (Boolean.TRUE.equals(isUploadedAsPlainFile)) {
             headers.add(HttpHeaders.CONTENT_ENCODING, GZIP_ENCODING);
         }
+        headers.setContentDisposition(
+                ContentDisposition.attachment().filename(name).build()
+        );
         return headers;
     }
 }
