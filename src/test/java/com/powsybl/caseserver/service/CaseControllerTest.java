@@ -268,6 +268,7 @@ class CaseControllerTest implements MinioContainerConfig {
             mvc.perform(get(GET_CASE_URL, firstCaseUuid))
                     .andExpect(status().isOk())
                     .andExpect(content().bytes(expectedGzippedBytes))
+                    .andExpect(content().contentType("text/plain"))
                     .andReturn();
         }
 
@@ -275,6 +276,7 @@ class CaseControllerTest implements MinioContainerConfig {
         mvc.perform(get(GET_CASE_URL, gzipCaseUuid))
                 .andExpect(status().isOk())
                 .andExpect(content().bytes(getClass().getResourceAsStream("/" + TEST_GZIP_CASE).readAllBytes()))
+                .andExpect(content().contentType("application/gzip"))
                 .andReturn();
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
