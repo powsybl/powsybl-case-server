@@ -37,6 +37,7 @@ import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
@@ -911,6 +912,10 @@ class CaseControllerTest implements MinioContainerConfig {
                 Assertions.assertEquals(bytes.length, file.getSize());
                 Assertions.assertEquals("application/zip", file.getContentType());
                 assertFalse(file.isEmpty());
+                File tmpFile = new File("/tmp/testFile.zip");
+                file.transferTo(tmpFile);
+                assertTrue(tmpFile.exists());
+                tmpFile.delete();
             }
         }
     }
