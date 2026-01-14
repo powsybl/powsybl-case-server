@@ -45,6 +45,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.zip.GZIPOutputStream;
 
+import static com.powsybl.caseserver.Utils.ZIP_EXTENSION;
+import static com.powsybl.caseserver.service.CaseService.DELIMITER;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
@@ -839,6 +841,39 @@ class CaseControllerTest implements MinioContainerConfig {
         UUID firstCaseUuid = importCase(TEST_CASE, false);
         removeFile(firstCaseUuid.toString());
         assertThrows(ResponseStatusException.class, () -> caseService.duplicateCase(firstCaseUuid, false));
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
+    }
+
+    void addZipCaseFile(UUID caseUuid, String folderName, String fileName) throws IOException {
+        try (InputStream inputStream = CaseControllerTest.class.getResourceAsStream("/" + fileName + ZIP_EXTENSION)) {
+            if (inputStream != null) {
+                RequestBody requestBody = RequestBody.fromBytes(inputStream.readAllBytes());
+                PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(caseService.getBucketName())
+                    .key(folderName + DELIMITER + caseUuid + DELIMITER + fileName + ZIP_EXTENSION)
+                    .contentType("application/zip")
+                    .build();
+                caseService.getS3Client().putObject(putObjectRequest, requestBody);
+            }
+        }
+    }
+
+    @Test
+    void testCreateCase() throws Exception {
+
+        UUID caseUuid = UUID.randomUUID();
+        String folderName = "network_exports";
+        String fileName = "testCase";
+
+        // create zip case in one folder in bucket
+        addZipCaseFile(caseUuid, folderName, fileName);
+
+        mvc.perform(post("/v1/cases/create")
+                .param("caseUuid", caseUuid.toString())
+                .param("folderName", folderName)
+                .param("fileName", fileName))
+            .andExpect(status().isOk());
+
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
     }
 }
