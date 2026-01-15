@@ -16,3 +16,9 @@ powsybl-ws:
 cleaning-cases-cron: 0 0 2 * * ?
 
 case-subpath: cases
+
+server:
+  compression:
+    enabled: true
+    min-response-size: 1MB
+    mime-types: application/octet-stream
