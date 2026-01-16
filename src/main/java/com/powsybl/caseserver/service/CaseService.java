@@ -22,10 +22,12 @@ import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.ws.commons.SecuredTarInputStream;
 import com.powsybl.ws.commons.SecuredZipInputStream;
+import lombok.Getter;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.utils.FileNameUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.function.FailableConsumer;
 import org.apache.commons.lang3.function.FailableFunction;
 import org.slf4j.Logger;
@@ -74,8 +76,10 @@ public class CaseService {
     public static final int MAX_ARCHIVE_ENTRIES = 1000;
     public static final String DELIMITER = "/";
 
+    @Getter
     private ComputationManager computationManager = LocalComputationManager.getDefault();
 
+    @Getter
     @Autowired
     private final CaseMetadataRepository caseMetadataRepository;
 
@@ -265,19 +269,18 @@ public class CaseService {
     }
 
     public Optional<InputStream> getCaseStream(String folderKey, String fileName) {
-        return getCaseStream(folderKey + DELIMITER + fileName);
+        return getCaseStream(UUID.randomUUID(), folderKey + DELIMITER + fileName);
     }
 
     public Optional<InputStream> getCaseStream(UUID caseUuid) {
-        String caseFileKey = uuidToKeyWithOriginalFileName(caseUuid);
-        return getCaseStream(caseFileKey);
+        return getCaseStream(caseUuid, null);
     }
 
-    private Optional<InputStream> getCaseStream(String caseFileKey) {
+    private Optional<InputStream> getCaseStream(UUID caseUuid, String caseFileKey) {
         try {
             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
-                .key(caseFileKey)
+                .key(StringUtils.isEmpty(caseFileKey) ? uuidToKeyWithOriginalFileName(caseUuid) : caseFileKey)
                 .build();
 
             ResponseInputStream<GetObjectResponse> responseInputStream = s3Client.getObject(getObjectRequest);
@@ -672,14 +675,6 @@ public class CaseService {
 
     public void setComputationManager(ComputationManager computationManager) {
         this.computationManager = Objects.requireNonNull(computationManager);
-    }
-
-    public ComputationManager getComputationManager() {
-        return computationManager;
-    }
-
-    public CaseMetadataRepository getCaseMetadataRepository() {
-        return caseMetadataRepository;
     }
 
 }
