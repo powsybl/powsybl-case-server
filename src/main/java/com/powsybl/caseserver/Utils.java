@@ -24,6 +24,7 @@ public final class Utils {
     public static final String GZIP_EXTENSION = ".gz";
     public static final String GZIP_FORMAT = "gz";
     public static final String GZIP_ENCODING = "gzip";
+    public static final String ZIP_EXTENSION = ".zip";
     public static final List<String> COMPRESSION_FORMATS = List.of("bz2", GZIP_FORMAT, "xz", "zst");
     public static final List<String> ARCHIVE_FORMATS = List.of("zip", "tar");
     public static final String NOT_FOUND = " not found";
