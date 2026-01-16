@@ -27,7 +27,6 @@ import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.utils.FileNameUtils;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.function.FailableConsumer;
 import org.apache.commons.lang3.function.FailableFunction;
 import org.slf4j.Logger;
@@ -269,27 +268,29 @@ public class CaseService {
     }
 
     public Optional<InputStream> getCaseStream(String folderKey, String fileName) {
-        return getCaseStream(UUID.randomUUID(), folderKey + DELIMITER + fileName);
+        return getCaseStream(folderKey + DELIMITER + fileName);
     }
 
     public Optional<InputStream> getCaseStream(UUID caseUuid) {
-        return getCaseStream(caseUuid, null);
+        try {
+            return getCaseStream(uuidToKeyWithOriginalFileName(caseUuid));
+        } catch (CaseException | ResponseStatusException e) {
+            LOGGER.error(e.getMessage());
+            return Optional.empty();
+        }
     }
 
-    private Optional<InputStream> getCaseStream(UUID caseUuid, String caseFileKey) {
+    private Optional<InputStream> getCaseStream(String caseFileKey) {
         try {
             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
-                .key(StringUtils.isEmpty(caseFileKey) ? uuidToKeyWithOriginalFileName(caseUuid) : caseFileKey)
+                .key(caseFileKey)
                 .build();
 
             ResponseInputStream<GetObjectResponse> responseInputStream = s3Client.getObject(getObjectRequest);
             return Optional.of(responseInputStream);
         } catch (NoSuchKeyException e) {
             LOGGER.error("The expected key does not exist in the bucket s3 : {}", caseFileKey);
-            return Optional.empty();
-        } catch (CaseException | ResponseStatusException e) {
-            LOGGER.error(e.getMessage());
             return Optional.empty();
         }
     }
