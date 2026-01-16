@@ -83,7 +83,7 @@ public class S3MultiPartFile implements MultipartFile, Closeable {
 
     @Override
     public byte[] getBytes() throws IOException {
-        return Files.readAllBytes(tempFile);
+        throw new UnsupportedOperationException("Not supported.");
     }
 
     @Override
