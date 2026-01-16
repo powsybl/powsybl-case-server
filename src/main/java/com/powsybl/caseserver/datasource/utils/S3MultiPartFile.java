@@ -21,7 +21,6 @@ import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * @author Bassel El Cheikh <bassel.el-cheikh_externe at rte-france.com>
@@ -32,24 +31,22 @@ public class S3MultiPartFile implements MultipartFile, Closeable {
     private final String name;
     private final String contentType;
     private final CaseService caseService;
-    private final UUID caseUuid;
-    private final String folderName;
+    private final String folderKey;
     private Path tempFile;
     private long size;
 
-    public S3MultiPartFile(CaseService caseService, UUID caseUuid, String folderName, String name, String contentType) throws IOException {
+    public S3MultiPartFile(CaseService caseService, String folderKey, String name, String contentType) throws IOException {
         this.name = name != null ? name : "";
         this.contentType = contentType;
         this.caseService = caseService;
-        this.caseUuid = caseUuid;
-        this.folderName = folderName;
+        this.folderKey = folderKey;
         init();
     }
 
     private void init() throws IOException {
         FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
-        this.tempFile = Files.createTempFile("s3-tmp-", caseUuid.toString(), attr);
-        try (InputStream in = caseService.getInputStreamFromS3(caseUuid, folderName, name)
+        this.tempFile = Files.createTempFile("s3-tmp-", name, attr);
+        try (InputStream in = caseService.getCaseStream(folderKey, name)
             .orElseThrow(() -> new IOException("Could not retrieve file from S3: " + name))) {
             Files.copy(in, this.tempFile, StandardCopyOption.REPLACE_EXISTING);
         }
@@ -93,7 +90,7 @@ public class S3MultiPartFile implements MultipartFile, Closeable {
 
     @Override
     public void transferTo(File dest) throws IOException, IllegalStateException {
-        Files.copy(tempFile, dest.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        transferTo(dest.toPath());
     }
 
     @Override

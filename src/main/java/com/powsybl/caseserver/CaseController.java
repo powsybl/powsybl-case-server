@@ -6,7 +6,6 @@
  */
 package com.powsybl.caseserver;
 
-import com.powsybl.caseserver.datasource.utils.S3MultiPartFile;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.service.CaseObserver;
@@ -37,8 +36,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.powsybl.caseserver.CaseException.createDirectoryNotFound;
-import static com.powsybl.caseserver.Utils.ZIP_EXTENSION;
 import static com.powsybl.caseserver.Utils.buildHeaders;
+
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -158,23 +157,22 @@ public class CaseController {
         return ResponseEntity.ok().body(newCaseUuid);
     }
 
-    @PostMapping(value = "/cases/create", params = {"caseUuid", "folderName", "fileName"})
+    @PostMapping(value = "/cases/create", params = {"caseFolderKey", "fileName"})
     @Operation(summary = "create a case from converted one stored in folder in s3")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Case created"),
         @ApiResponse(responseCode = "404", description = "Source case not found"),
         @ApiResponse(responseCode = "500", description = "An error occurred during the case file creation")})
     public ResponseEntity<UUID> createCase(
-        @RequestParam("caseUuid") UUID caseUuid,
-        @RequestParam("folderName") String folderName,
+        @RequestParam("caseFolderKey") String caseFolderKey,
         @RequestParam("fileName") String fileName,
         @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration,
         @RequestParam(value = "withIndexation", required = false, defaultValue = "false") boolean withIndexation) {
 
-        try (S3MultiPartFile mpf = new S3MultiPartFile(caseService, caseUuid, folderName, fileName + ZIP_EXTENSION, "application/zip")) {
-            UUID uuid = caseService.importCase(mpf, withExpiration, withIndexation, caseUuid);
+        try {
+            UUID uuid = caseService.importCase(caseFolderKey, fileName, withExpiration, withIndexation);
             return ResponseEntity.ok().body(uuid);
         } catch (IOException e) {
-            LOGGER.error("Failed to create case from S3 for caseUuid: {}", caseUuid, e);
+            LOGGER.error("Failed to create case from S3 for caseFolderKey: {}", caseFolderKey, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

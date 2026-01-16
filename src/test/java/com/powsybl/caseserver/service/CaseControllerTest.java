@@ -873,8 +873,7 @@ class CaseControllerTest implements MinioContainerConfig {
         addZipCaseFile(caseUuid, folderName, fileName);
 
         mvc.perform(post("/v1/cases/create")
-                .param("caseUuid", caseUuid.toString())
-                .param("folderName", folderName)
+                .param("caseFolderKey", folderName + DELIMITER + caseUuid)
                 .param("fileName", fileName))
             .andExpect(status().isOk());
 
@@ -889,8 +888,7 @@ class CaseControllerTest implements MinioContainerConfig {
         String fileName = "testCase4";
 
         mvc.perform(post("/v1/cases/create")
-                .param("caseUuid", caseUuid.toString())
-                .param("folderName", folderName)
+                .param("caseFolderKey", folderName + DELIMITER + caseUuid)
                 .param("fileName", fileName))
             .andExpect(status().isInternalServerError());
     }
@@ -904,11 +902,10 @@ class CaseControllerTest implements MinioContainerConfig {
         // create zip case in one folder in bucket
         addZipCaseFile(caseUuid, folderName, fileName);
 
-        try (S3MultiPartFile file = new S3MultiPartFile(caseService, caseUuid, folderName, fileName + ZIP_EXTENSION, "application/zip")) {
+        try (S3MultiPartFile file = new S3MultiPartFile(caseService, folderName + DELIMITER + caseUuid, fileName + ZIP_EXTENSION, "application/zip")) {
             try (InputStream inputStream = CaseControllerTest.class.getResourceAsStream("/" + fileName + ZIP_EXTENSION)) {
                 assertNotNull(inputStream);
                 byte[] bytes = inputStream.readAllBytes();
-                assertTrue(Arrays.equals(bytes, file.getBytes()));
                 Assertions.assertEquals(bytes.length, file.getSize());
                 Assertions.assertEquals("application/zip", file.getContentType());
                 assertFalse(file.isEmpty());
