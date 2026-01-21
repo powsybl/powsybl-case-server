@@ -872,8 +872,8 @@ class CaseControllerTest implements MinioContainerConfig {
         addZipCaseFile(caseUuid, folderName, fileName);
 
         mvc.perform(post("/v1/cases/create")
-                .param("caseFolderKey", folderName + DELIMITER + caseUuid)
-                .param("fileName", fileName))
+                .param("caseKey", folderName + DELIMITER + caseUuid + DELIMITER + fileName + ZIP_EXTENSION)
+                .param("contentType", "application/zip"))
             .andExpect(status().isOk());
 
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
@@ -887,8 +887,8 @@ class CaseControllerTest implements MinioContainerConfig {
         String fileName = "testCase4";
 
         mvc.perform(post("/v1/cases/create")
-                .param("caseFolderKey", folderName + DELIMITER + caseUuid)
-                .param("fileName", fileName))
+                .param("caseKey", folderName + DELIMITER + caseUuid + DELIMITER + fileName)
+                .param("contentType", "application/zip"))
             .andExpect(status().isInternalServerError());
     }
 
@@ -901,7 +901,7 @@ class CaseControllerTest implements MinioContainerConfig {
         // create zip case in one folder in bucket
         addZipCaseFile(caseUuid, folderName, fileName);
 
-        try (S3MultiPartFile file = new S3MultiPartFile(caseService, folderName + DELIMITER + caseUuid, fileName + ZIP_EXTENSION, "application/zip")) {
+        try (S3MultiPartFile file = new S3MultiPartFile(caseService, folderName + DELIMITER + caseUuid + DELIMITER + fileName + ZIP_EXTENSION, "application/zip")) {
             try (InputStream inputStream = CaseControllerTest.class.getResourceAsStream("/" + fileName + ZIP_EXTENSION)) {
                 assertNotNull(inputStream);
                 byte[] bytes = inputStream.readAllBytes();

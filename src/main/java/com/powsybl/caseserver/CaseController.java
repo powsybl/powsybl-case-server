@@ -157,19 +157,19 @@ public class CaseController {
         return ResponseEntity.ok().body(newCaseUuid);
     }
 
-    @PostMapping(value = "/cases/create", params = {"caseFolderKey", "fileName"})
+    @PostMapping(value = "/cases/create", params = {"caseKey", "contentType"})
     @Operation(summary = "create a case from converted one stored in folder in s3")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Case created"),
         @ApiResponse(responseCode = "404", description = "Source case not found"),
         @ApiResponse(responseCode = "500", description = "An error occurred during the case file creation")})
     public ResponseEntity<UUID> createCase(
-        @RequestParam("caseFolderKey") String caseFolderKey,
-        @RequestParam("fileName") String fileName,
+        @RequestParam("caseKey") String caseFolderKey,
+        @RequestParam("contentType") String contentType,
         @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration,
         @RequestParam(value = "withIndexation", required = false, defaultValue = "false") boolean withIndexation) {
 
         try {
-            UUID uuid = caseService.importCase(caseFolderKey, fileName, withExpiration, withIndexation);
+            UUID uuid = caseService.importCase(caseFolderKey, contentType, withExpiration, withIndexation);
             return ResponseEntity.ok().body(uuid);
         } catch (IOException e) {
             LOGGER.error("Failed to create case from S3 for caseFolderKey: {}", caseFolderKey, e);

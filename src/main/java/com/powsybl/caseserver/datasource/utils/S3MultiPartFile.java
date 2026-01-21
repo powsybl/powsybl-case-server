@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
@@ -31,22 +32,23 @@ public class S3MultiPartFile implements MultipartFile, Closeable {
     private final String name;
     private final String contentType;
     private final CaseService caseService;
-    private final String folderKey;
+    private final String caseKey;
     private Path tempFile;
     private long size;
 
-    public S3MultiPartFile(CaseService caseService, String folderKey, String name, String contentType) throws IOException {
-        this.name = name != null ? name : "";
+    public S3MultiPartFile(CaseService caseService, String caseKey, String contentType) throws IOException {
+        Paths.get(caseKey);
+        this.name = Path.of(caseKey).getFileName().toString();
         this.contentType = contentType;
         this.caseService = caseService;
-        this.folderKey = folderKey;
+        this.caseKey = caseKey;
         init();
     }
 
     private void init() throws IOException {
         FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
         this.tempFile = Files.createTempFile("s3-tmp-", name, attr);
-        try (InputStream in = caseService.getCaseStream(folderKey, name)
+        try (InputStream in = caseService.getCaseStream(caseKey)
             .orElseThrow(() -> new IOException("Could not retrieve file from S3: " + name))) {
             Files.copy(in, this.tempFile, StandardCopyOption.REPLACE_EXISTING);
         }

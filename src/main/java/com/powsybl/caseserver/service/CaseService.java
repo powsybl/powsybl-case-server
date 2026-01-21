@@ -267,10 +267,6 @@ public class CaseService {
         return UUID.fromString(keyWithoutRootDirectory.substring(0, firstSlash));
     }
 
-    public Optional<InputStream> getCaseStream(String folderKey, String fileName) {
-        return getCaseStream(folderKey + DELIMITER + fileName);
-    }
-
     public Optional<InputStream> getCaseStream(UUID caseUuid) {
         try {
             return getCaseStream(uuidToKeyWithOriginalFileName(caseUuid));
@@ -280,7 +276,7 @@ public class CaseService {
         }
     }
 
-    private Optional<InputStream> getCaseStream(String caseFileKey) {
+    public Optional<InputStream> getCaseStream(String caseFileKey) {
         try {
             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
@@ -511,8 +507,9 @@ public class CaseService {
         return caseUuid;
     }
 
-    public UUID importCase(String folderKey, String fileName, boolean withExpiration, boolean withIndexation) throws IOException {
-        try (S3MultiPartFile mpf = new S3MultiPartFile(this, folderKey, fileName + ZIP_EXTENSION, "application/zip")) {
+    public UUID importCase(String folderKey, String contentType, boolean withExpiration, boolean withIndexation) throws IOException {
+
+        try (S3MultiPartFile mpf = new S3MultiPartFile(this, folderKey, contentType)) {
             return importCase(mpf, withExpiration, withIndexation, UUID.randomUUID());
         }
     }
