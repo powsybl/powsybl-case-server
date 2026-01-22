@@ -42,7 +42,7 @@ public class S3MultiPartFile implements MultipartFile, Closeable {
 
     private void init(InputStream inputStream) throws IOException {
         FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
-        this.tempFile = Files.createTempFile("s3-tmp-", name, attr);
+        this.tempFile = Files.createTempFile("s3-import-", null, attr);
         Files.copy(inputStream, this.tempFile, StandardCopyOption.REPLACE_EXISTING);
         this.size = Files.size(this.tempFile);
     }
