@@ -162,7 +162,7 @@ public class CaseController {
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Case created"),
         @ApiResponse(responseCode = "404", description = "Source case not found"),
         @ApiResponse(responseCode = "500", description = "An error occurred during the case file creation")})
-    public ResponseEntity<UUID> createCase(
+    public ResponseEntity<UUID> importCaseFromS3Key(
         @RequestParam("caseKey") String caseFolderKey,
         @RequestParam("contentType") String contentType,
         @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration,
