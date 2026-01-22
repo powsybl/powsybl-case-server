@@ -8,7 +8,7 @@ package com.powsybl.caseserver.service;
 
 import com.google.re2j.Pattern;
 import com.powsybl.caseserver.CaseException;
-import com.powsybl.caseserver.datasource.utils.S3MultiPartFile;
+import com.powsybl.caseserver.datasource.utils.TmpMultiPartFile;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.parsers.FileNameInfos;
@@ -508,7 +508,7 @@ public class CaseService {
 
     public UUID importCase(String caseKey, String contentType, boolean withExpiration, boolean withIndexation) throws IOException {
         InputStream inputStream = getCaseStream(caseKey).orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "The expected key does not exist in the bucket s3 : " + caseKey));
-        try (S3MultiPartFile mpf = new S3MultiPartFile(inputStream, caseKey, contentType)) {
+        try (TmpMultiPartFile mpf = new TmpMultiPartFile(inputStream, caseKey, contentType)) {
             return importCase(mpf, withExpiration, withIndexation, UUID.randomUUID());
         }
     }

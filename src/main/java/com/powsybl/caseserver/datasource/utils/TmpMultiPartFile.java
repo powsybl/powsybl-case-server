@@ -26,14 +26,14 @@ import java.util.Set;
  * @author Bassel El Cheikh <bassel.el-cheikh_externe at rte-france.com>
  */
 
-public class S3MultiPartFile implements MultipartFile, Closeable {
+public class TmpMultiPartFile implements MultipartFile, Closeable {
 
     private final String name;
     private final String contentType;
     private Path tempFile;
     private long size;
 
-    public S3MultiPartFile(InputStream inputStream, String caseKey, String contentType) throws IOException {
+    public TmpMultiPartFile(InputStream inputStream, String caseKey, String contentType) throws IOException {
         Paths.get(caseKey);
         this.name = Path.of(caseKey).getFileName().toString();
         this.contentType = contentType;

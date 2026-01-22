@@ -9,7 +9,7 @@ package com.powsybl.caseserver.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
-import com.powsybl.caseserver.datasource.utils.S3MultiPartFile;
+import com.powsybl.caseserver.datasource.utils.TmpMultiPartFile;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
@@ -903,7 +903,7 @@ class CaseControllerTest implements MinioContainerConfig {
 
         String caseKey = folderName + DELIMITER + caseUuid + DELIMITER + fileName + ZIP_EXTENSION;
         InputStream inputStream = caseService.getCaseStream(caseKey).get();
-        try (S3MultiPartFile file = new S3MultiPartFile(inputStream, caseKey, "application/zip")) {
+        try (TmpMultiPartFile file = new TmpMultiPartFile(inputStream, caseKey, "application/zip")) {
             try (InputStream in = CaseControllerTest.class.getResourceAsStream("/" + fileName + ZIP_EXTENSION)) {
                 assertNotNull(in);
                 byte[] bytes = in.readAllBytes();
