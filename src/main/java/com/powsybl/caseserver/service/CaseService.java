@@ -508,7 +508,6 @@ public class CaseService {
     }
 
     public UUID importCase(String caseKey, String contentType, boolean withExpiration, boolean withIndexation) throws IOException {
-
         InputStream inputStream = getCaseStream(caseKey).orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "The expected key does not exist in the bucket s3 : " + caseKey));
         try (S3MultiPartFile mpf = new S3MultiPartFile(inputStream, caseKey, contentType)) {
             return importCase(mpf, withExpiration, withIndexation, UUID.randomUUID());

@@ -866,7 +866,7 @@ class CaseControllerTest implements MinioContainerConfig {
 
         UUID caseUuid = UUID.randomUUID();
         String folderName = "network_exports";
-        String fileName = "test(3)Case";
+        String fileName = "zippedTestCase";
 
         // create zip case in one folder in bucket
         addZipCaseFile(caseUuid, folderName, fileName);
@@ -896,7 +896,7 @@ class CaseControllerTest implements MinioContainerConfig {
     void testS3MultiPartFile() throws IOException {
         UUID caseUuid = UUID.randomUUID();
         String folderName = "network_exports";
-        String fileName = "test(3)Case";
+        String fileName = "zippedTestCase";
 
         // create zip case in one folder in bucket
         addZipCaseFile(caseUuid, folderName, fileName);
