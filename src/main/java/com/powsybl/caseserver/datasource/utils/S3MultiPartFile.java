@@ -7,7 +7,6 @@
 
 package com.powsybl.caseserver.datasource.utils;
 
-import com.powsybl.caseserver.service.CaseService;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.Closeable;
@@ -31,27 +30,20 @@ public class S3MultiPartFile implements MultipartFile, Closeable {
 
     private final String name;
     private final String contentType;
-    private final CaseService caseService;
-    private final String caseKey;
     private Path tempFile;
     private long size;
 
-    public S3MultiPartFile(CaseService caseService, String caseKey, String contentType) throws IOException {
+    public S3MultiPartFile(InputStream inputStream, String caseKey, String contentType) throws IOException {
         Paths.get(caseKey);
         this.name = Path.of(caseKey).getFileName().toString();
         this.contentType = contentType;
-        this.caseService = caseService;
-        this.caseKey = caseKey;
-        init();
+        init(inputStream);
     }
 
-    private void init() throws IOException {
+    private void init(InputStream inputStream) throws IOException {
         FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------"));
         this.tempFile = Files.createTempFile("s3-tmp-", name, attr);
-        try (InputStream in = caseService.getCaseStream(caseKey)
-            .orElseThrow(() -> new IOException("Could not retrieve file from S3: " + name))) {
-            Files.copy(in, this.tempFile, StandardCopyOption.REPLACE_EXISTING);
-        }
+        Files.copy(inputStream, this.tempFile, StandardCopyOption.REPLACE_EXISTING);
         this.size = Files.size(this.tempFile);
     }
 

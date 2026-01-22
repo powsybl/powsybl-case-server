@@ -901,10 +901,12 @@ class CaseControllerTest implements MinioContainerConfig {
         // create zip case in one folder in bucket
         addZipCaseFile(caseUuid, folderName, fileName);
 
-        try (S3MultiPartFile file = new S3MultiPartFile(caseService, folderName + DELIMITER + caseUuid + DELIMITER + fileName + ZIP_EXTENSION, "application/zip")) {
-            try (InputStream inputStream = CaseControllerTest.class.getResourceAsStream("/" + fileName + ZIP_EXTENSION)) {
-                assertNotNull(inputStream);
-                byte[] bytes = inputStream.readAllBytes();
+        String caseKey = folderName + DELIMITER + caseUuid + DELIMITER + fileName + ZIP_EXTENSION;
+        InputStream inputStream = caseService.getCaseStream(caseKey).get();
+        try (S3MultiPartFile file = new S3MultiPartFile(inputStream, caseKey, "application/zip")) {
+            try (InputStream in = CaseControllerTest.class.getResourceAsStream("/" + fileName + ZIP_EXTENSION)) {
+                assertNotNull(in);
+                byte[] bytes = in.readAllBytes();
                 Assertions.assertEquals(bytes.length, file.getSize());
                 Assertions.assertEquals("application/zip", file.getContentType());
                 assertFalse(file.isEmpty());

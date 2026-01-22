@@ -507,9 +507,10 @@ public class CaseService {
         return caseUuid;
     }
 
-    public UUID importCase(String folderKey, String contentType, boolean withExpiration, boolean withIndexation) throws IOException {
+    public UUID importCase(String caseKey, String contentType, boolean withExpiration, boolean withIndexation) throws IOException {
 
-        try (S3MultiPartFile mpf = new S3MultiPartFile(this, folderKey, contentType)) {
+        InputStream inputStream = getCaseStream(caseKey).orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "The expected key does not exist in the bucket s3 : " + caseKey));
+        try (S3MultiPartFile mpf = new S3MultiPartFile(inputStream, caseKey, contentType)) {
             return importCase(mpf, withExpiration, withIndexation, UUID.randomUUID());
         }
     }
