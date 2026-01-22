@@ -464,7 +464,6 @@ public class CaseService {
     public UUID importCase(MultipartFile mpf, boolean withExpiration, boolean withIndexation, UUID caseUuid) {
         String caseName = Objects.requireNonNull(mpf.getOriginalFilename());
         validateCaseName(caseName);
-
         String format = withTempCopy(caseUuid, caseName, mpf::transferTo, this::getFormat);
         String compressionFormat = FileNameUtils.getExtension(Paths.get(caseName));
 
