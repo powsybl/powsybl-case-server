@@ -871,7 +871,7 @@ class CaseControllerTest implements MinioContainerConfig {
         // create zip case in one folder in bucket
         addZipCaseFile(caseUuid, folderName, fileName);
 
-        mvc.perform(post("/v1/cases/create")
+        mvc.perform(post("/v1/cases")
                 .param("caseKey", folderName + DELIMITER + caseUuid + DELIMITER + fileName + ZIP_EXTENSION)
                 .param("contentType", "application/zip"))
             .andExpect(status().isOk());
@@ -886,7 +886,7 @@ class CaseControllerTest implements MinioContainerConfig {
         String folderName = "network_exports";
         String fileName = "testCase4";
 
-        mvc.perform(post("/v1/cases/create")
+        mvc.perform(post("/v1/cases")
                 .param("caseKey", folderName + DELIMITER + caseUuid + DELIMITER + fileName)
                 .param("contentType", "application/zip"))
             .andExpect(status().isInternalServerError());

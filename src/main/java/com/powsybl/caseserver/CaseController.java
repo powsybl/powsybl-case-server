@@ -157,7 +157,7 @@ public class CaseController {
         return ResponseEntity.ok().body(newCaseUuid);
     }
 
-    @PostMapping(value = "/cases/create", params = {"caseKey", "contentType"})
+    @PostMapping(value = "/cases", params = {"caseKey", "contentType"})
     @Operation(summary = "create a case from converted one stored in folder in s3")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Case created"),
         @ApiResponse(responseCode = "404", description = "Source case not found"),
