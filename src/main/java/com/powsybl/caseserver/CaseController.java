@@ -169,7 +169,8 @@ public class CaseController {
         @RequestParam(value = "withIndexation", required = false, defaultValue = "false") boolean withIndexation) {
 
         try {
-            UUID uuid = caseService.importCase(caseFolderKey, contentType, withExpiration, withIndexation);
+            UUID uuid = UUID.randomUUID();
+            caseService.importCase(uuid, caseFolderKey, contentType, withExpiration, withIndexation);
             return ResponseEntity.ok().body(uuid);
         } catch (IOException e) {
             LOGGER.error("Failed to create case from S3 for caseFolderKey: {}", caseFolderKey, e);
