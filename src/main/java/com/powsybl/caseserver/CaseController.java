@@ -120,7 +120,6 @@ public class CaseController {
         HttpHeaders headers = buildHeaders(name, isUploadedAsPlainFile);
         return ResponseEntity.ok()
                 .headers(headers)
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(new InputStreamResource(caseStreamOpt.get()));
     }
 
