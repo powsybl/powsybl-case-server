@@ -158,7 +158,7 @@ public class CaseController {
     }
 
     @PostMapping(value = "/cases", params = {"caseKey", "contentType"})
-    @Operation(summary = "create a case from converted one stored in folder in s3")
+    @Operation(summary = "import a case from an s3 object")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Case created"),
         @ApiResponse(responseCode = "404", description = "Source case not found"),
         @ApiResponse(responseCode = "500", description = "An error occurred during the case file creation")})
