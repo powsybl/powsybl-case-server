@@ -9,11 +9,13 @@ package com.powsybl.caseserver.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
+import com.powsybl.caseserver.datasource.utils.TmpMultiPartFile;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.computation.ComputationManager;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -35,6 +37,7 @@ import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
@@ -45,6 +48,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.zip.GZIPOutputStream;
 
+import static com.powsybl.caseserver.Utils.ZIP_EXTENSION;
+import static com.powsybl.caseserver.service.CaseService.DELIMITER;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
@@ -840,5 +845,76 @@ class CaseControllerTest implements MinioContainerConfig {
         removeFile(firstCaseUuid.toString());
         assertThrows(ResponseStatusException.class, () -> caseService.duplicateCase(firstCaseUuid, false));
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
+    }
+
+    void addZipCaseFile(UUID caseUuid, String folderName, String fileName) throws IOException {
+        try (InputStream inputStream = CaseControllerTest.class.getResourceAsStream("/" + fileName + ZIP_EXTENSION)) {
+            if (inputStream != null) {
+                RequestBody requestBody = RequestBody.fromBytes(inputStream.readAllBytes());
+                PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(caseService.getBucketName())
+                    .key(folderName + DELIMITER + caseUuid + DELIMITER + fileName + ZIP_EXTENSION)
+                    .contentType("application/zip")
+                    .build();
+                caseService.getS3Client().putObject(putObjectRequest, requestBody);
+            }
+        }
+    }
+
+    @Test
+    void testCreateCase() throws Exception {
+
+        UUID caseUuid = UUID.randomUUID();
+        String folderName = "network_exports";
+        String fileName = "zippedTestCase";
+
+        // create zip case in one folder in bucket
+        addZipCaseFile(caseUuid, folderName, fileName);
+
+        mvc.perform(post("/v1/cases")
+                .param("caseKey", folderName + DELIMITER + caseUuid + DELIMITER + fileName + ZIP_EXTENSION)
+                .param("contentType", "application/zip"))
+            .andExpect(status().isOk());
+
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
+    }
+
+    @Test
+    void testCreateCaseKo() throws Exception {
+
+        UUID caseUuid = UUID.randomUUID();
+        String folderName = "network_exports";
+        String fileName = "testCase4";
+
+        mvc.perform(post("/v1/cases")
+                .param("caseKey", folderName + DELIMITER + caseUuid + DELIMITER + fileName)
+                .param("contentType", "application/zip"))
+            .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void testS3MultiPartFile() throws IOException {
+        UUID caseUuid = UUID.randomUUID();
+        String folderName = "network_exports";
+        String fileName = "zippedTestCase";
+
+        // create zip case in one folder in bucket
+        addZipCaseFile(caseUuid, folderName, fileName);
+
+        String caseKey = folderName + DELIMITER + caseUuid + DELIMITER + fileName + ZIP_EXTENSION;
+        InputStream inputStream = caseService.getCaseStream(caseKey).get();
+        try (TmpMultiPartFile file = new TmpMultiPartFile(inputStream, caseKey, "application/zip")) {
+            try (InputStream in = CaseControllerTest.class.getResourceAsStream("/" + fileName + ZIP_EXTENSION)) {
+                assertNotNull(in);
+                byte[] bytes = in.readAllBytes();
+                Assertions.assertEquals(bytes.length, file.getSize());
+                Assertions.assertEquals("application/zip", file.getContentType());
+                assertFalse(file.isEmpty());
+                File tmpFile = new File("/tmp/testFile.zip");
+                file.transferTo(tmpFile);
+                assertTrue(tmpFile.exists());
+                tmpFile.delete();
+            }
+        }
     }
 }

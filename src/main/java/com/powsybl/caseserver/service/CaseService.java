@@ -8,6 +8,7 @@ package com.powsybl.caseserver.service;
 
 import com.google.re2j.Pattern;
 import com.powsybl.caseserver.CaseException;
+import com.powsybl.caseserver.datasource.utils.TmpMultiPartFile;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.parsers.FileNameInfos;
@@ -21,6 +22,7 @@ import com.powsybl.computation.local.LocalComputationManager;
 import com.powsybl.iidm.network.Importer;
 import com.powsybl.ws.commons.SecuredTarInputStream;
 import com.powsybl.ws.commons.SecuredZipInputStream;
+import lombok.Getter;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.utils.FileNameUtils;
@@ -73,8 +75,10 @@ public class CaseService {
     public static final int MAX_ARCHIVE_ENTRIES = 1000;
     public static final String DELIMITER = "/";
 
+    @Getter
     private ComputationManager computationManager = LocalComputationManager.getDefault();
 
+    @Getter
     @Autowired
     private final CaseMetadataRepository caseMetadataRepository;
 
@@ -263,6 +267,30 @@ public class CaseService {
         return UUID.fromString(keyWithoutRootDirectory.substring(0, firstSlash));
     }
 
+    public Optional<InputStream> getCaseStream(UUID caseUuid) {
+        try {
+            return getCaseStream(uuidToKeyWithOriginalFileName(caseUuid));
+        } catch (CaseException | ResponseStatusException e) {
+            LOGGER.error(e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    public Optional<InputStream> getCaseStream(String caseFileKey) {
+        try {
+            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(caseFileKey)
+                .build();
+
+            ResponseInputStream<GetObjectResponse> responseInputStream = s3Client.getObject(getObjectRequest);
+            return Optional.of(responseInputStream);
+        } catch (NoSuchKeyException e) {
+            LOGGER.error("The expected key does not exist in the bucket s3 : {}", caseFileKey);
+            return Optional.empty();
+        }
+    }
+
     private String parseFilenameFromKey(String key) {
         String keyWithoutRootDirectory = key.replaceAll(rootDirectory + DELIMITER, "");
         int firstSlash = keyWithoutRootDirectory.indexOf(DELIMITER);
@@ -316,26 +344,6 @@ public class CaseService {
             throw CaseException.createOriginalFileNotFound(caseUuid);
         }
         return originalFilename;
-    }
-
-    public Optional<InputStream> getCaseStream(UUID caseUuid) {
-        String caseFileKey = null;
-        try {
-            caseFileKey = uuidToKeyWithOriginalFileName(caseUuid);
-            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(caseFileKey)
-                    .build();
-
-            ResponseInputStream<GetObjectResponse> responseInputStream = s3Client.getObject(getObjectRequest);
-            return Optional.of(responseInputStream);
-        } catch (NoSuchKeyException e) {
-            LOGGER.error("The expected key does not exist in the bucket s3 : {}", caseFileKey);
-            return Optional.empty();
-        } catch (CaseException | ResponseStatusException e) {
-            LOGGER.error(e.getMessage());
-            return Optional.empty();
-        }
     }
 
     public List<CaseInfos> getCases() {
@@ -456,7 +464,6 @@ public class CaseService {
     public UUID importCase(MultipartFile mpf, boolean withExpiration, boolean withIndexation, UUID caseUuid) {
         String caseName = Objects.requireNonNull(mpf.getOriginalFilename());
         validateCaseName(caseName);
-
         String format = withTempCopy(caseUuid, caseName, mpf::transferTo, this::getFormat);
         String compressionFormat = FileNameUtils.getExtension(Paths.get(caseName));
 
@@ -497,6 +504,13 @@ public class CaseService {
         notificationService.sendImportMessage(caseInfos.createMessage());
 
         return caseUuid;
+    }
+
+    public void importCase(UUID caseUuid, String caseKey, String contentType, boolean withExpiration, boolean withIndexation) throws IOException {
+        InputStream inputStream = getCaseStream(caseKey).orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "The expected key does not exist in the bucket s3 : " + caseKey));
+        try (TmpMultiPartFile mpf = new TmpMultiPartFile(inputStream, caseKey, contentType)) {
+            caseObserver.observeCaseImport(mpf.getSize(), () -> importCase(mpf, withExpiration, withIndexation, caseUuid));
+        }
     }
 
     private void compressAndUploadToS3(UUID caseUuid, String fileName, String contentType, InputStream inputStream) {
@@ -658,14 +672,6 @@ public class CaseService {
 
     public void setComputationManager(ComputationManager computationManager) {
         this.computationManager = Objects.requireNonNull(computationManager);
-    }
-
-    public ComputationManager getComputationManager() {
-        return computationManager;
-    }
-
-    public CaseMetadataRepository getCaseMetadataRepository() {
-        return caseMetadataRepository;
     }
 
 }
