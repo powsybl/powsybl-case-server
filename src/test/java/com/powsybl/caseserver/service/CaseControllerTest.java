@@ -50,13 +50,11 @@ import java.util.zip.GZIPOutputStream;
 
 import static com.powsybl.caseserver.Utils.ZIP_EXTENSION;
 import static com.powsybl.caseserver.service.CaseService.DELIMITER;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
@@ -272,6 +270,7 @@ class CaseControllerTest implements MinioContainerConfig {
             byte[] expectedGzippedBytes = byteArrayOutputStream.toByteArray();
             mvc.perform(get(GET_CASE_URL, firstCaseUuid))
                     .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Disposition", "attachment; filename=\"" + TEST_CASE + "\""))
                     .andExpect(content().bytes(expectedGzippedBytes))
                     .andReturn();
         }
@@ -280,6 +279,7 @@ class CaseControllerTest implements MinioContainerConfig {
         mvc.perform(get(GET_CASE_URL, gzipCaseUuid))
                 .andExpect(status().isOk())
                 .andExpect(content().bytes(getClass().getResourceAsStream("/" + TEST_GZIP_CASE).readAllBytes()))
+                .andExpect(header().string("Content-Disposition", "attachment; filename=\"" + TEST_GZIP_CASE + "\""))
                 .andReturn();
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
