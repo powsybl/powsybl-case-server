@@ -7,9 +7,11 @@
 package com.powsybl.caseserver;
 
 import com.powsybl.commons.datasource.DataSourceUtil;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * @author Etienne Lesot <etienne.lesot at rte-france.com>
@@ -23,6 +25,7 @@ public final class Utils {
     public static final String GZIP_EXTENSION = ".gz";
     public static final String GZIP_FORMAT = "gz";
     public static final String GZIP_ENCODING = "gzip";
+    public static final String ZIP_EXTENSION = ".zip";
     public static final List<String> COMPRESSION_FORMATS = List.of("bz2", GZIP_FORMAT, "xz", "zst");
     public static final List<String> ARCHIVE_FORMATS = List.of("zip", "tar");
     public static final String NOT_FOUND = " not found";
@@ -53,12 +56,15 @@ public final class Utils {
 
     public static HttpHeaders buildHeaders(String name, Boolean isUploadedAsPlainFile) {
         String baseName = DataSourceUtil.getBaseName(name);
-        String extension = name.replaceFirst(baseName + ".", "");
+        String extension = name.replaceFirst(Pattern.quote(baseName) + ".", "");
         HttpHeaders headers = new HttpHeaders();
         headers.add("extension", extension);
         if (Boolean.TRUE.equals(isUploadedAsPlainFile)) {
             headers.add(HttpHeaders.CONTENT_ENCODING, GZIP_ENCODING);
         }
+        headers.setContentDisposition(
+                ContentDisposition.attachment().filename(name).build()
+        );
         return headers;
     }
 }

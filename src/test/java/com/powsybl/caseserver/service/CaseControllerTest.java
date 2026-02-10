@@ -9,12 +9,16 @@ package com.powsybl.caseserver.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
+import com.powsybl.caseserver.datasource.utils.TmpMultiPartFile;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
+import com.powsybl.computation.ComputationManager;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -27,8 +31,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.web.server.ResponseStatusException;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
@@ -39,12 +48,13 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.zip.GZIPOutputStream;
 
+import static com.powsybl.caseserver.Utils.ZIP_EXTENSION;
+import static com.powsybl.caseserver.service.CaseService.DELIMITER;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
@@ -53,8 +63,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ContextConfigurationWithTestChannel
-abstract class AbstractCaseControllerTest {
+class CaseControllerTest implements MinioContainerConfig {
     static final String TEST_CASE = "testCase.xiidm";
+    static final String TEST_CASE_2 = "test(2)Case.xiidm";
     static final String TEST_GZIP_CASE = "LF.xml.gz";
     private static final String TEST_TAR_CASE = "tarCase.tar";
     private static final String TEST_CASE_FORMAT = "XIIDM";
@@ -69,6 +80,7 @@ abstract class AbstractCaseControllerTest {
     @Autowired
     protected MockMvc mvc;
 
+    @Autowired
     CaseService caseService;
 
     @Autowired
@@ -82,12 +94,38 @@ abstract class AbstractCaseControllerTest {
 
     final String caseImportDestination = "case.import.destination";
 
-    abstract void addRandomFile() throws IOException;
+    void addRandomFile() {
+        RequestBody requestBody = RequestBody.fromString("");
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(caseService.getBucketName())
+                .key(caseService.getRootDirectory() + "/randomFile.txt")
+                .contentType("application/octet-stream")
+                .build();
+        caseService.getS3Client().putObject(putObjectRequest, requestBody);
+    }
 
-    abstract void removeFile(String caseKey) throws IOException;
+    void removeFile(String caseKey) {
+        List<ObjectIdentifier> objectsToDelete = caseService.getS3Client().listObjectsV2(builder -> builder.bucket(caseService.getBucketName()).prefix(caseService.getRootDirectory() + "/" + caseKey))
+                .contents()
+                .stream()
+                .map(s3Object -> ObjectIdentifier.builder().key(s3Object.key()).build())
+                .toList();
+        DeleteObjectsRequest deleteObjectsRequest = DeleteObjectsRequest.builder()
+                .bucket(caseService.getBucketName())
+                .delete(delete -> delete.objects(objectsToDelete))
+                .build();
+        caseService.getS3Client().deleteObjects(deleteObjectsRequest);
+    }
+
+    @BeforeEach
+    void setUp() {
+        caseService.setComputationManager(Mockito.mock(ComputationManager.class));
+        caseService.deleteAllCases();
+        outputDestination.clear();
+    }
 
     private static MockMultipartFile createMockMultipartFile(String fileName) throws IOException {
-        try (InputStream inputStream = AbstractCaseControllerTest.class.getResourceAsStream("/" + fileName)) {
+        try (InputStream inputStream = CaseControllerTest.class.getResourceAsStream("/" + fileName)) {
             return new MockMultipartFile("file", fileName, MediaType.TEXT_PLAIN_VALUE, inputStream);
         }
     }
@@ -159,22 +197,22 @@ abstract class AbstractCaseControllerTest {
         // import a non valid case and expect a fail
         mvc.perform(multipart("/v1/cases")
                         .file(createMockMultipartFile(NOT_A_NETWORK)))
-            .andExpect(status().isUnprocessableEntity())
-            .andExpect(result -> {
-                Throwable ex = result.getResolvedException();
-                assertNotNull(ex);
-                Assertions.assertTrue(ex.getMessage().contains("No available importer found for this file:"));
-            });
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(result -> {
+                    Throwable ex = result.getResolvedException();
+                    assertNotNull(ex);
+                    Assertions.assertTrue(ex.getMessage().contains("No available importer found for this file:"));
+                });
 
         // import a non valid case with a valid extension and expect a fail
         mvc.perform(multipart("/v1/cases")
                         .file(createMockMultipartFile(STILL_NOT_A_NETWORK)))
-            .andExpect(status().isUnprocessableEntity())
-            .andExpect(result -> {
-                Throwable ex = result.getResolvedException();
-                assertNotNull(ex);
-                Assertions.assertTrue(ex.getMessage().contains("No available importer found for this file:"));
-            });
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(result -> {
+                    Throwable ex = result.getResolvedException();
+                    assertNotNull(ex);
+                    Assertions.assertTrue(ex.getMessage().contains("No available importer found for this file:"));
+                });
     }
 
     @Test
@@ -183,6 +221,18 @@ abstract class AbstractCaseControllerTest {
         mvc.perform(get(GET_CASE_URL, UUID.randomUUID()))
                 .andExpect(status().isNoContent())
                 .andReturn();
+    }
+
+    @Test
+    void testDownloadCaseWithSpecialCharacters() throws Exception {
+        UUID caseUuid = importCase(TEST_CASE_2, false);
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
+
+        mvc.perform(get(GET_CASE_URL, caseUuid))
+                .andExpect(status().isOk())
+                .andDo(result ->
+                        assertEquals(TEST_CASE_FORMAT.toLowerCase(), result.getResponse().getHeader("extension"))
+            );
     }
 
     @Test
@@ -226,6 +276,7 @@ abstract class AbstractCaseControllerTest {
             byte[] expectedGzippedBytes = byteArrayOutputStream.toByteArray();
             mvc.perform(get(GET_CASE_URL, firstCaseUuid))
                     .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Disposition", "attachment; filename=\"" + TEST_CASE + "\""))
                     .andExpect(content().bytes(expectedGzippedBytes))
                     .andReturn();
         }
@@ -234,6 +285,7 @@ abstract class AbstractCaseControllerTest {
         mvc.perform(get(GET_CASE_URL, gzipCaseUuid))
                 .andExpect(status().isOk())
                 .andExpect(content().bytes(getClass().getResourceAsStream("/" + TEST_GZIP_CASE).readAllBytes()))
+                .andExpect(header().string("Content-Disposition", "attachment; filename=\"" + TEST_GZIP_CASE + "\""))
                 .andReturn();
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
@@ -735,7 +787,7 @@ abstract class AbstractCaseControllerTest {
     }
 
     @Test
-    public void testTar() throws Exception {
+    void testTar() throws Exception {
         // import a case
         UUID tarCaseUuid = importCase(TEST_TAR_CASE, false);
 
@@ -799,5 +851,76 @@ abstract class AbstractCaseControllerTest {
         removeFile(firstCaseUuid.toString());
         assertThrows(ResponseStatusException.class, () -> caseService.duplicateCase(firstCaseUuid, false));
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
+    }
+
+    void addZipCaseFile(UUID caseUuid, String folderName, String fileName) throws IOException {
+        try (InputStream inputStream = CaseControllerTest.class.getResourceAsStream("/" + fileName + ZIP_EXTENSION)) {
+            if (inputStream != null) {
+                RequestBody requestBody = RequestBody.fromBytes(inputStream.readAllBytes());
+                PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(caseService.getBucketName())
+                    .key(folderName + DELIMITER + caseUuid + DELIMITER + fileName + ZIP_EXTENSION)
+                    .contentType("application/zip")
+                    .build();
+                caseService.getS3Client().putObject(putObjectRequest, requestBody);
+            }
+        }
+    }
+
+    @Test
+    void testCreateCase() throws Exception {
+
+        UUID caseUuid = UUID.randomUUID();
+        String folderName = "network_exports";
+        String fileName = "zippedTestCase";
+
+        // create zip case in one folder in bucket
+        addZipCaseFile(caseUuid, folderName, fileName);
+
+        mvc.perform(post("/v1/cases")
+                .param("caseKey", folderName + DELIMITER + caseUuid + DELIMITER + fileName + ZIP_EXTENSION)
+                .param("contentType", "application/zip"))
+            .andExpect(status().isOk());
+
+        assertNotNull(outputDestination.receive(1000, caseImportDestination));
+    }
+
+    @Test
+    void testCreateCaseKo() throws Exception {
+
+        UUID caseUuid = UUID.randomUUID();
+        String folderName = "network_exports";
+        String fileName = "testCase4";
+
+        mvc.perform(post("/v1/cases")
+                .param("caseKey", folderName + DELIMITER + caseUuid + DELIMITER + fileName)
+                .param("contentType", "application/zip"))
+            .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void testS3MultiPartFile() throws IOException {
+        UUID caseUuid = UUID.randomUUID();
+        String folderName = "network_exports";
+        String fileName = "zippedTestCase";
+
+        // create zip case in one folder in bucket
+        addZipCaseFile(caseUuid, folderName, fileName);
+
+        String caseKey = folderName + DELIMITER + caseUuid + DELIMITER + fileName + ZIP_EXTENSION;
+        InputStream inputStream = caseService.getCaseStream(caseKey).get();
+        try (TmpMultiPartFile file = new TmpMultiPartFile(inputStream, caseKey, "application/zip")) {
+            try (InputStream in = CaseControllerTest.class.getResourceAsStream("/" + fileName + ZIP_EXTENSION)) {
+                assertNotNull(in);
+                byte[] bytes = in.readAllBytes();
+                Assertions.assertEquals(bytes.length, file.getSize());
+                Assertions.assertEquals("application/zip", file.getContentType());
+                assertFalse(file.isEmpty());
+                File tmpFile = new File("/tmp/testFile.zip");
+                file.transferTo(tmpFile);
+                assertTrue(tmpFile.exists());
+                tmpFile.delete();
+            }
+        }
     }
 }

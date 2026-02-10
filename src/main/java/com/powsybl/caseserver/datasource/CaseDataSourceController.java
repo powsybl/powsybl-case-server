@@ -10,8 +10,6 @@ import com.powsybl.caseserver.CaseConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
@@ -31,11 +29,9 @@ import java.util.UUID;
 @RestController
 @RequestMapping(value = "/" + CaseConstants.API_VERSION)
 @Tag(name = "Case datasource util")
-@ComponentScan(basePackageClasses = {CaseDataSourceService.class})
 public class CaseDataSourceController {
 
     @Autowired
-    @Qualifier("caseDataSourceService")
     private CaseDataSourceService caseDataSourceService;
 
     @GetMapping(value = "/cases/{caseUuid}/datasource/baseName")

@@ -10,8 +10,8 @@ import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.error.CaseRuntimeException;
 import com.powsybl.caseserver.service.CaseObserver;
-import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.caseserver.service.MetadataService;
+import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.commons.datasource.DataSourceUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -20,22 +20,24 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static com.powsybl.caseserver.Utils.buildHeaders;
+
 /**
  * @author Abdelsalem Hedhili <abdelsalem.hedhili at rte-france.com>
  * @author Franck Lecuyer <franck.lecuyer at rte-france.com>
@@ -49,7 +51,6 @@ public class CaseController {
     private static final Logger LOGGER = LoggerFactory.getLogger(CaseController.class);
 
     @Autowired
-    @Qualifier("storageService")
     private CaseService caseService;
 
     @Autowired
@@ -139,7 +140,7 @@ public class CaseController {
                                            @RequestParam(value = "withIndexation", required = false, defaultValue = "false") boolean withIndexation) {
         LOGGER.debug("importCase request received with file = {}", file.getOriginalFilename());
         UUID caseUuid = UUID.randomUUID();
-        caseObserver.observeCaseImport(file.getSize(), caseService.getStorageType(), () -> caseService.importCase(file, withExpiration, withIndexation, caseUuid));
+        caseObserver.observeCaseImport(file.getSize(), () -> caseService.importCase(file, withExpiration, withIndexation, caseUuid));
         return ResponseEntity.ok().body(caseUuid);
     }
 
@@ -154,6 +155,27 @@ public class CaseController {
         LOGGER.debug("duplicateCase request received with parameter sourceCaseUuid = {}", caseId);
         UUID newCaseUuid = caseService.duplicateCase(caseId, withExpiration);
         return ResponseEntity.ok().body(newCaseUuid);
+    }
+
+    @PostMapping(value = "/cases", params = {"caseKey", "contentType"})
+    @Operation(summary = "import a case from an s3 object")
+    @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "Case created"),
+        @ApiResponse(responseCode = "404", description = "Source case not found"),
+        @ApiResponse(responseCode = "500", description = "An error occurred during the case file creation")})
+    public ResponseEntity<UUID> importCaseFromS3Key(
+        @RequestParam("caseKey") String caseFolderKey,
+        @RequestParam("contentType") String contentType,
+        @RequestParam(value = "withExpiration", required = false, defaultValue = "false") boolean withExpiration,
+        @RequestParam(value = "withIndexation", required = false, defaultValue = "false") boolean withIndexation) {
+
+        try {
+            UUID uuid = UUID.randomUUID();
+            caseService.importCase(uuid, caseFolderKey, contentType, withExpiration, withIndexation);
+            return ResponseEntity.ok().body(uuid);
+        } catch (IOException e) {
+            LOGGER.error("Failed to create case from S3 for caseFolderKey: {}", caseFolderKey, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @PutMapping(value = "/cases/{caseUuid}/disableExpiration")

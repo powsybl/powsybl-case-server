@@ -6,7 +6,6 @@
  */
 package com.powsybl.caseserver.service;
 
-import com.powsybl.caseserver.service.CaseService.StorageType;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.Observation;
@@ -20,7 +19,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class CaseObserver {
     private static final String OBSERVATION_PREFIX = "app.case.";
-    private static final String STORAGE_TYPE_TAG_NAME = "storage_type";
 
     private static final String CASE_WRITING_OBSERVATION_NAME = OBSERVATION_PREFIX + "writing";
     private static final String CASE_IMPORT_OBSERVATION_NAME = OBSERVATION_PREFIX + "import";
@@ -36,27 +34,25 @@ public class CaseObserver {
         this.meterRegistry = meterRegistry;
     }
 
-    public <E extends Throwable> void observeCaseWriting(StorageType storageType, Observation.CheckedRunnable<E> runnable) throws E {
-        createObservation(CASE_WRITING_OBSERVATION_NAME, storageType).observeChecked(runnable);
+    public <E extends Throwable> void observeCaseWriting(Observation.CheckedRunnable<E> runnable) throws E {
+        createObservation(CASE_WRITING_OBSERVATION_NAME).observeChecked(runnable);
     }
 
-    public <E extends Throwable> void observeCaseImport(long caseSize, StorageType storageType, Observation.CheckedRunnable<E> runnable) throws E {
-        createObservation(CASE_IMPORT_OBSERVATION_NAME, storageType).observeChecked(runnable);
-        recordCaseSize(caseSize, storageType);
+    public <E extends Throwable> void observeCaseImport(long caseSize, Observation.CheckedRunnable<E> runnable) throws E {
+        createObservation(CASE_IMPORT_OBSERVATION_NAME).observeChecked(runnable);
+        recordCaseSize(caseSize);
     }
 
-    public <E extends Throwable> Boolean observeCaseExist(StorageType storageType, Observation.CheckedCallable<Boolean, E> callable) throws E {
-        return createObservation(CASE_EXIST_OBSERVATION_NAME, storageType).observeChecked(callable);
+    public <E extends Throwable> Boolean observeCaseExist(Observation.CheckedCallable<Boolean, E> callable) throws E {
+        return createObservation(CASE_EXIST_OBSERVATION_NAME).observeChecked(callable);
     }
 
-    private Observation createObservation(String name, StorageType storageType) {
-        return Observation.createNotStarted(name, observationRegistry)
-            .lowCardinalityKeyValue(STORAGE_TYPE_TAG_NAME, storageType.name());
+    private Observation createObservation(String name) {
+        return Observation.createNotStarted(name, observationRegistry);
     }
 
-    private void recordCaseSize(long size, StorageType storageType) {
+    private void recordCaseSize(long size) {
         DistributionSummary.builder(CASE_SIZE_METER_NAME)
-            .tags(STORAGE_TYPE_TAG_NAME, storageType.name())
             .register(meterRegistry)
             .record(size);
     }

@@ -7,29 +7,38 @@
 package com.powsybl.caseserver.datasource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
 import com.powsybl.caseserver.elasticsearch.DisableElasticsearch;
 import com.powsybl.caseserver.service.CaseService;
+import com.powsybl.caseserver.service.MinioContainerConfig;
 import com.powsybl.commons.datasource.DataSource;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -40,7 +49,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @DisableElasticsearch
 @Import(DisableElasticsearch.MockConfig.class)
-public abstract class AbstractCaseDataSourceControllerTest {
+@AutoConfigureMockMvc
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
+@ContextConfigurationWithTestChannel
+class CaseDataSourceControllerTest implements MinioContainerConfig {
 
     @MockitoBean
     StreamBridge streamBridge;
@@ -48,7 +60,8 @@ public abstract class AbstractCaseDataSourceControllerTest {
     @Autowired
     private MockMvc mvc;
 
-    protected static CaseService caseService;
+    @Autowired
+    private CaseService caseService;
 
     static final String CGMES_ZIP_NAME = "CGMES_v2415_MicroGridTestConfiguration_BC_BE_v2.zip";
 
@@ -74,36 +87,67 @@ public abstract class AbstractCaseDataSourceControllerTest {
 
     protected DataSource iidmDataSource;
 
-    protected static UUID importCase(String filename, String contentType) throws IOException {
+    protected UUID importCase(String filename, String contentType) throws IOException {
         UUID caseUuid = UUID.randomUUID();
-        try (InputStream inputStream = S3CaseDataSourceControllerTest.class.getResourceAsStream("/" + filename)) {
+        try (InputStream inputStream = CaseDataSourceControllerTest.class.getResourceAsStream("/" + filename)) {
             caseService.importCase(new MockMultipartFile(filename, filename, contentType, inputStream.readAllBytes()), false, false, caseUuid);
         }
         return caseUuid;
     }
 
+    @BeforeEach
+    void setUp() throws URISyntaxException, IOException {
+
+        //insert a cgmes in the FS
+        cgmesCaseUuid = importCase(CGMES_ZIP_NAME, "application/zip");
+        cgmesDataSource = DataSource.fromPath(Paths.get(CaseDataSourceControllerTest.class.getResource("/" + CGMES_ZIP_NAME).toURI()));
+
+        // insert plain file in the FS
+        iidmCaseUuid = importCase(IIDM_FILE_NAME, "text/plain");
+        iidmDataSource = DataSource.fromPath(Paths.get(CaseDataSourceControllerTest.class.getResource("/" + IIDM_FILE_NAME).toURI()));
+
+        // insert tar in the FS
+        tarCaseUuid = importCase(IIDM_TAR_NAME, "application/tar");
+        tarDataSource = DataSource.fromPath(Paths.get(CaseDataSourceControllerTest.class.getResource("/" + IIDM_TAR_NAME).toURI()));
+    }
+
     @Test
-    public void testBaseName() throws Exception {
+    void testExistsPlainWithExtraFolder() throws IOException {
+        UUID caseUuid = importCase(IIDM_FILE_NAME, "text/plain");
+
+        // Some implementations create an entry for the directory, mimic this behavior
+        // minio doesn't do this so we do it manually
+        S3Client s3client = caseService.getS3Client();
+        s3client.putObject(PutObjectRequest.builder()
+                .bucket(caseService.getBucketName())
+                .key(caseService.uuidToKeyPrefix(caseUuid))
+                .build(), RequestBody.empty());
+
+        assertTrue(caseService.datasourceExists(caseUuid, IIDM_FILE_NAME), "datasourceExist should return true for a plain file even if there is a empty key for the directory");
+    }
+
+    @Test
+    void testBaseName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/baseName", cgmesCaseUuid))
                 .andExpect(status().isOk())
                 .andReturn();
 
-        assertEquals(cgmesDataSource.getBaseName(), mvcResult.getResponse().getContentAsString());
+        Assertions.assertEquals(cgmesDataSource.getBaseName(), mvcResult.getResponse().getContentAsString());
     }
 
     @Test
-    public void testListName() throws Exception {
+    void testListName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/list", cgmesCaseUuid)
                         .param("regex", ".*"))
                 .andExpect(status().isOk())
                 .andReturn();
 
         Set<String> nameList = mapper.readValue(mvcResult.getResponse().getContentAsString(), Set.class);
-        assertEquals(cgmesDataSource.listNames(".*"), nameList);
+        Assertions.assertEquals(cgmesDataSource.listNames(".*"), nameList);
     }
 
     @Test
-    public void testInputStreamWithFileName() throws Exception {
+    void testInputStreamWithFileName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", cgmesCaseUuid)
                         .param("fileName", CGMES_FILE_NAME))
                 .andExpect(status().isOk())
@@ -116,7 +160,7 @@ public abstract class AbstractCaseDataSourceControllerTest {
             while ((str = reader.readLine()) != null) {
                 datasourceResponse.append(str).append("\n");
             }
-            assertEquals(datasourceResponse.toString(), mvcResult.getResponse().getContentAsString());
+            Assertions.assertEquals(datasourceResponse.toString(), mvcResult.getResponse().getContentAsString());
         }
     }
 
@@ -133,49 +177,49 @@ public abstract class AbstractCaseDataSourceControllerTest {
     }
 
     @Test
-    public void testInputStreamWithZipFile() throws Exception {
+    void testInputStreamWithZipFile() throws Exception {
         String zipName = "LF.zip";
         String fileName = "LF.xml";
         UUID caseUuid = importCase(zipName, "application/zip");
-        DataSource dataSource = DataSource.fromPath(Paths.get(S3CaseDataSourceControllerTest.class.getResource("/" + zipName).toURI()));
+        DataSource dataSource = DataSource.fromPath(Paths.get(CaseDataSourceControllerTest.class.getResource("/" + zipName).toURI()));
 
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", caseUuid)
                 .param("fileName", fileName))
                 .andExpect(status().isOk())
                 .andReturn();
-        assertEquals(readDataSource(dataSource, fileName), mvcResult.getResponse().getContentAsString());
+        Assertions.assertEquals(readDataSource(dataSource, fileName), mvcResult.getResponse().getContentAsString());
     }
 
     @Test
-    public void testInputStreamWithGZipFile() throws Exception {
+    void testInputStreamWithGZipFile() throws Exception {
         String gzipName = "LF.xml.gz";
         String fileName = "LF.xml";
         UUID caseUuid = importCase(gzipName, "application/zip");
-        DataSource dataSource = DataSource.fromPath(Paths.get(S3CaseDataSourceControllerTest.class.getResource("/" + gzipName).toURI()));
+        DataSource dataSource = DataSource.fromPath(Paths.get(CaseDataSourceControllerTest.class.getResource("/" + gzipName).toURI()));
 
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", caseUuid)
                         .param("fileName", fileName))
                 .andExpect(status().isOk())
                 .andReturn();
-        assertEquals(readDataSource(dataSource, fileName), mvcResult.getResponse().getContentAsString());
+        Assertions.assertEquals(readDataSource(dataSource, fileName), mvcResult.getResponse().getContentAsString());
     }
 
     @Test
-    public void testInputStreamWithXiidmPlainFile() throws Exception {
+    void testInputStreamWithXiidmPlainFile() throws Exception {
         String fileName = "LF.xml";
         UUID caseUuid = importCase(fileName, "application/zip");
-        DataSource dataSource = DataSource.fromPath(Paths.get(S3CaseDataSourceControllerTest.class.getResource("/" + fileName).toURI()));
+        DataSource dataSource = DataSource.fromPath(Paths.get(CaseDataSourceControllerTest.class.getResource("/" + fileName).toURI()));
 
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", caseUuid)
                         .param("fileName", fileName))
                 .andExpect(status().isOk())
                 .andReturn();
 
-        assertEquals(readDataSource(dataSource, fileName), mvcResult.getResponse().getContentAsString());
+        Assertions.assertEquals(readDataSource(dataSource, fileName), mvcResult.getResponse().getContentAsString());
     }
 
     @Test
-    public void testInputStreamWithSuffixExt() throws Exception {
+    void testInputStreamWithSuffixExt() throws Exception {
         String suffix = "/MicroGridTestConfiguration_BC_BE_DL_V2";
         String ext = "xml";
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", cgmesCaseUuid)
@@ -191,19 +235,19 @@ public abstract class AbstractCaseDataSourceControllerTest {
             while ((str = reader.readLine()) != null) {
                 datasourceResponse.append(str).append("\n");
             }
-            assertEquals(datasourceResponse.toString(), mvcResult.getResponse().getContentAsString());
+            Assertions.assertEquals(datasourceResponse.toString(), mvcResult.getResponse().getContentAsString());
         }
     }
 
     @Test
-    public void testExistsWithFileName() throws Exception {
+    void testExistsWithFileName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", cgmesCaseUuid)
                         .param("fileName", CGMES_FILE_NAME))
                 .andExpect(status().isOk())
                 .andReturn();
 
         Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertEquals(cgmesDataSource.exists(CGMES_FILE_NAME), res);
+        Assertions.assertEquals(cgmesDataSource.exists(CGMES_FILE_NAME), res);
 
         mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", cgmesCaseUuid)
                         .param("fileName", "random"))
@@ -211,11 +255,11 @@ public abstract class AbstractCaseDataSourceControllerTest {
                 .andReturn();
 
         res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertEquals(cgmesDataSource.exists("random"), res);
+        Assertions.assertEquals(cgmesDataSource.exists("random"), res);
     }
 
     @Test
-    public void testExistsWithSuffixExt() throws Exception {
+    void testExistsWithSuffixExt() throws Exception {
         String suffix = "random";
         String ext = "uct";
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", cgmesCaseUuid)
@@ -225,7 +269,7 @@ public abstract class AbstractCaseDataSourceControllerTest {
                 .andReturn();
 
         Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertEquals(cgmesDataSource.exists(suffix, ext), res);
+        Assertions.assertEquals(cgmesDataSource.exists(suffix, ext), res);
     }
 
     @Test
@@ -283,27 +327,27 @@ public abstract class AbstractCaseDataSourceControllerTest {
 
     // tar tests
     @Test
-    public void testTarBaseName() throws Exception {
+    void testTarBaseName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/baseName", tarCaseUuid))
                 .andExpect(status().isOk())
                 .andReturn();
 
-        assertEquals(tarDataSource.getBaseName(), mvcResult.getResponse().getContentAsString());
+        Assertions.assertEquals(tarDataSource.getBaseName(), mvcResult.getResponse().getContentAsString());
     }
 
     @Test
-    public void testTarListName() throws Exception {
+    void testTarListName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/list", tarCaseUuid)
                         .param("regex", ".*"))
                 .andExpect(status().isOk())
                 .andReturn();
 
         Set<String> nameList = mapper.readValue(mvcResult.getResponse().getContentAsString(), Set.class);
-        assertEquals(tarDataSource.listNames(".*"), nameList);
+        Assertions.assertEquals(tarDataSource.listNames(".*"), nameList);
     }
 
     @Test
-    public void testTarInputStreamWithFileName() throws Exception {
+    void testTarInputStreamWithFileName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource", tarCaseUuid)
                         .param("fileName", PLAIN_IIDM_TAR_NAME))
                 .andExpect(status().isOk())
@@ -316,19 +360,19 @@ public abstract class AbstractCaseDataSourceControllerTest {
             while ((str = reader.readLine()) != null) {
                 datasourceResponse.append(str).append("\n");
             }
-            assertEquals(datasourceResponse.toString(), mvcResult.getResponse().getContentAsString());
+            Assertions.assertEquals(datasourceResponse.toString(), mvcResult.getResponse().getContentAsString());
         }
     }
 
     @Test
-    public void testTarExistsWithFileName() throws Exception {
+    void testTarExistsWithFileName() throws Exception {
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", tarCaseUuid)
                         .param("fileName", IIDM_TAR_NAME))
                 .andExpect(status().isOk())
                 .andReturn();
 
         Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertEquals(tarDataSource.exists(IIDM_TAR_NAME), res);
+        Assertions.assertEquals(tarDataSource.exists(IIDM_TAR_NAME), res);
 
         mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", tarCaseUuid)
                         .param("fileName", "random"))
@@ -336,11 +380,11 @@ public abstract class AbstractCaseDataSourceControllerTest {
                 .andReturn();
 
         res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertEquals(tarDataSource.exists("random"), res);
+        Assertions.assertEquals(tarDataSource.exists("random"), res);
     }
 
     @Test
-    public void testTarExistsWithSuffixExt() throws Exception {
+    void testTarExistsWithSuffixExt() throws Exception {
         String suffix = "random";
         String ext = "uct";
         MvcResult mvcResult = mvc.perform(get("/v1/cases/{caseUuid}/datasource/exists", tarCaseUuid)
@@ -350,7 +394,7 @@ public abstract class AbstractCaseDataSourceControllerTest {
                 .andReturn();
 
         Boolean res = mapper.readValue(mvcResult.getResponse().getContentAsString(), Boolean.class);
-        assertEquals(tarDataSource.exists(suffix, ext), res);
+        Assertions.assertEquals(tarDataSource.exists(suffix, ext), res);
     }
 
 }
