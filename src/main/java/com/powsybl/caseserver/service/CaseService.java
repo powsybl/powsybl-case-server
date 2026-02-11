@@ -7,10 +7,11 @@
 package com.powsybl.caseserver.service;
 
 import com.google.re2j.Pattern;
-import com.powsybl.caseserver.CaseException;
 import com.powsybl.caseserver.datasource.utils.TmpMultiPartFile;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
+import com.powsybl.caseserver.error.CaseBusinessException;
+import com.powsybl.caseserver.error.CaseRuntimeException;
 import com.powsybl.caseserver.parsers.FileNameInfos;
 import com.powsybl.caseserver.parsers.FileNameParser;
 import com.powsybl.caseserver.parsers.FileNameParsers;
@@ -108,7 +109,7 @@ public class CaseService {
     void validateCaseName(String caseName) {
         Objects.requireNonNull(caseName);
         if (!caseName.matches("[^<>:\"/|?*]+(\\.[\\w]+)")) {
-            throw CaseException.createIllegalCaseName(caseName);
+            throw CaseBusinessException.createIllegalCaseName(caseName);
         }
     }
 
@@ -155,7 +156,7 @@ public class CaseService {
         DataSource dataSource = DataSource.fromPath(caseFile);
         Importer importer = Importer.find(dataSource, getComputationManager());
         if (importer == null) {
-            throw CaseException.createFileNotImportable(caseFile);
+            throw CaseBusinessException.noAvailableImporter(caseFile);
         }
         return importer;
     }
@@ -202,21 +203,23 @@ public class CaseService {
             }
             // after this line, need to cleanup the dir
         } catch (IOException e) {
-            throw CaseException.createTempDirectory(caseUuid, e);
+            throw CaseRuntimeException.tempDirectoryCreation(caseUuid, e);
         }
         try {
             tempCasePath = tempdirPath.resolve(filename);
             try {
                 contentInitializer.accept(tempCasePath);
             } catch (Exception e) {
-                throw CaseException.createInitTempFileError(caseUuid, e);
+                throw CaseRuntimeException.initTempFile(caseUuid, e);
             }
             // after this line, need to cleanup the file
             try {
                 try {
                     return f.apply(tempCasePath);
+                } catch (CaseBusinessException businessException) {
+                    throw businessException;
                 } catch (Exception e) {
-                    throw CaseException.createFileNotImportable(tempdirPath.toString(), e);
+                    throw CaseRuntimeException.fileNotImportable(tempdirPath, e);
                 }
             } finally {
                 try {
@@ -270,7 +273,7 @@ public class CaseService {
     public Optional<InputStream> getCaseStream(UUID caseUuid) {
         try {
             return getCaseStream(uuidToKeyWithOriginalFileName(caseUuid));
-        } catch (CaseException | ResponseStatusException e) {
+        } catch (CaseRuntimeException | ResponseStatusException e) {
             LOGGER.error(e.getMessage());
             return Optional.empty();
         }
@@ -341,7 +344,7 @@ public class CaseService {
     public String getCaseName(UUID caseUuid) {
         String originalFilename = getOriginalFilename(caseUuid);
         if (originalFilename == null) {
-            throw CaseException.createOriginalFileNotFound(caseUuid);
+            throw CaseRuntimeException.originalFileNotFound(caseUuid);
         }
         return originalFilename;
     }
@@ -476,7 +479,7 @@ public class CaseService {
                     importTarContent(inputStream, caseUuid);
                 }
             } catch (IOException e) {
-                throw CaseException.createFileNotImportable(caseName, e);
+                throw CaseRuntimeException.fileNotImportable(Path.of(caseName), e);
             }
         }
 
@@ -493,7 +496,7 @@ public class CaseService {
                         RequestBody.fromInputStream(inputStream, mpf.getSize()));
             }
         } catch (IOException e) {
-            throw CaseException.createFileNotImportable(caseName, e);
+            throw CaseRuntimeException.fileNotImportable(Path.of(caseName), e);
         }
 
         createCaseMetadataEntity(caseUuid, withExpiration, withIndexation, caseName, compressionFormat, format);

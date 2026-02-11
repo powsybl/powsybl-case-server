@@ -198,15 +198,21 @@ class CaseControllerTest implements MinioContainerConfig {
         mvc.perform(multipart("/v1/cases")
                         .file(createMockMultipartFile(NOT_A_NETWORK)))
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(content().string(startsWith("This file cannot be imported")))
-                .andReturn();
+                .andExpect(result -> {
+                    Throwable ex = result.getResolvedException();
+                    assertNotNull(ex);
+                    Assertions.assertTrue(ex.getMessage().contains("No available importer found for this file:"));
+                });
 
         // import a non valid case with a valid extension and expect a fail
         mvc.perform(multipart("/v1/cases")
                         .file(createMockMultipartFile(STILL_NOT_A_NETWORK)))
                 .andExpect(status().isUnprocessableEntity())
-                .andExpect(content().string(startsWith("This file cannot be imported")))
-                .andReturn();
+                .andExpect(result -> {
+                    Throwable ex = result.getResolvedException();
+                    assertNotNull(ex);
+                    Assertions.assertTrue(ex.getMessage().contains("No available importer found for this file:"));
+                });
     }
 
     @Test
@@ -241,7 +247,7 @@ class CaseControllerTest implements MinioContainerConfig {
 
         // delete non existing file
         mvc.perform(delete(GET_CASE_URL, caseaseUuid))
-                .andExpect(content().string(startsWith("The directory with the following uuid doesn't exist:")))
+                .andExpect(content().string(containsString("The directory with the following uuid doesn't exist:")))
                 .andReturn();
 
     }
