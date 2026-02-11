@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * @author Mohamed Ben-rejeb <mohamed.ben-rejeb at rte-france.com>
  */
-public class CaseRuntimeExceptionTest {
+class CaseRuntimeExceptionTest {
     @Test
     void directoryNotFound() {
         UUID id = UUID.randomUUID();
