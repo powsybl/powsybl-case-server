@@ -1,9 +1,18 @@
+/**
+ * Copyright (c) 2026, RTE (http://www.rte-france.com)
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
 package com.powsybl.caseserver.error;
 
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * @author Mohamed Ben-rejeb <mohamed.ben-rejeb at rte-france.com>
+ */
 public class CaseRuntimeException extends RuntimeException {
 
     public CaseRuntimeException(String message) {
@@ -14,16 +23,6 @@ public class CaseRuntimeException extends RuntimeException {
         super(message, cause);
     }
 
-    public static CaseRuntimeException directoryAlreadyExists(String directory) {
-        Objects.requireNonNull(directory);
-        return new CaseRuntimeException("A directory with the same name already exists: " + directory);
-    }
-
-    public static CaseRuntimeException emptyDirectory(Path directory) {
-        Objects.requireNonNull(directory);
-        return new CaseRuntimeException("The directory is empty: " + directory);
-    }
-
     public static CaseRuntimeException directoryNotFound(UUID uuid) {
         Objects.requireNonNull(uuid);
         return new CaseRuntimeException("The directory with the following uuid doesn't exist: " + uuid);
@@ -32,16 +31,6 @@ public class CaseRuntimeException extends RuntimeException {
     public static CaseRuntimeException originalFileNotFound(UUID uuid) {
         Objects.requireNonNull(uuid);
         return new CaseRuntimeException("The original file were not retrieved in the directory with the following uuid: " + uuid);
-    }
-
-    public static CaseRuntimeException fileNameNotFound(UUID uuid) {
-        Objects.requireNonNull(uuid);
-        return new CaseRuntimeException("The file name with the following uuid doesn't exist: " + uuid);
-    }
-
-    public static CaseRuntimeException storageNotInitialized(Path storageRootDir) {
-        Objects.requireNonNull(storageRootDir);
-        return new CaseRuntimeException("The storage is not initialized: " + storageRootDir);
     }
 
     public static CaseRuntimeException tempDirectoryCreation(UUID uuid, Exception e) {
