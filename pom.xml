@@ -49,6 +49,8 @@
         <spring-cloud-aws-starter-s3>3.3.1</spring-cloud-aws-starter-s3>
         <!-- FIXME to remove when powsybl-ws-dependencies upgrades to springboot 3.5.9 -->
         <testcontainers.version>1.21.4</testcontainers.version>
+        <sonar.organization>powsybl-ci-github</sonar.organization>
+        <sonar.projectKey>com.powsybl:powsybl-case-server</sonar.projectKey>
     </properties>
 
     <build>
