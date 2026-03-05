@@ -12,9 +12,6 @@ import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.error.CaseBusinessException;
 import com.powsybl.caseserver.error.CaseRuntimeException;
-import com.powsybl.caseserver.parsers.FileNameInfos;
-import com.powsybl.caseserver.parsers.FileNameParser;
-import com.powsybl.caseserver.parsers.FileNameParsers;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.commons.datasource.DataSource;
@@ -123,14 +120,11 @@ public class CaseService {
     }
 
     public CaseInfos createInfos(String fileBaseName, UUID caseUuid, String format) {
-        FileNameParser parser = FileNameParsers.findParser(fileBaseName);
-        if (parser != null) {
-            Optional<? extends FileNameInfos> fileNameInfos = parser.parse(fileBaseName);
-            if (fileNameInfos.isPresent()) {
-                return CaseInfos.create(fileBaseName, caseUuid, format, fileNameInfos.get());
-            }
-        }
-        return CaseInfos.builder().name(fileBaseName).uuid(caseUuid).format(format).build();
+        return CaseInfos.builder()
+                .name(fileBaseName)
+                .uuid(caseUuid)
+                .format(format)
+                .build();
     }
 
     public void createCaseMetadataEntity(UUID newCaseUuid, boolean withExpiration, boolean withIndexation, String originalFilename, String compressionFormat, String format) {
