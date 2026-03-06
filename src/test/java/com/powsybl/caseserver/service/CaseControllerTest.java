@@ -11,6 +11,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
 import com.powsybl.caseserver.datasource.utils.TmpMultiPartFile;
 import com.powsybl.caseserver.dto.CaseInfos;
+import com.powsybl.caseserver.parsers.FileNameInfos;
+import com.powsybl.caseserver.parsers.FileNameParser;
+import com.powsybl.caseserver.parsers.FileNameParsers;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
 import com.powsybl.caseserver.repository.CaseMetadataEntity;
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
@@ -27,6 +30,7 @@ import org.springframework.http.MediaType;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -53,6 +57,8 @@ import static com.powsybl.caseserver.service.CaseService.DELIMITER;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -80,7 +86,7 @@ class CaseControllerTest implements MinioContainerConfig {
     @Autowired
     protected MockMvc mvc;
 
-    @Autowired
+    @MockitoSpyBean
     CaseService caseService;
 
     @Autowired
@@ -128,6 +134,21 @@ class CaseControllerTest implements MinioContainerConfig {
         try (InputStream inputStream = CaseControllerTest.class.getResourceAsStream("/" + fileName)) {
             return new MockMultipartFile("file", fileName, MediaType.TEXT_PLAIN_VALUE, inputStream);
         }
+    }
+
+    private CaseInfos parseWithLegacyParser(String fileBaseName, UUID caseUuid, String format) {
+        FileNameParser parser = FileNameParsers.findParser(fileBaseName);
+        if (parser != null) {
+            Optional<? extends FileNameInfos> fileNameInfos = parser.parse(fileBaseName);
+            if (fileNameInfos.isPresent()) {
+                return CaseInfos.create(fileBaseName, caseUuid, format, fileNameInfos.get());
+            }
+        }
+        return CaseInfos.builder()
+                .name(fileBaseName)
+                .uuid(caseUuid)
+                .format(format)
+                .build();
     }
 
     @Test
@@ -489,7 +510,13 @@ class CaseControllerTest implements MinioContainerConfig {
     @Test
     void searchCaseTest() throws Exception {
         caseService.deleteAllCases();
-
+        doAnswer(invocation ->
+                parseWithLegacyParser(
+                        invocation.getArgument(0),
+                        invocation.getArgument(1),
+                        invocation.getArgument(2)
+                )
+        ).when(caseService).createInfos(anyString(), Mockito.any(UUID.class), anyString());
         // import IIDM test case
         String aCase = mvc.perform(multipart("/v1/cases")
                 .file(createMockMultipartFile("testCase.xiidm"))
