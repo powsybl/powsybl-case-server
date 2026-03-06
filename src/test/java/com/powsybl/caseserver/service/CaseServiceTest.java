@@ -12,6 +12,7 @@ import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.dto.cgmes.CgmesCaseInfos;
 import com.powsybl.caseserver.dto.entsoe.EntsoeCaseInfos;
 import com.powsybl.caseserver.elasticsearch.DisableElasticsearch;
+import com.powsybl.caseserver.parsers.FileNameParsers;
 import com.powsybl.caseserver.parsers.cgmes.CgmesFileNameParser;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
 import com.powsybl.entsoe.util.EntsoeGeographicalCode;
@@ -159,6 +160,10 @@ class CaseServiceTest {
         UUID caseUuid = UUID.randomUUID();
         Path casePath = Path.of(this.getClass().getResource("/" + fileName).getPath());
         String fileBaseName = casePath.getFileName().toString();
-        return caseService.createInfos(fileBaseName, caseUuid, format);
+        var parser = FileNameParsers.findParser(fileName);
+        assertNotNull(parser);
+        var infos = parser.parse(fileName);
+        assertTrue(infos.isPresent());
+        return CaseInfos.create(fileBaseName, caseUuid, format, infos.get());
     }
 }

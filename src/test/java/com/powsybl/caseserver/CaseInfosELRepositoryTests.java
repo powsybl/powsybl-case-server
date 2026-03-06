@@ -10,6 +10,7 @@ import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.dto.cgmes.CgmesCaseInfos;
 import com.powsybl.caseserver.dto.entsoe.EntsoeCaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
+import com.powsybl.caseserver.parsers.FileNameParsers;
 import com.powsybl.caseserver.service.CaseService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -170,6 +173,10 @@ class CaseInfosELRepositoryTests {
     private CaseInfos createInfos(String fileName, String format) {
         Path casePath = Path.of(this.getClass().getResource("/" + fileName).getPath());
         String fileBaseName = casePath.getFileName().toString();
-        return caseService.createInfos(fileBaseName, UUID.randomUUID(), format);
+        var parser = FileNameParsers.findParser(fileName);
+        assertNotNull(parser);
+        var infos = parser.parse(fileName);
+        assertTrue(infos.isPresent());
+        return CaseInfos.create(fileBaseName, UUID.randomUUID(), format, infos.get());
     }
 }
