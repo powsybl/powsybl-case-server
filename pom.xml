@@ -45,10 +45,8 @@
 
     <properties>
         <liquibase-hibernate-package>com.powsybl.caseserver.repository</liquibase-hibernate-package>
-        <powsybl-ws-dependencies.version>2.30.0</powsybl-ws-dependencies.version>
-        <spring-cloud-aws-starter-s3>3.3.1</spring-cloud-aws-starter-s3>
-        <!-- FIXME to remove when powsybl-ws-dependencies upgrades to springboot 3.5.9 -->
-        <testcontainers.version>1.21.4</testcontainers.version>
+        <powsybl-ws-dependencies.version>2.31.0</powsybl-ws-dependencies.version>
+        <spring-cloud-aws-starter-s3>3.4.2</spring-cloud-aws-starter-s3>
         <sonar.organization>powsybl-ci-github</sonar.organization>
         <sonar.projectKey>com.powsybl:powsybl-case-server</sonar.projectKey>
     </properties>
@@ -86,12 +84,6 @@
     <dependencyManagement>
         <dependencies>
             <!-- overrides of imports -->
-            <!-- FIXME to remove when powsybl-ws-dependencies upgrades to springboot 3.5.9 -->
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>testcontainers</artifactId>
-                <version>${testcontainers.version}</version>
-            </dependency>
 
             <!-- imports -->
             <dependency>
