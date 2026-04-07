@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2019, RTE (http://www.rte-france.com)
+ * Copyright (c) 2026, RTE (http://www.rte-france.com)
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -279,7 +279,7 @@ class CaseControllerTest implements MinioContainerConfig {
         UUID firstCaseUuid = importCase(TEST_CASE, false);
 
         // list the cases and expect the one imported before
-        mvc.perform(get("/v1/cases"))
+        mvc.perform(get("/v1/supervision/cases"))
                 .andExpect(status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$").isArray())
                 .andExpect(MockMvcResultMatchers.jsonPath("$", hasSize(1)))
@@ -443,7 +443,7 @@ class CaseControllerTest implements MinioContainerConfig {
                 .andReturn();
 
         // list the cases and expect one case
-        MvcResult mvcResult = mvc.perform(get("/v1/cases"))
+        MvcResult mvcResult = mvc.perform(get("/v1/supervision/cases"))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -603,7 +603,7 @@ class CaseControllerTest implements MinioContainerConfig {
         assertEquals("UCTE", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
 
         // list the cases
-        MvcResult mvcResult = mvc.perform(get("/v1/cases"))
+        MvcResult mvcResult = mvc.perform(get("/v1/supervision/cases"))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -750,7 +750,7 @@ class CaseControllerTest implements MinioContainerConfig {
         // import a case properly
         importCase(TEST_CASE, false);
 
-        MvcResult mvcResult = mvc.perform(get("/v1/cases"))
+        MvcResult mvcResult = mvc.perform(get("/v1/supervision/cases"))
                 .andExpect(status().isOk())
                 .andReturn();
         String resultAsString = mvcResult.getResponse().getContentAsString();
@@ -774,7 +774,7 @@ class CaseControllerTest implements MinioContainerConfig {
         importCase(TEST_CASE, false);
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
-        MvcResult mvcResult = mvc.perform(get("/v1/cases"))
+        MvcResult mvcResult = mvc.perform(get("/v1/supervision/cases"))
                 .andExpect(status().isOk())
                 .andReturn();
         String resultAsString = mvcResult.getResponse().getContentAsString();
@@ -819,7 +819,7 @@ class CaseControllerTest implements MinioContainerConfig {
         UUID tarCaseUuid = importCase(TEST_TAR_CASE, false);
 
         // list the cases and expect the one imported before
-        mvc.perform(get("/v1/cases"))
+        mvc.perform(get("/v1/supervision/cases"))
                 .andExpect(status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$").isArray())
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].name").value(TEST_TAR_CASE))

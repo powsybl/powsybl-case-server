@@ -1,11 +1,12 @@
 /**
- * Copyright (c) 2024, RTE (http://www.rte-france.com)
+ * Copyright (c) 2026, RTE (http://www.rte-france.com)
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package com.powsybl.caseserver;
 
+import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.caseserver.service.SupervisionService;
@@ -20,6 +21,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * @author Jamal KHEYYAD <jamal.kheyyad at rte-international.com>
@@ -51,6 +54,17 @@ public class SupervisionController {
                 + ":"
                 + httpHost.getPort();
         return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(host);
+    }
+
+    @GetMapping(value = "/cases")
+    @Operation(summary = "Get all cases")
+    public ResponseEntity<List<CaseInfos>> getCases() {
+        LOGGER.debug("getCases request received");
+        List<CaseInfos> cases = caseService.getCases();
+        if (cases == null) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok().body(cases);
     }
 
     @GetMapping(value = "/cases/index-name")
