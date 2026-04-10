@@ -6,7 +6,6 @@
  */
 package com.powsybl.caseserver.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
 import com.powsybl.caseserver.datasource.utils.TmpMultiPartFile;
@@ -49,12 +48,14 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPOutputStream;
 
 import static com.powsybl.caseserver.Utils.ZIP_EXTENSION;
 import static com.powsybl.caseserver.service.CaseService.DELIMITER;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -279,13 +280,13 @@ class CaseControllerTest implements MinioContainerConfig {
         UUID firstCaseUuid = importCase(TEST_CASE, false);
 
         // list the cases and expect the one imported before
-        mvc.perform(get("/v1/supervision/cases"))
-                .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$").isArray())
-                .andExpect(MockMvcResultMatchers.jsonPath("$", hasSize(1)))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].name").value(TEST_CASE))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].format").value(TEST_CASE_FORMAT))
-                .andReturn();
+        List<CaseInfos> caseInfos = caseService.getCases();
+
+        assertEquals(1, caseInfos.size());
+        assertEquals(firstCaseUuid, caseInfos.get(0).getUuid());
+        assertEquals(TEST_CASE, caseInfos.get(0).getName());
+        assertEquals(TEST_CASE_FORMAT, caseInfos.get(0).getFormat());
+
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
         // download a plain file case
@@ -442,15 +443,14 @@ class CaseControllerTest implements MinioContainerConfig {
                 .andExpect(status().isNotFound())
                 .andReturn();
 
-        // list the cases and expect one case
-        MvcResult mvcResult = mvc.perform(get("/v1/supervision/cases"))
-                .andExpect(status().isOk())
-                .andReturn();
+        // list the cases and expect one case with name "testCase.xiidm"
+        caseInfos = caseService.getCases();
 
-        assertTrue(mvcResult.getResponse().getContentAsString().contains("\"name\":\"testCase.xiidm\""));
+        assertEquals(3, caseInfos.size());
+        assertEquals(TEST_CASE, caseInfos.get(0).getName());
 
         // test case metadata
-        mvcResult = mvc.perform(get("/v1/cases/metadata?ids=" + caseUuid))
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/metadata?ids=" + caseUuid))
                 .andExpect(status().isOk())
                 .andReturn();
         String response = mvcResult.getResponse().getContentAsString();
@@ -603,24 +603,23 @@ class CaseControllerTest implements MinioContainerConfig {
         assertEquals("UCTE", headersCase.get(CaseInfos.FORMAT_HEADER_KEY));
 
         // list the cases
-        MvcResult mvcResult = mvc.perform(get("/v1/supervision/cases"))
-                .andExpect(status().isOk())
-                .andReturn();
+        List<CaseInfos> caseInfos = caseService.getCases();
 
         // assert that the 5 previously imported cases are present
-        String response = mvcResult.getResponse().getContentAsString();
-        assertTrue(response.contains("\"name\":\"testCase.xiidm\""));
-        assertTrue(response.contains("\"name\":\"20200424T1330Z_2D_RTEFRANCE_001.zip\""));
-        assertTrue(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT\""));
-        assertTrue(response.contains("\"name\":\"20200103_0915_SN5_D80.UCT\""));
-        assertTrue(response.contains("\"name\":\"20200103_0915_135_CH2.UCT\""));
+        Set<String> caseNames = caseInfos.stream().map(CaseInfos::getName).collect(Collectors.toSet());
+        assertTrue(caseNames.contains("testCase.xiidm"));
+        assertTrue(caseNames.contains("20200424T1330Z_2D_RTEFRANCE_001.zip"));
+        assertTrue(caseNames.contains("20200103_0915_FO5_FR0.UCT"));
+        assertTrue(caseNames.contains("20200103_0915_SN5_D80.UCT"));
+        assertTrue(caseNames.contains("20200103_0915_135_CH2.UCT"));
 
         // search the cases
-        mvcResult = mvc.perform(get("/v1/cases/search")
+        MvcResult mvcResult = mvc.perform(get("/v1/cases/search")
                 .param("q", "*"))
                 .andExpect(status().isOk())
                 .andReturn();
-        response = mvcResult.getResponse().getContentAsString();
+
+        String response = mvcResult.getResponse().getContentAsString();
         assertTrue(response.contains("\"name\":\"testCase.xiidm\""));
         assertTrue(response.contains("\"name\":\"20200424T1330Z_2D_RTEFRANCE_001.zip\""));
         assertTrue(response.contains("\"name\":\"20200103_0915_FO5_FR0.UCT\""));
@@ -750,11 +749,7 @@ class CaseControllerTest implements MinioContainerConfig {
         // import a case properly
         importCase(TEST_CASE, false);
 
-        MvcResult mvcResult = mvc.perform(get("/v1/supervision/cases"))
-                .andExpect(status().isOk())
-                .andReturn();
-        String resultAsString = mvcResult.getResponse().getContentAsString();
-        List<CaseInfos> caseInfos = mapper.readValue(resultAsString, new TypeReference<>() { });
+        List<CaseInfos> caseInfos = caseService.getCases();
         assertEquals(1, caseInfos.size());
         assertEquals(TEST_CASE, caseInfos.get(0).getName());
 
@@ -774,11 +769,7 @@ class CaseControllerTest implements MinioContainerConfig {
         importCase(TEST_CASE, false);
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
-        MvcResult mvcResult = mvc.perform(get("/v1/supervision/cases"))
-                .andExpect(status().isOk())
-                .andReturn();
-        String resultAsString = mvcResult.getResponse().getContentAsString();
-        List<CaseInfos> caseInfos = mapper.readValue(resultAsString, new TypeReference<>() { });
+        List<CaseInfos> caseInfos = caseService.getCases();
         assertEquals(1, caseInfos.size());
         assertEquals(TEST_CASE, caseInfos.get(0).getName());
 
@@ -819,12 +810,11 @@ class CaseControllerTest implements MinioContainerConfig {
         UUID tarCaseUuid = importCase(TEST_TAR_CASE, false);
 
         // list the cases and expect the one imported before
-        mvc.perform(get("/v1/supervision/cases"))
-                .andExpect(status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$").isArray())
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].name").value(TEST_TAR_CASE))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].format").value(TEST_CASE_FORMAT))
-                .andReturn();
+        List<CaseInfos> cases = caseService.getCases();
+
+        assertEquals(2, cases.size());
+        assertEquals(TEST_TAR_CASE, cases.get(0).getName());
+        assertEquals(TEST_CASE_FORMAT, cases.get(0).getFormat());
 
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
 

@@ -60,11 +60,7 @@ public class SupervisionController {
     @Operation(summary = "Get all cases")
     public ResponseEntity<List<CaseInfos>> getCases() {
         LOGGER.debug("getCases request received");
-        List<CaseInfos> cases = caseService.getCases();
-        if (cases == null) {
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.ok().body(cases);
+        return ResponseEntity.ok().body(caseService.getCases());
     }
 
     @GetMapping(value = "/cases/index-name")
