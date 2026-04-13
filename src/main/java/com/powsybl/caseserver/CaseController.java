@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2019, RTE (http://www.rte-france.com)
+ * Copyright (c) 2026, RTE (http://www.rte-france.com)
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -61,18 +61,6 @@ public class CaseController {
 
     @Autowired
     private MetadataService metadataService;
-
-    @GetMapping(value = "/cases")
-    @Operation(summary = "Get all cases")
-    //For maintenance purpose
-    public ResponseEntity<List<CaseInfos>> getCases() {
-        LOGGER.debug("getCases request received");
-        List<CaseInfos> cases = caseService.getCases();
-        if (cases == null) {
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.ok().body(cases);
-    }
 
     @GetMapping(value = "/cases/{caseUuid}/infos")
     @Operation(summary = "Get a case infos")
