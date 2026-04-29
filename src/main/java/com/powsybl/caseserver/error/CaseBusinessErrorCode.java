@@ -15,6 +15,7 @@ public enum CaseBusinessErrorCode implements BusinessErrorCode {
     NO_AVAILABLE_IMPORTER("case.noAvailableImporter"),
     ILLEGAL_FILE_NAME("case.illegalFileName");
     private final String code;
+
     CaseBusinessErrorCode(String code) {
         this.code = code;
     }
