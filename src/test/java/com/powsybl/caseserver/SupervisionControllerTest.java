@@ -1,12 +1,14 @@
 /**
- * Copyright (c) 2024, RTE (http://www.rte-france.com)
+ * Copyright (c) 2026, RTE (http://www.rte-france.com)
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 package com.powsybl.caseserver;
 
-import com.powsybl.caseserver.repository.CaseMetadataRepository;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.service.CaseService;
 import com.powsybl.caseserver.service.MinioContainerConfig;
 import com.powsybl.caseserver.service.SupervisionService;
@@ -24,7 +26,9 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -39,11 +43,11 @@ class SupervisionControllerTest implements MinioContainerConfig {
     @Autowired
     private SupervisionService supervisionService;
     @Autowired
-    CaseMetadataRepository caseMetadataRepository;
-    @Autowired
     CaseService caseService;
     @Autowired
     protected MockMvc mockMvc;
+    @Autowired
+    ObjectMapper mapper;
 
     private static final String TEST_CASE = "testCase.xiidm";
 
@@ -61,6 +65,21 @@ class SupervisionControllerTest implements MinioContainerConfig {
         mockMvc.perform(post("/v1/supervision/cases/reindex"))
                 .andExpect(status().isOk());
         assertEquals(2, supervisionService.getIndexedCasesCount());
+    }
+
+    @Test
+    void testGetAllCases() throws Exception {
+
+        List<CaseInfos> caseInfos = getAllCases();
+
+        assertTrue(caseInfos.isEmpty());
+
+        importCase(false);
+        importCase(false);
+
+        caseInfos = getAllCases();
+
+        assertEquals(2, caseInfos.size());
     }
 
     @Test
@@ -100,6 +119,16 @@ class SupervisionControllerTest implements MinioContainerConfig {
                             .param("withIndexation", indexed.toString()))
                     .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
+    }
+
+    private List<CaseInfos> getAllCases() throws Exception {
+        String response = mockMvc.perform(get("/v1/supervision/cases"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        return mapper.readValue(response, new TypeReference<>() {
+        });
+
     }
 
     private static MockMultipartFile createMockMultipartFile() throws IOException {
