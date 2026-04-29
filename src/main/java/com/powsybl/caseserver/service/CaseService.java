@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2026, RTE (http://www.rte-france.com)
+ * Copyright (c) 2024, RTE (http://www.rte-france.com)
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -132,8 +132,7 @@ public class CaseService {
         if (withExpiration) {
             expirationTime = Instant.now().plus(1, ChronoUnit.HOURS);
         }
-        var entity = getCaseMetadataRepository().save(new CaseMetadataEntity(newCaseUuid, expirationTime, withIndexation, originalFilename, compressionFormat, format));
-        LOGGER.info("Case {} created with metadata {}", newCaseUuid, entity);
+        getCaseMetadataRepository().save(new CaseMetadataEntity(newCaseUuid, expirationTime, withIndexation, originalFilename, compressionFormat, format));
     }
 
     public List<CaseInfos> getMetadata(List<UUID> ids) {
@@ -500,8 +499,6 @@ public class CaseService {
             caseInfosService.addCaseInfos(caseInfos);
         }
         notificationService.sendImportMessage(caseInfos.createMessage());
-
-        LOGGER.info("Case {} imported", caseUuid);
 
         return caseUuid;
     }
