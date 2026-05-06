@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2023, RTE (http://www.rte-france.com)
+ * Copyright (c) 2026, RTE (http://www.rte-france.com)
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -21,9 +21,10 @@ public interface MinioContainerConfig {
     String MINIO_DOCKER_IMAGE_NAME = "minio/minio";
     String BUCKET_NAME = "ws-bucket";
     // Just a fixed version, latest at the time of writing this
-    String MINIO_DOCKER_IMAGE_VERSION = "RELEASE.2023-09-27T15-22-50Z";
+    String MINIO_DOCKER_IMAGE_VERSION = "RELEASE.2025-09-07T16-13-09Z";
     int MINIO_PORT = 9000;
     GenericContainer<?> MINIO_CONTAINER = createMinioContainer();
+
     static GenericContainer<?> createMinioContainer() {
         try {
             GenericContainer<?> minioContainer = new GenericContainer(
