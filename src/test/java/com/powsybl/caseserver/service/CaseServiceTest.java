@@ -6,12 +6,12 @@
  */
 package com.powsybl.caseserver.service;
 
-import com.powsybl.caseserver.error.CaseBusinessErrorCode;
-import com.powsybl.caseserver.error.CaseBusinessException;
 import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.dto.cgmes.CgmesCaseInfos;
 import com.powsybl.caseserver.dto.entsoe.EntsoeCaseInfos;
 import com.powsybl.caseserver.elasticsearch.DisableElasticsearch;
+import com.powsybl.caseserver.error.CaseBusinessErrorCode;
+import com.powsybl.caseserver.error.CaseBusinessException;
 import com.powsybl.caseserver.parsers.FileNameParsers;
 import com.powsybl.caseserver.parsers.cgmes.CgmesFileNameParser;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileNameParser;
@@ -19,16 +19,13 @@ import com.powsybl.entsoe.util.EntsoeGeographicalCode;
 import com.powsybl.iidm.network.Country;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.server.ResponseStatusException;
-
 import java.nio.file.Path;
 import java.util.UUID;
-
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 

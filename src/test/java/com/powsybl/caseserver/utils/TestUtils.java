@@ -23,6 +23,7 @@ public final class TestUtils {
         throw new IllegalStateException("Utility class");
     }
 
+    @SuppressWarnings("checkstyle:IllegalCatch")
     public static void assertQueuesEmptyThenClear(List<String> destinations, OutputDestination output) {
         try {
             destinations.forEach(destination -> assertNull(output.receive(TIMEOUT, destination), "Should not be any messages in queue " + destination + " : "));
