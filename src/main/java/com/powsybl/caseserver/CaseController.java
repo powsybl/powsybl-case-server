@@ -10,8 +10,8 @@ import com.powsybl.caseserver.dto.CaseInfos;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.error.CaseRuntimeException;
 import com.powsybl.caseserver.service.CaseObserver;
-import com.powsybl.caseserver.service.MetadataService;
 import com.powsybl.caseserver.service.CaseService;
+import com.powsybl.caseserver.service.MetadataService;
 import com.powsybl.commons.datasource.DataSourceUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -29,13 +29,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
 import static com.powsybl.caseserver.Utils.buildHeaders;
 
 /**
