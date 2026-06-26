@@ -182,6 +182,7 @@ public class CaseService {
 
     // creates a directory, and then in this directory, initializes a file with content.
     // After applying f to the file, deletes the file and the directory.
+    @SuppressWarnings("checkstyle:MethodTypeParameterName")
     private <R, T1 extends Exception, T2 extends Exception> R withTempCopy(UUID caseUuid, String filename,
                                                                                          FailableConsumer<Path, T1> contentInitializer, FailableFunction<Path, R, T2> f) {
         Path tempdirPath;
@@ -504,7 +505,8 @@ public class CaseService {
     }
 
     public void importCase(UUID caseUuid, String caseKey, String contentType, boolean withExpiration, boolean withIndexation) throws IOException {
-        InputStream inputStream = getCaseStream(caseKey).orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "The expected key does not exist in the bucket s3 : " + caseKey));
+        InputStream inputStream = getCaseStream(caseKey).orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                "The expected key does not exist in the bucket s3 : " + caseKey));
         try (TmpMultiPartFile mpf = new TmpMultiPartFile(inputStream, caseKey, contentType)) {
             caseObserver.observeCaseImport(mpf.getSize(), () -> importCase(mpf, withExpiration, withIndexation, caseUuid));
         }

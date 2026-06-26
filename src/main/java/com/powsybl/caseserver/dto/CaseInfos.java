@@ -11,9 +11,6 @@ import com.powsybl.caseserver.dto.entsoe.EntsoeCaseInfos;
 import com.powsybl.caseserver.parsers.FileNameInfos;
 import com.powsybl.caseserver.parsers.cgmes.CgmesFileName;
 import com.powsybl.caseserver.parsers.entsoe.EntsoeFileName;
-import java.util.Objects;
-import java.util.UUID;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -25,6 +22,8 @@ import org.springframework.data.annotation.TypeAlias;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.integration.support.MessageBuilder;
 import org.springframework.messaging.Message;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * @author Geoffroy Jamgotchian <geoffroy.jamgotchian at rte-france.com>

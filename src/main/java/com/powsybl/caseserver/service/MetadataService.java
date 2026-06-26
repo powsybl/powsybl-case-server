@@ -31,7 +31,8 @@ public class MetadataService {
 
     @Transactional
     public void disableCaseExpiration(UUID caseUuid) {
-        CaseMetadataEntity caseMetadataEntity = caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Metadata of case " + caseUuid + NOT_FOUND));
+        CaseMetadataEntity caseMetadataEntity = caseMetadataRepository.findById(caseUuid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                "Metadata of case " + caseUuid + NOT_FOUND));
         caseMetadataEntity.setExpirationDate(null);
     }
 }
