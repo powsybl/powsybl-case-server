@@ -65,7 +65,6 @@ import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM_VALUE;
  * @author Etienne Homer <etienne.homer at rte-france.com>
  */
 @Service
-@SuppressWarnings("checkstyle:MethodTypeParameterName")
 @ComponentScan(basePackageClasses = {CaseInfosService.class})
 public class CaseService {
 
