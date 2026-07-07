@@ -8,6 +8,7 @@ package com.powsybl.caseserver;
 
 import com.powsybl.caseserver.repository.CaseMetadataRepository;
 import com.powsybl.caseserver.service.CaseService;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -33,6 +34,7 @@ public class ScheduledCaseCleaner {
     }
 
     @Scheduled(cron = "${cleaning-cases-cron}", zone = "UTC")
+    @SchedulerLock(name = "ScheduledCaseCleaner_deleteExpiredCases")
     public void deleteExpiredCases() {
         Instant now = Instant.now();
         LOGGER.info("Cleaning cases cron starting execution at {}", now);
