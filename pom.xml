@@ -50,7 +50,7 @@
         <sonar.organization>powsybl-ci-github</sonar.organization>
         <sonar.projectKey>com.powsybl:powsybl-case-server</sonar.projectKey>
         <aws-sdk.version>2.29.52</aws-sdk.version>
-        <shedlock.version>5.16.0</shedlock.version>
+        <shedlock.version>6.4.0</shedlock.version>
     </properties>
 
     <build>

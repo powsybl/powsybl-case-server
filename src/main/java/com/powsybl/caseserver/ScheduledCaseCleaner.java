@@ -34,7 +34,7 @@ public class ScheduledCaseCleaner {
     }
 
     @Scheduled(cron = "${cleaning-cases-cron}", zone = "UTC")
-    @SchedulerLock(name = "ScheduledCaseCleaner_deleteExpiredCases", lockAtMostFor = "PT20M", lockAtLeastFor = "PT1M")
+    @SchedulerLock(name = "ScheduledCaseCleaner_deleteExpiredCases")
     public void deleteExpiredCases() {
         Instant now = Instant.now();
         LOGGER.info("Cleaning cases cron starting execution at {}", now);
