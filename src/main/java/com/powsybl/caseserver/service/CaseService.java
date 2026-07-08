@@ -194,7 +194,11 @@ public class CaseService {
             // Create parent directory if necessary
             Path parentPath = Paths.get(filename).getParent();
             if (parentPath != null) {
-                Files.createDirectories(tempdirPath.resolve(parentPath), attr);
+                Path resolvedPath = tempdirPath.resolve(parentPath).normalize();
+                if (!resolvedPath.startsWith(tempdirPath)) {
+                    throw new IllegalArgumentException("Invalid path: " + parentPath);
+                }
+                Files.createDirectories(resolvedPath, attr);
             }
             // after this line, need to cleanup the dir
         } catch (IOException e) {
@@ -460,7 +464,7 @@ public class CaseService {
      * </ul>
      */
     public UUID importCase(MultipartFile mpf, boolean withExpiration, boolean withIndexation, UUID caseUuid) {
-        String caseName = Objects.requireNonNull(mpf.getOriginalFilename());
+            String caseName = Objects.requireNonNull(mpf.getOriginalFilename());
         validateCaseName(caseName);
         String format = withTempCopy(caseUuid, caseName, mpf::transferTo, this::getFormat);
         String compressionFormat = FileNameUtils.getExtension(Paths.get(caseName));
