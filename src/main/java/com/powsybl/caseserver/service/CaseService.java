@@ -194,7 +194,11 @@ public class CaseService {
             // Create parent directory if necessary
             Path parentPath = Paths.get(filename).getParent();
             if (parentPath != null) {
-                Files.createDirectories(tempdirPath.resolve(parentPath), attr);
+                Path resolvedPath = tempdirPath.resolve(parentPath).normalize();
+                if (!resolvedPath.startsWith(tempdirPath)) {
+                    throw CaseRuntimeException.tempDirectoryCreation(caseUuid, new IllegalArgumentException("Invalid path: " + parentPath));
+                }
+                Files.createDirectories(resolvedPath, attr);
             }
             // after this line, need to cleanup the dir
         } catch (IOException e) {
