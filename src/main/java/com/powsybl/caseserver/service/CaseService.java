@@ -196,7 +196,7 @@ public class CaseService {
             if (parentPath != null) {
                 Path resolvedPath = tempdirPath.resolve(parentPath).normalize();
                 if (!resolvedPath.startsWith(tempdirPath)) {
-                    throw new IllegalArgumentException("Invalid path: " + parentPath);
+                    throw CaseRuntimeException.tempDirectoryCreation(caseUuid, new IllegalAccessException("Invalid path: " + parentPath));
                 }
                 Files.createDirectories(resolvedPath, attr);
             }
