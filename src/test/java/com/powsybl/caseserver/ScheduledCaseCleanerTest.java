@@ -63,12 +63,15 @@ class ScheduledCaseCleanerTest {
 
     @BeforeEach
     void cleanDBBeforeEach() {
-        caseMetadataRepository.deleteAll();
-        releaseLock();
+        cleanDB();
     }
 
     @AfterEach
     void cleanDBAfterEach() {
+        cleanDB();
+    }
+
+    void cleanDB() {
         caseMetadataRepository.deleteAll();
         releaseLock();
     }
