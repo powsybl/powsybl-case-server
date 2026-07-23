@@ -353,7 +353,7 @@ class CaseControllerTest implements MinioContainerConfig {
         assertNull(caseMetadataEntity.getExpirationDate());
 
         //duplicate an existing case
-        MvcResult duplicateResult = mvc.perform(post("/v1/cases?duplicateFrom=" + caseUuid))
+        MvcResult duplicateResult = mvc.perform(post("/v1/cases/" + caseUuid + "/duplicate"))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -394,7 +394,7 @@ class CaseControllerTest implements MinioContainerConfig {
         assertNotNull(caseMetadataEntity.getExpirationDate());
 
         //duplicate an existing case withExpiration
-        MvcResult duplicateResult2 = mvc.perform(post("/v1/cases?duplicateFrom=" + caseUuid)
+        MvcResult duplicateResult2 = mvc.perform(post("/v1/cases/" + caseUuid + "/duplicate")
                 .param("withExpiration", "true"))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -439,7 +439,7 @@ class CaseControllerTest implements MinioContainerConfig {
         assertTrue(deleteExpirationResult.getResponse().getContentAsString().contains("case " + randomUuid + " not found"));
 
         // assert that duplicating a non existing case should return a 404
-        mvc.perform(post("/v1/cases?duplicateFrom=" + UUID.randomUUID()))
+        mvc.perform(post("/v1/cases/" + UUID.randomUUID() + "/duplicate"))
                 .andExpect(status().isNotFound())
                 .andReturn();
 
@@ -480,7 +480,7 @@ class CaseControllerTest implements MinioContainerConfig {
                 .andReturn().getResponse().getContentAsString();
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
         //duplicate an existing case
-        String duplicateCaseStr = mvc.perform(post("/v1/cases?duplicateFrom=" + caseUuid.substring(1, caseUuid.length() - 1)))
+        String duplicateCaseStr = mvc.perform(post("/v1/cases/" + caseUuid.substring(1, caseUuid.length() - 1) + "/duplicate"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         UUID duplicateCaseUuid = UUID.fromString(duplicateCaseStr.substring(1, duplicateCaseStr.length() - 1));
@@ -819,7 +819,7 @@ class CaseControllerTest implements MinioContainerConfig {
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
         //duplicate an existing case
-        MvcResult duplicateResult = mvc.perform(post("/v1/cases?duplicateFrom=" + tarCaseUuid))
+        MvcResult duplicateResult = mvc.perform(post("/v1/cases/" + tarCaseUuid + "/duplicate"))
                 .andExpect(status().isOk())
                 .andReturn();
 
