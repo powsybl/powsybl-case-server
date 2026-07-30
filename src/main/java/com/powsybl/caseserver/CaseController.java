@@ -29,8 +29,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -97,17 +98,24 @@ public class CaseController {
     @Operation(summary = "Download a case")
     public ResponseEntity<Resource> downloadCase(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("getCase request received with parameter caseUuid = {}", caseUuid);
-        Optional<InputStream> caseStreamOpt = caseService.getCaseStream(caseUuid);
+        Optional<ResponseInputStream<GetObjectResponse>> caseStreamOpt = caseService.getCaseStream(caseUuid);
         if (caseStreamOpt.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
+        ResponseInputStream<GetObjectResponse> caseStream = caseStreamOpt.get();
         String name = caseService.getCaseName(caseUuid);
         Boolean isUploadedAsPlainFile = caseService.isUploadedAsPlainFile(caseUuid);
         HttpHeaders headers = buildHeaders(name, isUploadedAsPlainFile);
+        // Setting the content length lets the browser display a determinate download progress instead
+        // of an indeterminate one.
+        Long contentLength = caseStream.response().contentLength();
+        if (contentLength != null) {
+            headers.setContentLength(contentLength);
+        }
         return ResponseEntity.ok()
                 .headers(headers)
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(new InputStreamResource(caseStreamOpt.get()));
+                .body(new InputStreamResource(caseStream));
     }
 
     @GetMapping(value = "/cases/{caseUuid}/exists")

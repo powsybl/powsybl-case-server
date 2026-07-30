@@ -269,7 +269,7 @@ public class CaseService {
         return UUID.fromString(keyWithoutRootDirectory.substring(0, firstSlash));
     }
 
-    public Optional<InputStream> getCaseStream(UUID caseUuid) {
+    public Optional<ResponseInputStream<GetObjectResponse>> getCaseStream(UUID caseUuid) {
         try {
             return getCaseStream(uuidToKeyWithOriginalFileName(caseUuid));
         } catch (CaseRuntimeException | ResponseStatusException e) {
@@ -278,7 +278,7 @@ public class CaseService {
         }
     }
 
-    public Optional<InputStream> getCaseStream(String caseFileKey) {
+    public Optional<ResponseInputStream<GetObjectResponse>> getCaseStream(String caseFileKey) {
         try {
             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
