@@ -93,7 +93,7 @@ public class CaseController {
         return ResponseEntity.ok().body(caseName);
     }
 
-    @GetMapping(value = "/cases/{caseUuid}")
+    @RequestMapping(value = "/cases/{caseUuid}", method = {RequestMethod.GET, RequestMethod.POST})
     @Operation(summary = "Download a case")
     public ResponseEntity<Resource> downloadCase(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("getCase request received with parameter caseUuid = {}", caseUuid);
