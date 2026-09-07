@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
 import com.powsybl.caseserver.datasource.utils.TmpMultiPartFile;
 import com.powsybl.caseserver.dto.CaseInfos;
+import com.powsybl.caseserver.dto.CaseStream;
 import com.powsybl.caseserver.parsers.FileNameInfos;
 import com.powsybl.caseserver.parsers.FileNameParser;
 import com.powsybl.caseserver.parsers.FileNameParsers;
@@ -925,8 +926,8 @@ class CaseControllerTest implements MinioContainerConfig {
         addZipCaseFile(caseUuid, folderName, fileName);
 
         String caseKey = folderName + DELIMITER + caseUuid + DELIMITER + fileName + ZIP_EXTENSION;
-        InputStream inputStream = caseService.getCaseStream(caseKey).get();
-        try (TmpMultiPartFile file = new TmpMultiPartFile(inputStream, caseKey, "application/zip")) {
+        CaseStream caseStream = caseService.getCaseStream(caseKey).get();
+        try (TmpMultiPartFile file = new TmpMultiPartFile(caseStream.inputStream(), caseKey, "application/zip")) {
             try (InputStream in = CaseControllerTest.class.getResourceAsStream("/" + fileName + ZIP_EXTENSION)) {
                 assertNotNull(in);
                 byte[] bytes = in.readAllBytes();
