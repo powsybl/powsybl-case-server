@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
 import com.powsybl.caseserver.datasource.utils.TmpMultiPartFile;
 import com.powsybl.caseserver.dto.CaseInfos;
+import com.powsybl.caseserver.dto.CaseStream;
 import com.powsybl.caseserver.parsers.FileNameInfos;
 import com.powsybl.caseserver.parsers.FileNameParser;
 import com.powsybl.caseserver.parsers.FileNameParsers;
@@ -25,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.stream.binder.test.OutputDestination;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageHeaders;
@@ -298,16 +300,19 @@ class CaseControllerTest implements MinioContainerConfig {
             byte[] expectedGzippedBytes = byteArrayOutputStream.toByteArray();
             mvc.perform(get(GET_CASE_URL, firstCaseUuid))
                     .andExpect(status().isOk())
-                    .andExpect(header().string("Content-Disposition", "attachment; filename=\"" + TEST_CASE + "\""))
+                    .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + TEST_CASE + "\""))
+                    .andExpect(header().longValue(HttpHeaders.CONTENT_LENGTH, expectedGzippedBytes.length))
                     .andExpect(content().bytes(expectedGzippedBytes))
                     .andReturn();
         }
 
         UUID gzipCaseUuid = importCase(TEST_GZIP_CASE, false);
+        byte[] expectedGzipBytes = getClass().getResourceAsStream("/" + TEST_GZIP_CASE).readAllBytes();
         mvc.perform(get(GET_CASE_URL, gzipCaseUuid))
                 .andExpect(status().isOk())
-                .andExpect(content().bytes(getClass().getResourceAsStream("/" + TEST_GZIP_CASE).readAllBytes()))
-                .andExpect(header().string("Content-Disposition", "attachment; filename=\"" + TEST_GZIP_CASE + "\""))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + TEST_GZIP_CASE + "\""))
+                .andExpect(header().longValue(HttpHeaders.CONTENT_LENGTH, expectedGzipBytes.length))
+                .andExpect(content().bytes(expectedGzipBytes))
                 .andReturn();
         assertNotNull(outputDestination.receive(1000, caseImportDestination));
 
@@ -925,8 +930,8 @@ class CaseControllerTest implements MinioContainerConfig {
         addZipCaseFile(caseUuid, folderName, fileName);
 
         String caseKey = folderName + DELIMITER + caseUuid + DELIMITER + fileName + ZIP_EXTENSION;
-        InputStream inputStream = caseService.getCaseStream(caseKey).get();
-        try (TmpMultiPartFile file = new TmpMultiPartFile(inputStream, caseKey, "application/zip")) {
+        CaseStream caseStream = caseService.getCaseStream(caseKey).get();
+        try (TmpMultiPartFile file = new TmpMultiPartFile(caseStream.inputStream(), caseKey, "application/zip")) {
             try (InputStream in = CaseControllerTest.class.getResourceAsStream("/" + fileName + ZIP_EXTENSION)) {
                 assertNotNull(in);
                 byte[] bytes = in.readAllBytes();

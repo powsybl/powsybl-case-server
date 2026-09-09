@@ -9,6 +9,7 @@ package com.powsybl.caseserver.service;
 import com.google.re2j.Pattern;
 import com.powsybl.caseserver.datasource.utils.TmpMultiPartFile;
 import com.powsybl.caseserver.dto.CaseInfos;
+import com.powsybl.caseserver.dto.CaseStream;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.error.CaseBusinessException;
 import com.powsybl.caseserver.error.CaseRuntimeException;
@@ -269,7 +270,7 @@ public class CaseService {
         return UUID.fromString(keyWithoutRootDirectory.substring(0, firstSlash));
     }
 
-    public Optional<InputStream> getCaseStream(UUID caseUuid) {
+    public Optional<CaseStream> getCaseStream(UUID caseUuid) {
         try {
             return getCaseStream(uuidToKeyWithOriginalFileName(caseUuid));
         } catch (CaseRuntimeException | ResponseStatusException e) {
@@ -278,7 +279,7 @@ public class CaseService {
         }
     }
 
-    public Optional<InputStream> getCaseStream(String caseFileKey) {
+    public Optional<CaseStream> getCaseStream(String caseFileKey) {
         try {
             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
                 .bucket(bucketName)
@@ -286,7 +287,7 @@ public class CaseService {
                 .build();
 
             ResponseInputStream<GetObjectResponse> responseInputStream = s3Client.getObject(getObjectRequest);
-            return Optional.of(responseInputStream);
+            return Optional.of(new CaseStream(responseInputStream, responseInputStream.response().contentLength()));
         } catch (NoSuchKeyException e) {
             LOGGER.error("The expected key does not exist in the bucket s3 : {}", caseFileKey);
             return Optional.empty();
@@ -510,7 +511,7 @@ public class CaseService {
 
     public void importCase(UUID caseUuid, String caseKey, String contentType, boolean withExpiration, boolean withIndexation) throws IOException {
         InputStream inputStream = getCaseStream(caseKey).orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                "The expected key does not exist in the bucket s3 : " + caseKey));
+                "The expected key does not exist in the bucket s3 : " + caseKey)).inputStream();
         try (TmpMultiPartFile mpf = new TmpMultiPartFile(inputStream, caseKey, contentType)) {
             caseObserver.observeCaseImport(mpf.getSize(), () -> importCase(mpf, withExpiration, withIndexation, caseUuid));
         }

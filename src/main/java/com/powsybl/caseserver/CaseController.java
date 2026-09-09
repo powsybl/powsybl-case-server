@@ -7,6 +7,7 @@
 package com.powsybl.caseserver;
 
 import com.powsybl.caseserver.dto.CaseInfos;
+import com.powsybl.caseserver.dto.CaseStream;
 import com.powsybl.caseserver.elasticsearch.CaseInfosService;
 import com.powsybl.caseserver.error.CaseRuntimeException;
 import com.powsybl.caseserver.service.CaseObserver;
@@ -30,7 +31,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -97,7 +97,7 @@ public class CaseController {
     @Operation(summary = "Download a case")
     public ResponseEntity<Resource> downloadCase(@PathVariable("caseUuid") UUID caseUuid) {
         LOGGER.debug("getCase request received with parameter caseUuid = {}", caseUuid);
-        Optional<InputStream> caseStreamOpt = caseService.getCaseStream(caseUuid);
+        Optional<CaseStream> caseStreamOpt = caseService.getCaseStream(caseUuid);
         if (caseStreamOpt.isEmpty()) {
             return ResponseEntity.noContent().build();
         }
@@ -107,7 +107,8 @@ public class CaseController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(new InputStreamResource(caseStreamOpt.get()));
+                .contentLength(caseStreamOpt.get().contentLength())
+                .body(new InputStreamResource(caseStreamOpt.get().inputStream()));
     }
 
     @GetMapping(value = "/cases/{caseUuid}/exists")
