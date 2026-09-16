@@ -18,7 +18,7 @@ import java.time.Duration;
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
  */
 public interface MinioContainerConfig {
-    String MINIO_DOCKER_IMAGE_NAME = "minio/minio";
+    String MINIO_DOCKER_IMAGE_NAME = "powsybl/minio-minio";
     String BUCKET_NAME = "ws-bucket";
     // Just a fixed version, latest at the time of writing this
     String MINIO_DOCKER_IMAGE_VERSION = "RELEASE.2025-09-07T16-13-09Z";
