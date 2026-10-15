@@ -8,7 +8,6 @@ package com.powsybl.caseserver.service;
 
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 
@@ -17,18 +16,18 @@ import java.time.Duration;
 /**
  * @author Ghazwa Rehili <ghazwa.rehili at rte-france.com>
  */
-public interface MinioContainerConfig {
-    String MINIO_DOCKER_IMAGE_NAME = "powsybl/minio-minio";
-    String BUCKET_NAME = "ws-bucket";
+public abstract class AbstractMinioContainerConfig {
+    protected static final String MINIO_DOCKER_IMAGE_NAME = "powsybl/minio-minio";
+    protected static final String BUCKET_NAME = "ws-bucket";
     // Just a fixed version, latest at the time of writing this
-    String MINIO_DOCKER_IMAGE_VERSION = "RELEASE.2025-09-07T16-13-09Z";
-    int MINIO_PORT = 9000;
-    GenericContainer<?> MINIO_CONTAINER = createMinioContainer();
+    protected static final String MINIO_DOCKER_IMAGE_VER = "RELEASE.2025-09-07T16-13-09Z";
+    protected static final int MINIO_PORT = 9000;
+    protected static final GenericContainer<?> MINIO_CONTAINER = createMinioContainer();
 
     static GenericContainer<?> createMinioContainer() {
         try {
             GenericContainer<?> minioContainer = new GenericContainer(
-                    String.format("%s:%s", MINIO_DOCKER_IMAGE_NAME, MINIO_DOCKER_IMAGE_VERSION))
+                    String.format("%s:%s", MINIO_DOCKER_IMAGE_NAME, MINIO_DOCKER_IMAGE_VER))
                     .withCommand("server /data")
                     .withExposedPorts(MINIO_PORT)
                     .waitingFor(new HttpWaitStrategy()
@@ -46,9 +45,9 @@ public interface MinioContainerConfig {
     @DynamicPropertySource
     static void registerAwsProperties(DynamicPropertyRegistry registry) {
         Integer mappedPort = MINIO_CONTAINER.getFirstMappedPort();
-        Testcontainers.exposeHostPorts(mappedPort);
-        String minioContainerUrl = String.format("http://172.17.0.1:%s", mappedPort);
+        String minioContainerUrl = String.format("http://%s:%s", MINIO_CONTAINER.getHost(), mappedPort);
 
         registry.add("spring.cloud.aws.endpoint", () -> minioContainerUrl);
+        registry.add("spring.cloud.aws.s3.path-style-access-enabled", () -> true);
     }
 }

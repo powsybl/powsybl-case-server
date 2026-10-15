@@ -23,8 +23,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.cloud.stream.binder.test.OutputDestination;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -58,7 +58,6 @@ import java.util.zip.GZIPOutputStream;
 import static com.powsybl.caseserver.Utils.ZIP_EXTENSION;
 import static com.powsybl.caseserver.service.CaseService.DELIMITER;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
@@ -72,7 +71,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ContextConfigurationWithTestChannel
-class CaseControllerTest implements MinioContainerConfig {
+class CaseControllerTest extends AbstractMinioContainerConfig {
     static final String TEST_CASE = "testCase.xiidm";
     static final String TEST_CASE_2 = "test(2)Case.xiidm";
     static final String TEST_GZIP_CASE = "LF.xml.gz";

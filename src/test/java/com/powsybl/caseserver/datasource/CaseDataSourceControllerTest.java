@@ -9,15 +9,15 @@ package com.powsybl.caseserver.datasource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.caseserver.ContextConfigurationWithTestChannel;
 import com.powsybl.caseserver.elasticsearch.DisableElasticsearch;
+import com.powsybl.caseserver.service.AbstractMinioContainerConfig;
 import com.powsybl.caseserver.service.CaseService;
-import com.powsybl.caseserver.service.MinioContainerConfig;
 import com.powsybl.commons.datasource.DataSource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockMultipartFile;
@@ -52,7 +52,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ContextConfigurationWithTestChannel
-class CaseDataSourceControllerTest implements MinioContainerConfig {
+class CaseDataSourceControllerTest extends AbstractMinioContainerConfig {
 
     @MockitoBean
     StreamBridge streamBridge;

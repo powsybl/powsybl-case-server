@@ -9,16 +9,16 @@ package com.powsybl.caseserver;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.powsybl.caseserver.dto.CaseInfos;
+import com.powsybl.caseserver.service.AbstractMinioContainerConfig;
 import com.powsybl.caseserver.service.CaseService;
-import com.powsybl.caseserver.service.MinioContainerConfig;
 import com.powsybl.caseserver.service.SupervisionService;
 import com.powsybl.computation.ComputationManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.cloud.stream.binder.test.EnableTestBinder;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
@@ -28,8 +28,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -39,7 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @SpringBootTest(classes = {CaseApplication.class}, webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @EnableTestBinder
-class SupervisionControllerTest implements MinioContainerConfig {
+class SupervisionControllerTest extends AbstractMinioContainerConfig {
     @Autowired
     private SupervisionService supervisionService;
     @Autowired

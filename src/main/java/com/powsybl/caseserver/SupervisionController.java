@@ -14,14 +14,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.apache.http.HttpHost;
-import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
 
 /**
@@ -35,13 +35,15 @@ public class SupervisionController {
 
     private final SupervisionService supervisionService;
     private final CaseService caseService;
-    private final RestClient restClient;
+    private final List<String> elasticsearchUris;
     private final CaseInfosService caseInfosService;
 
-    public SupervisionController(SupervisionService supervisionService, CaseService caseService, RestClient restClient, CaseInfosService caseInfosService) {
+    public SupervisionController(SupervisionService supervisionService, CaseService caseService,
+                                 @Value("${spring.elasticsearch.uris:http://elasticsearch:9200}") List<String> elasticsearchUris,
+                                 CaseInfosService caseInfosService) {
         this.supervisionService = supervisionService;
         this.caseService = caseService;
-        this.restClient = restClient;
+        this.elasticsearchUris = elasticsearchUris;
         this.caseInfosService = caseInfosService;
     }
 
@@ -49,10 +51,9 @@ public class SupervisionController {
     @Operation(summary = "get the elasticsearch address")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "the elasticsearch address")})
     public ResponseEntity<String> getElasticsearchHost() {
-        HttpHost httpHost = restClient.getNodes().get(0).getHost();
-        String host = httpHost.getHostName()
-                + ":"
-                + httpHost.getPort();
+        String uri = elasticsearchUris.get(0);
+        URI elasticsearchUri = URI.create(uri.contains("://") ? uri : "http://" + uri);
+        String host = elasticsearchUri.getHost() + ":" + elasticsearchUri.getPort();
         return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(host);
     }
 

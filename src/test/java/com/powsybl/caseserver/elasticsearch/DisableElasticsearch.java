@@ -7,7 +7,6 @@
 
 package com.powsybl.caseserver.elasticsearch;
 
-import org.elasticsearch.client.RestClient;
 import org.mockito.Mockito;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
@@ -24,7 +23,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @TestPropertySource(properties = {
-    "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration"
+    "spring.autoconfigure.exclude=org.springframework.boot.data.elasticsearch.autoconfigure.DataElasticsearchRepositoriesAutoConfiguration"
 })
 public @interface DisableElasticsearch {
     class MockConfig {
@@ -41,11 +40,6 @@ public @interface DisableElasticsearch {
         @Bean
         public CaseInfosRepository caseInfosRepository() {
             return Mockito.mock(CaseInfosRepository.class);
-        }
-
-        @Bean
-        public RestClient restClient() {
-            return Mockito.mock(RestClient.class);
         }
 
     }
